@@ -1,11 +1,23 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import {
+  usePathname,
+  useRouter,
+} from "next/navigation";
 import { useEffect, useState } from "react";
+
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function LayoutAdmin({ children }) {
   const pathname = usePathname();
+  const router = useRouter();
+  const { usuario, sair } = useAuth();
+
+  function realizarLogout() {
+    sair();
+    router.replace("/login");
+  }
 
   const rotasCadastros = [
     "/clientes",
@@ -322,6 +334,79 @@ export default function LayoutAdmin({ children }) {
             )}
           </div>
         </nav>
+
+                <div
+          style={{
+            marginTop: "24px",
+            paddingTop: "16px",
+            borderTop: "1px solid #374151",
+          }}
+        >
+          <div
+            style={{
+              padding: "12px",
+              marginBottom: "10px",
+              borderRadius: "8px",
+              background: "#1f2937",
+            }}
+          >
+            <div
+              style={{
+                marginBottom: "4px",
+                fontSize: "14px",
+                fontWeight: "bold",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+              }}
+              title={usuario?.nome || ""}
+            >
+              👤 {usuario?.nome || "Usuário"}
+            </div>
+
+            <div
+              style={{
+                marginBottom: "5px",
+                color: "#9ca3af",
+                fontSize: "11px",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+              }}
+              title={usuario?.email || ""}
+            >
+              {usuario?.email || ""}
+            </div>
+
+            <div
+              style={{
+                color: "#93c5fd",
+                fontSize: "11px",
+                textTransform: "capitalize",
+              }}
+            >
+              {usuario?.perfil || ""}
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={realizarLogout}
+            style={{
+              width: "100%",
+              padding: "10px",
+              border: "1px solid #ef4444",
+              borderRadius: "8px",
+              color: "#fecaca",
+              background: "transparent",
+              fontSize: "14px",
+              fontWeight: "bold",
+              cursor: "pointer",
+            }}
+          >
+            🚪 Sair
+          </button>
+        </div>
       </aside>
 
       <main
