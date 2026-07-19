@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import styles from "./agendar.module.css";
 
 import {
   listarBarbeirosOnline,
@@ -428,10 +429,8 @@ const horarioButtonStyle = (ativo) => ({
 if (agendamentoConfirmado) {
   return (
     <main
+      className={styles.pagina}
       style={{
-        minHeight: "100vh",
-        background: "linear-gradient(135deg, #111827, #374151)",
-        padding: "30px",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
@@ -446,6 +445,7 @@ if (agendamentoConfirmado) {
           padding: "35px",
           boxShadow: "0 15px 35px rgba(0,0,0,0.25)",
           textAlign: "center",
+          boxSizing: "border-box",
         }}
       >
         <div
@@ -487,111 +487,96 @@ if (agendamentoConfirmado) {
           }}
         >
           <p>
-            <strong>Cliente:</strong> {agendamentoConfirmado.cliente}
+            <strong>Cliente:</strong>{" "}
+            {agendamentoConfirmado.cliente}
           </p>
 
           <p>
-            <strong>Telefone:</strong> {agendamentoConfirmado.telefone}
+            <strong>Telefone:</strong>{" "}
+            {agendamentoConfirmado.telefone}
           </p>
 
           <p>
-            <strong>Serviço:</strong> {agendamentoConfirmado.servico}
+            <strong>Serviço:</strong>{" "}
+            {agendamentoConfirmado.servico}
           </p>
 
           <p>
-            <strong>Barbeiro:</strong> {agendamentoConfirmado.barbeiro}
+            <strong>Barbeiro:</strong>{" "}
+            {agendamentoConfirmado.barbeiro}
           </p>
 
           <p>
-            <strong>Data:</strong> {formatarData(agendamentoConfirmado.data)}
+            <strong>Data:</strong>{" "}
+            {formatarData(
+              agendamentoConfirmado.data
+            )}
           </p>
 
           <p>
-            <strong>Horário:</strong> {agendamentoConfirmado.horario}
+            <strong>Horário:</strong>{" "}
+            {agendamentoConfirmado.horario}
           </p>
-          <p>
-          <strong>Protocolo:</strong>{" "} {agendamentoConfirmado.protocolo}
-         </p>
 
+          <p>
+            <strong>Protocolo:</strong>{" "}
+            {agendamentoConfirmado.protocolo}
+          </p>
         </div>
 
-        <div
-  style={{
-    display: "flex",
-    gap: "10px",
-    marginTop: "25px",
-  }}
->
-  <button
-    type="button"
-    onClick={() => {
-      setAgendamentoConfirmado(null);
-      setMensagem("");
-      setErro("");
-      setHorarioSelecionado(null);
+        <div className={styles.acoesConfirmacao}>
+          <button
+            type="button"
+            className={styles.botaoPrincipal}
+            onClick={() => {
+              setAgendamentoConfirmado(null);
+              setMensagem("");
+              setErro("");
+              setHorarioSelecionado(null);
 
-      setCliente({
-        nome: "",
-        telefone: "",
-        email: "",
-        observacoes: "",
-      });
-    }}
-    style={{
-      ...buttonStyle,
-      flex: 1,
-      background: "#111827",
-    }}
-  >
-    Novo Agendamento
-  </button>
+              setCliente({
+                nome: "",
+                telefone: "",
+                email: "",
+                observacoes: "",
+              });
+            }}
+            style={{
+              ...buttonStyle,
+              flex: 1,
+              background: "#111827",
+            }}
+          >
+            Novo Agendamento
+          </button>
 
-  <button
-    type="button"
-    onClick={abrirWhatsApp}
-    style={{
-      ...buttonStyle,
-      flex: 1,
-      background: "#16a34a",
-    }}
-  >
-    WhatsApp
-  </button>
-</div>
+          <button
+            type="button"
+            className={styles.botaoPrincipal}
+            onClick={abrirWhatsApp}
+            style={{
+              ...buttonStyle,
+              flex: 1,
+              background: "#16a34a",
+            }}
+          >
+            WhatsApp
+          </button>
+        </div>
       </section>
     </main>
   );
 }
 
-    return (
-  <main
-    style={{
-      minHeight: "100vh",
-      background: "linear-gradient(135deg, #111827, #374151)",
-      padding: "30px",
-      overflowY: "auto",
-    }}
-  >
-    <section style={{ maxWidth: "1100px", margin: "0 auto" }}>
-      <header
-        style={{
-          color: "#ffffff",
-          textAlign: "center",
-          marginBottom: "30px",
-        }}
-      >
+return (
+  <main className={styles.pagina}>
+    <section className={styles.container}>
+      <header className={styles.cabecalho}>
         {barbearia?.imagem_capa_url && (
           <img
             src={barbearia.imagem_capa_url}
             alt="Capa da Barbearia"
-            style={{
-              width: "100%",
-              maxHeight: "280px",
-              objectFit: "cover",
-              borderRadius: "20px",
-              marginBottom: "25px",
-              boxShadow: "0 10px 25px rgba(0,0,0,0.25)",
-            }}
+            className={styles.imagemCapa}
           />
         )}
 
@@ -995,15 +980,8 @@ if (agendamentoConfirmado) {
         </section>
       )}
       {abaPublica === "agendar" && (
-        <section
-          style={{
-            display: "grid",
-            gridTemplateColumns: "1fr 380px",
-            gap: "20px",
-            alignItems: "start",
-          }}
-        >
-          <div style={{ display: "grid", gap: "20px" }}>
+        <section className={styles.layoutAgendamento}>
+          <div className={styles.colunaFormulario}>
             <div style={cardStyle}>
               <h2>1. Escolha o serviço</h2>
 
@@ -1034,13 +1012,7 @@ if (agendamentoConfirmado) {
             <div style={cardStyle}>
               <h2>2. Como deseja agendar?</h2>
 
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-                  gap: "12px",
-                }}
-              >
+              <div className={styles.gradeOpcoes}>
                 <button
                   type="button"
                   onClick={() => {
@@ -1141,13 +1113,7 @@ if (agendamentoConfirmado) {
             <div style={cardStyle}>
               <h2>{modo === "barbeiro" ? "6." : "5."} Seus dados</h2>
 
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-                  gap: "12px",
-                }}
-              >
+              <div className={styles.gradeDados}>
                 <div>
                   <label>Nome</label>
                   <input
@@ -1187,7 +1153,10 @@ if (agendamentoConfirmado) {
             </div>
           </div>
 
-          <aside style={{ ...cardStyle, position: "sticky", top: "20px" }}>
+          <aside
+            className={styles.resumo}
+            style={cardStyle}
+          >
             <h2>Resumo</h2>
 
             <ResumoLinha titulo="Serviço" valor={servicoSelecionado?.nome} />
@@ -1221,6 +1190,7 @@ if (agendamentoConfirmado) {
 
             <button
               type="button"
+              className={styles.botaoPrincipal}
               onClick={confirmarAgendamento}
               disabled={salvando}
               style={{
