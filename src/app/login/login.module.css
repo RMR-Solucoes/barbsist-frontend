@@ -1,0 +1,268 @@
+.pagina {
+  width: 100%;
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: grid;
+  grid-template-columns:
+    minmax(320px, 0.9fr)
+    minmax(420px, 1.1fr);
+  overflow-x: hidden;
+  background: #f3f4f6;
+  font-family: Arial, sans-serif;
+}
+
+.apresentacao {
+  min-width: 0;
+  min-height: 100vh;
+  min-height: 100dvh;
+  padding: 48px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  box-sizing: border-box;
+  color: #ffffff;
+  background:
+    linear-gradient(
+      145deg,
+      #111827 0%,
+      #172554 55%,
+      #1d4ed8 100%
+    );
+}
+
+.marca {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 26px;
+  font-weight: 700;
+}
+
+.icone {
+  font-size: 32px;
+}
+
+.apresentacao h1 {
+  max-width: 520px;
+  margin: 0 0 18px;
+  font-size: clamp(36px, 5vw, 62px);
+  line-height: 1.05;
+}
+
+.apresentacao p {
+  max-width: 540px;
+  margin: 0;
+  color: #dbeafe;
+  font-size: 18px;
+  line-height: 1.6;
+}
+
+.apresentacao small {
+  color: #bfdbfe;
+}
+
+.areaFormulario {
+  min-width: 0;
+  min-height: 100vh;
+  min-height: 100dvh;
+  padding: 32px;
+  display: grid;
+  place-items: center;
+  box-sizing: border-box;
+}
+
+.formulario {
+  width: min(100%, 460px);
+  padding: 38px;
+  border: 1px solid #e5e7eb;
+  border-radius: 20px;
+  box-sizing: border-box;
+  background: #ffffff;
+  box-shadow:
+    0 20px 45px rgba(15, 23, 42, 0.1);
+}
+
+.cabecalho {
+  margin-bottom: 28px;
+}
+
+.cabecalho h2 {
+  margin: 0 0 10px;
+  color: #111827;
+  font-size: 30px;
+  line-height: 1.2;
+}
+
+.cabecalho p {
+  margin: 0;
+  color: #6b7280;
+  line-height: 1.5;
+}
+
+.logoMobile {
+  display: none;
+  margin-bottom: 22px;
+  color: #1d4ed8;
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.campo {
+  display: block;
+  margin-bottom: 20px;
+}
+
+.campo span {
+  display: block;
+  margin-bottom: 8px;
+  color: #374151;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.campo input {
+  width: 100%;
+  height: 48px;
+  padding: 0 14px;
+  border: 1px solid #d1d5db;
+  border-radius: 10px;
+  box-sizing: border-box;
+  color: #111827;
+  background: #ffffff;
+  font-size: 16px;
+  outline: none;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
+}
+
+.campo input:focus {
+  border-color: #2563eb;
+  box-shadow:
+    0 0 0 3px rgba(37, 99, 235, 0.14);
+}
+
+.botao {
+  width: 100%;
+  min-height: 50px;
+  border: none;
+  border-radius: 10px;
+  color: #ffffff;
+  background: #2563eb;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    background 0.2s,
+    transform 0.2s;
+}
+
+.botao:hover:not(:disabled) {
+  background: #1d4ed8;
+  transform: translateY(-1px);
+}
+
+.botao:disabled {
+  cursor: wait;
+  opacity: 0.7;
+}
+
+.erro {
+  margin-bottom: 20px;
+  padding: 13px 14px;
+  border: 1px solid #fecaca;
+  border-radius: 10px;
+  box-sizing: border-box;
+  color: #991b1b;
+  background: #fef2f2;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.ajuda {
+  margin: 22px 0 0;
+  color: #6b7280;
+  font-size: 13px;
+  line-height: 1.5;
+  text-align: center;
+}
+
+.carregando {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  color: #374151;
+  background: #f3f4f6;
+  font-family: Arial, sans-serif;
+}
+
+@media (max-width: 850px) {
+  .pagina {
+    display: block;
+  }
+
+  .apresentacao {
+    display: none;
+  }
+
+  .areaFormulario {
+    width: 100%;
+    min-height: 100vh;
+    min-height: 100dvh;
+    padding: 20px;
+  }
+
+  .logoMobile {
+    display: block;
+  }
+
+  .formulario {
+    width: min(100%, 520px);
+    padding: 28px 22px;
+  }
+}
+
+@media (max-width: 480px) {
+  .areaFormulario {
+    padding: 12px;
+    align-items: center;
+  }
+
+  .formulario {
+    width: 100%;
+    padding: 24px 18px;
+    border-radius: 16px;
+  }
+
+  .logoMobile {
+    margin-bottom: 18px;
+    font-size: 21px;
+  }
+
+  .cabecalho {
+    margin-bottom: 24px;
+  }
+
+  .cabecalho h2 {
+    font-size: 27px;
+  }
+
+  .cabecalho p {
+    font-size: 14px;
+  }
+
+  .campo {
+    margin-bottom: 17px;
+  }
+
+  .ajuda {
+    margin-top: 18px;
+  }
+}
+
+@media (max-height: 650px) and (max-width: 850px) {
+  .areaFormulario {
+    align-items: start;
+  }
+}

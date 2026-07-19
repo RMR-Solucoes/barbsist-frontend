@@ -21,7 +21,7 @@ import {
 } from "@/services/barbeiroDisponibilidadeService";
 
 export default function ConfiguracoesPage() {
-  const [abaAtiva, setAbaAtiva] = useState("funcionamento");
+  const [abaAtiva, setAbaAtiva] = useState("barbearia");
 
   const [configuracoes, setConfiguracoes] = useState([]);
   const [barbeiros, setBarbeiros] = useState([]);
@@ -30,6 +30,30 @@ export default function ConfiguracoesPage() {
 
   const [mensagem, setMensagem] = useState("");
   const [erro, setErro] = useState("");
+
+  const [barbearia, setBarbearia] = useState({
+
+  id: null,
+  nome: "",
+  responsavel: "",
+  email: "",
+  telefone: "",
+  telefone_whatsapp: "",
+  cnpj: "",
+  endereco: "",
+  cidade: "",
+  estado: "",
+  cep: "",
+  instagram: "",
+  logo_url: "",
+  slogan: "",
+  imagem_capa_url: "",
+  ativa: true,
+  created_at: null,
+});
+
+const [barbeariaExiste, setBarbeariaExiste] = useState(false);
+const [salvandoBarbearia, setSalvandoBarbearia] = useState(false);
 
   const diasSemana = [
     "SEGUNDA",
@@ -165,20 +189,36 @@ export default function ConfiguracoesPage() {
     const dados = await obterBarbearia();
 
     setBarbearia({
-      nome: dados.nome || "",
-      telefone_whatsapp: dados.telefone_whatsapp || "",
-      endereco: dados.endereco || "",
-      instagram: dados.instagram || "",
-      logo_url: dados.logo_url || "",
-      slogan: dados.slogan || "",
-      imagem_capa_url: dados.imagem_capa_url || "",
-    });
+  id: dados.id || null,
+  nome: dados.nome || "",
+  responsavel: dados.responsavel || "",
+  email: dados.email || "",
+  telefone: dados.telefone || "",
+  telefone_whatsapp: dados.telefone_whatsapp || "",
+  cnpj: dados.cnpj || "",
+  endereco: dados.endereco || "",
+  cidade: dados.cidade || "",
+  estado: dados.estado || "",
+  cep: dados.cep || "",
+  instagram: dados.instagram || "",
+  logo_url: dados.logo_url || "",
+  slogan: dados.slogan || "",
+  imagem_capa_url: dados.imagem_capa_url || "",
+  ativa: dados.ativa !== false,
+  created_at: dados.created_at || null,
+});
 
     setBarbeariaExiste(true);
-  } catch {
-    setBarbeariaExiste(false);
+  } catch (error) {
+    if (error?.response?.status === 404) {
+      setBarbeariaExiste(false);
+      return;
+    }
+
+    setErro("Erro ao carregar os dados da barbearia.");
   }
 }
+
 
 function alterarCampoBarbearia(campo, valor) {
   setBarbearia((atual) => ({
@@ -186,6 +226,7 @@ function alterarCampoBarbearia(campo, valor) {
     [campo]: valor,
   }));
 }
+
 
 async function salvarBarbearia() {
   limparMensagens();
@@ -195,17 +236,58 @@ async function salvarBarbearia() {
     return;
   }
 
+  if (
+    barbearia.email &&
+    !barbearia.email.includes("@")
+  ) {
+    setErro("Informe um e-mail válido.");
+    return;
+  }
+
   try {
+    setSalvandoBarbearia(true);
+
+    let dadosSalvos;
+
     if (barbeariaExiste) {
-      await atualizarBarbearia(barbearia);
+      dadosSalvos = await atualizarBarbearia(barbearia);
     } else {
-      await criarBarbearia(barbearia);
+      dadosSalvos = await criarBarbearia(barbearia);
       setBarbeariaExiste(true);
     }
 
+    setBarbearia({
+  id: dadosSalvos.id || null,
+  nome: dadosSalvos.nome || "",
+  responsavel: dadosSalvos.responsavel || "",
+  email: dadosSalvos.email || "",
+  telefone: dadosSalvos.telefone || "",
+  telefone_whatsapp: dadosSalvos.telefone_whatsapp || "",
+  cnpj: dadosSalvos.cnpj || "",
+  endereco: dadosSalvos.endereco || "",
+  cidade: dadosSalvos.cidade || "",
+  estado: dadosSalvos.estado || "",
+  cep: dadosSalvos.cep || "",
+  instagram: dadosSalvos.instagram || "",
+  logo_url: dadosSalvos.logo_url || "",
+  slogan: dadosSalvos.slogan || "",
+  imagem_capa_url: dadosSalvos.imagem_capa_url || "",
+  ativa: dadosSalvos.ativa !== false,
+  created_at: dadosSalvos.created_at || null,
+});
+
     setMensagem("Dados da barbearia salvos com sucesso.");
-  } catch {
-    setErro("Erro ao salvar dados da barbearia.");
+  } catch (error) {
+    const detalhe =
+      error?.response?.data?.detail;
+
+    setErro(
+      typeof detalhe === "string"
+        ? detalhe
+        : "Erro ao salvar os dados da barbearia."
+    );
+  } finally {
+    setSalvandoBarbearia(false);
   }
 }
 
@@ -259,19 +341,95 @@ async function salvarBarbearia() {
     fontSize: "15px",
    };
 
-  const [barbearia, setBarbearia] = useState({
-    nome: "",
-    telefone_whatsapp: "",
-    endereco: "",
-    instagram: "",
-    logo_url: "",
-    slogan: "",
-    imagem_capa_url: "",
-  });
 
- 
+   function somenteNumeros(valor) {
+  return valor.replace(/\D/g, "");
+}
 
-const [barbeariaExiste, setBarbeariaExiste] = useState(false);
+
+function formatarTelefone(valor) {
+  const numeros = somenteNumeros(valor).slice(0, 11);
+
+  if (numeros.length <= 10) {
+    return numeros
+      .replace(/^(\d{2})(\d)/, "($1) $2")
+      .replace(/(\d{4})(\d)/, "$1-$2");
+  }
+
+  return numeros
+    .replace(/^(\d{2})(\d)/, "($1) $2")
+    .replace(/(\d{5})(\d)/, "$1-$2");
+}
+
+
+function formatarWhatsApp(valor) {
+  const numeros = somenteNumeros(valor).slice(0, 13);
+
+  if (numeros.startsWith("55")) {
+    return numeros
+      .replace(/^(\d{2})(\d{2})(\d)/, "+$1 ($2) $3")
+      .replace(/(\d{5})(\d)/, "$1-$2");
+  }
+
+  return formatarTelefone(numeros);
+}
+
+
+function formatarCnpj(valor) {
+  return somenteNumeros(valor)
+    .slice(0, 14)
+    .replace(/^(\d{2})(\d)/, "$1.$2")
+    .replace(/^(\d{2})\.(\d{3})(\d)/, "$1.$2.$3")
+    .replace(/\.(\d{3})(\d)/, ".$1/$2")
+    .replace(/(\d{4})(\d)/, "$1-$2");
+}
+
+
+function formatarCep(valor) {
+  return somenteNumeros(valor)
+    .slice(0, 8)
+    .replace(/^(\d{5})(\d)/, "$1-$2");
+}
+
+
+function formatarData(valor) {
+  if (!valor) {
+    return "Não informado";
+  }
+
+  return new Date(valor).toLocaleDateString("pt-BR");
+}
+
+const estadosBrasil = [
+  "AC",
+  "AL",
+  "AP",
+  "AM",
+  "BA",
+  "CE",
+  "DF",
+  "ES",
+  "GO",
+  "MA",
+  "MT",
+  "MS",
+  "MG",
+  "PA",
+  "PB",
+  "PR",
+  "PE",
+  "PI",
+  "RJ",
+  "RN",
+  "RS",
+  "RO",
+  "RR",
+  "SC",
+  "SP",
+  "SE",
+  "TO",
+];
+
 
   return (
     <main style={{ padding: "30px" }}>
@@ -290,7 +448,7 @@ const [barbeariaExiste, setBarbeariaExiste] = useState(false);
           onClick={() => setAbaAtiva("barbearia")}
           style={tabButtonStyle(abaAtiva === "barbearia")}
         >
-          🏪 Dados da Barbearia
+          🏢 Empresa
         </button>
 
         <button
@@ -337,123 +495,456 @@ const [barbeariaExiste, setBarbeariaExiste] = useState(false);
       )}
 
       {abaAtiva === "barbearia" && (
-        <section>
-          <h2>Dados da Barbearia</h2>
+  <section>
+    <h2>Empresa / Barbearia</h2>
 
-          <div style={{ ...cardStyle, maxWidth: "800px" }}>
-            <label>Nome da Barbearia</label>
-            <input
-              value={barbearia.nome || ""}
-              onChange={(e) =>
-                alterarCampoBarbearia("nome", e.target.value)
-              }
-              style={inputPadraoStyle}
-            />
+    <p
+      style={{
+        color: "#6b7280",
+        marginTop: "-6px",
+        marginBottom: "20px",
+      }}
+    >
+      Cadastre e mantenha atualizadas as informações da empresa, utilizadas na agenda online, relatórios, identidade visual e comunicação com os clientes.
+    </p>
 
-            <label>Slogan da Barbearia</label>
-            <input
-              value={barbearia.slogan || ""}
-              onChange={(e) =>
-                alterarCampoBarbearia("slogan", e.target.value)
-              }
-              placeholder="Ex: Corte, barba e estilo para quem valoriza presença."
-              style={inputPadraoStyle}
-            />
+    <div
+      style={{
+        display: "grid",
+        gridTemplateColumns:
+          "repeat(auto-fit, minmax(180px, 1fr))",
+        gap: "12px",
+        maxWidth: "1000px",
+        marginBottom: "20px",
+      }}
+    >
+      <div
+        style={{
+          ...cardStyle,
+          marginBottom: 0,
+          padding: "16px",
+        }}
+      >
+        <div style={{ color: "#6b7280", fontSize: "13px" }}>
+          Empresa
+        </div>
 
-            <label>Telefone WhatsApp</label>
-            <input
-              value={barbearia.telefone_whatsapp || ""}
-              onChange={(e) =>
-                alterarCampoBarbearia("telefone_whatsapp", e.target.value)
-              }
-              placeholder="Ex: 5511999999999"
-              style={inputPadraoStyle}
-            />
+        <strong>{barbearia.nome || "Não cadastrada"}</strong>
+      </div>
 
-            <label>Endereço</label>
-            <input
-              value={barbearia.endereco || ""}
-              onChange={(e) =>
-                alterarCampoBarbearia("endereco", e.target.value)
-              }
-              style={inputPadraoStyle}
-            />
+      <div
+        style={{
+          ...cardStyle,
+          marginBottom: 0,
+          padding: "16px",
+        }}
+      >
+        <div style={{ color: "#6b7280", fontSize: "13px" }}>
+          Status
+        </div>
 
-            <label>Instagram</label>
-            <input
-              value={barbearia.instagram || ""}
-              onChange={(e) =>
-                alterarCampoBarbearia("instagram", e.target.value)
-              }
-              placeholder="@suaBarbearia"
-              style={inputPadraoStyle}
-            />
+        <strong
+          style={{
+            color: barbearia.ativa
+              ? "#15803d"
+              : "#b91c1c",
+          }}
+        >
+          {barbearia.ativa ? "● Ativa" : "● Inativa"}
+        </strong>
+      </div>
 
-            <label>Logo URL</label>
-            <input
-              value={barbearia.logo_url || ""}
-              onChange={(e) =>
-                alterarCampoBarbearia("logo_url", e.target.value)
-              }
-              placeholder="https://..."
-              style={inputPadraoStyle}
-            />
+      <div
+        style={{
+          ...cardStyle,
+          marginBottom: 0,
+          padding: "16px",
+        }}
+      >
+        <div style={{ color: "#6b7280", fontSize: "13px" }}>
+          Cadastro
+        </div>
 
-            {barbearia.logo_url && (
-              <div style={{ marginBottom: "15px" }}>
-                <p>Prévia da logo:</p>
-                <img
-                  src={barbearia.logo_url}
-                  alt="Logo da barbearia"
-                  style={{
-                    maxWidth: "160px",
-                    maxHeight: "100px",
-                    objectFit: "contain",
-                    border: "1px solid #e5e7eb",
-                    borderRadius: "8px",
-                    padding: "8px",
-                  }}
-                />
-              </div>
+        <strong>{formatarData(barbearia.created_at)}</strong>
+      </div>
+
+      <div
+        style={{
+          ...cardStyle,
+          marginBottom: 0,
+          padding: "16px",
+        }}
+      >
+        <div style={{ color: "#6b7280", fontSize: "13px" }}>
+          Identificador
+        </div>
+
+        <strong>{barbearia.id || "—"}</strong>
+      </div>
+    </div>
+
+    <div style={{ ...cardStyle, maxWidth: "1000px" }}>
+      <h3 style={{ marginTop: 0 }}>Dados cadastrais</h3>
+
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns:
+            "repeat(auto-fit, minmax(280px, 1fr))",
+          gap: "0 20px",
+        }}
+      >
+        <div>
+          <label>Nome da Barbearia *</label>
+          <input
+            value={barbearia.nome}
+            onChange={(e) =>
+              alterarCampoBarbearia(
+                "nome",
+                e.target.value
+              )
+            }
+            placeholder="Nome fantasia da barbearia"
+            style={inputPadraoStyle}
+          />
+        </div>
+
+        <div>
+          <label>Responsável</label>
+          <input
+            value={barbearia.responsavel}
+            onChange={(e) =>
+              alterarCampoBarbearia(
+                "responsavel",
+                e.target.value
+              )
+            }
+            placeholder="Nome do proprietário ou responsável"
+            style={inputPadraoStyle}
+          />
+        </div>
+
+        <div>
+          <label>E-mail</label>
+          <input
+            type="email"
+            value={barbearia.email}
+            onChange={(e) =>
+              alterarCampoBarbearia(
+                "email",
+                e.target.value
+              )
+            }
+            placeholder="contato@barbearia.com.br"
+            style={inputPadraoStyle}
+          />
+        </div>
+
+        <div>
+          <label>Telefone</label>
+          <input
+            value={barbearia.telefone}
+            onChange={(e) =>
+              alterarCampoBarbearia(
+                "telefone",
+                formatarTelefone(e.target.value)
+              )
+            }
+            placeholder="Ex.: 11999999999"
+            style={inputPadraoStyle}
+          />
+        </div>
+
+        <div>
+          <label>Telefone WhatsApp</label>
+          <input
+            value={barbearia.telefone_whatsapp}
+            onChange={(e) =>
+              alterarCampoBarbearia(
+                "telefone_whatsapp",
+                formatarWhatsApp(e.target.value)
+              )
+            }
+            placeholder="Ex.: 5511999999999"
+            style={inputPadraoStyle}
+          />
+        </div>
+
+        <div>
+          <label>CNPJ</label>
+          <input
+            value={barbearia.cnpj}
+            onChange={(e) =>
+              alterarCampoBarbearia(
+                "cnpj",
+                formatarCnpj(e.target.value)
+              )
+            }
+            placeholder="00.000.000/0001-00"
+            style={inputPadraoStyle}
+          />
+        </div>
+      </div>
+
+      <hr
+        style={{
+          border: 0,
+          borderTop: "1px solid #e5e7eb",
+          margin: "15px 0 25px",
+        }}
+      />
+
+      <h3>Endereço</h3>
+
+      <div>
+        <label>Endereço completo</label>
+        <input
+          value={barbearia.endereco}
+          onChange={(e) =>
+            alterarCampoBarbearia(
+              "endereco",
+              e.target.value
+            )
+          }
+          placeholder="Rua, número e complemento"
+          style={inputPadraoStyle}
+        />
+      </div>
+
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns:
+            "repeat(auto-fit, minmax(200px, 1fr))",
+          gap: "0 20px",
+        }}
+      >
+        <div>
+          <label>Cidade</label>
+          <input
+            value={barbearia.cidade}
+            onChange={(e) =>
+              alterarCampoBarbearia(
+                "cidade",
+                e.target.value
+              )
+            }
+            placeholder="Cidade"
+            style={inputPadraoStyle}
+          />
+        </div>
+
+        <div>
+          <label>Estado</label>
+          <select
+            value={barbearia.estado}
+            onChange={(e) =>
+              alterarCampoBarbearia(
+                "estado",
+                e.target.value
+              )
+            }
+            style={inputPadraoStyle}
+          >
+            <option value="">Selecione</option>
+
+            {estadosBrasil.map((estado) => (
+              <option key={estado} value={estado}>
+                {estado}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <label>CEP</label>
+          <input
+            value={barbearia.cep}
+            onChange={(e) =>
+              alterarCampoBarbearia(
+                "cep",
+                formatarCep(e.target.value)
+              )
+            }
+            placeholder="00000-000"
+            style={inputPadraoStyle}
+          />
+        </div>
+      </div>
+
+      <hr
+        style={{
+          border: 0,
+          borderTop: "1px solid #e5e7eb",
+          margin: "15px 0 25px",
+        }}
+      />
+
+      <h3>Identidade visual</h3>
+
+      <label>Slogan da Barbearia</label>
+      <input
+        value={barbearia.slogan}
+        onChange={(e) =>
+          alterarCampoBarbearia(
+            "slogan",
+            e.target.value
+          )
+        }
+        placeholder="Ex.: Corte, barba e estilo para quem valoriza presença."
+        style={inputPadraoStyle}
+      />
+
+      <label>Instagram</label>
+      <input
+        value={barbearia.instagram}
+        onChange={(e) =>
+          alterarCampoBarbearia(
+            "instagram",
+            e.target.value
+          )
+        }
+        placeholder="@suaBarbearia"
+        style={inputPadraoStyle}
+      />
+
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns:
+            "repeat(auto-fit, minmax(300px, 1fr))",
+          gap: "20px",
+          alignItems: "start",
+        }}
+      >
+        <div>
+          <label>Logo URL</label>
+
+          <input
+            value={barbearia.logo_url}
+            onChange={(e) =>
+              alterarCampoBarbearia(
+                "logo_url",
+                e.target.value
+              )
+            }
+            placeholder="Informe a URL da logo"
+            style={inputPadraoStyle}
+          />
+
+          <div
+            style={{
+              minHeight: "220px",
+              border: "1px dashed #d1d5db",
+              borderRadius: "10px",
+              padding: "15px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              background: "#f9fafb",
+            }}
+          >
+            {barbearia.logo_url ? (
+              <img
+                src={barbearia.logo_url}
+                alt="Logo da barbearia"
+                style={{
+                  maxWidth: "220px",
+                  maxHeight: "180px",
+                  objectFit: "contain",
+                }}
+              />
+            ) : (
+              <span style={{ color: "#9ca3af" }}>
+                🖼️
+
+                Nenhuma logo informada
+              </span>
             )}
-
-            <label>Imagem de Capa URL</label>
-            <input
-              value={barbearia.imagem_capa_url || ""}
-              onChange={(e) =>
-                alterarCampoBarbearia("imagem_capa_url", e.target.value)
-              }
-              placeholder="https://..."
-              style={inputPadraoStyle}
-            />
-
-            {barbearia.imagem_capa_url && (
-              <div style={{ marginBottom: "15px" }}>
-                <p>Prévia da imagem de capa:</p>
-                <img
-                  src={barbearia.imagem_capa_url}
-                  alt="Imagem de capa da barbearia"
-                  style={{
-                    width: "100%",
-                    maxWidth: "500px",
-                    maxHeight: "220px",
-                    objectFit: "cover",
-                    border: "1px solid #e5e7eb",
-                    borderRadius: "12px",
-                  }}
-                />
-              </div>
-            )}
-
-            <button
-              type="button"
-              onClick={salvarBarbearia}
-              style={buttonStyle}
-            >
-              Salvar Dados da Barbearia
-            </button>
           </div>
-        </section>
+        </div>
+
+        <div>
+          <label>Imagem de Capa URL</label>
+
+          <input
+            value={barbearia.imagem_capa_url}
+            onChange={(e) =>
+              alterarCampoBarbearia(
+                "imagem_capa_url",
+                e.target.value
+              )
+            }
+            placeholder="Informe a URL da imagem de capa"
+            style={inputPadraoStyle}
+          />
+
+          <div
+            style={{
+              minHeight: "150px",
+              border: "1px dashed #d1d5db",
+              borderRadius: "10px",
+              overflow: "hidden",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              background: "#f9fafb",
+            }}
+          >
+            {barbearia.imagem_capa_url ? (
+              <img
+                src={barbearia.imagem_capa_url}
+                alt="Imagem de capa da barbearia"
+                style={{
+                  width: "100%",
+                  height: "180px",
+                  objectFit: "cover",
+                }}
+              />
+            ) : (
+              <span style={{ color: "#9ca3af" }}>
+                Nenhuma imagem de capa informada
+              </span>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <p
+        style={{
+          color: "#6b7280",
+          fontSize: "13px",
+          marginTop: "25px",
+          marginBottom: "18px",
+        }}
+      >
+        * Campo obrigatório.
+      </p>
+
+      <button
+        type="button"
+        onClick={salvarBarbearia}
+        disabled={salvandoBarbearia}
+        style={{
+          ...buttonStyle,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: "8px",
+          minWidth: "230px",
+          opacity: salvandoBarbearia ? 0.65 : 1,
+          cursor: salvandoBarbearia
+            ? "not-allowed"
+            : "pointer",
+        }}
+      >
+        {salvandoBarbearia
+          ? "Salvando alterações..."
+          : "💾 Salvar Alterações"}
+      </button>
+
+      </div>
+      </section>
       )}
 
       {abaAtiva === "funcionamento" && (

@@ -1,93 +1,74 @@
-const API_URL =
-  process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
+import api from "./api";
+
+async function executar(
+  requisicao,
+  mensagemPadrao
+) {
+  try {
+    const resposta = await requisicao();
+
+    return resposta.data;
+  } catch (erro) {
+    const detalhe =
+      erro.response?.data?.detail;
+
+    throw new Error(
+      typeof detalhe === "string"
+        ? detalhe
+        : mensagemPadrao
+    );
+  }
+}
 
 export async function listarBarbeiros() {
-  const resposta = await fetch(`${API_URL}/barbeiros`);
-
-  if (!resposta.ok) {
-    throw new Error("Erro ao listar barbeiros.");
-  }
-
-  return resposta.json();
+  return executar(
+    () => api.get("/barbeiros"),
+    "Erro ao listar barbeiros."
+  );
 }
 
 export async function criarBarbeiro(dados) {
-  const resposta = await fetch(`${API_URL}/barbeiros`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(dados),
-  });
-
-  if (!resposta.ok) {
-    const erro = await resposta.json();
-    throw new Error(erro.detail || "Erro ao criar barbeiro.");
-  }
-
-  return resposta.json();
+  return executar(
+    () => api.post("/barbeiros", dados),
+    "Erro ao criar barbeiro."
+  );
 }
 
-export async function atualizarBarbeiro(id, dados) {
-  const resposta = await fetch(`${API_URL}/barbeiros/${id}`, {
-    method: "PUT",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(dados),
-  });
-
-  if (!resposta.ok) {
-    const erro = await resposta.json();
-    throw new Error(erro.detail || "Erro ao atualizar barbeiro.");
-  }
-
-  return resposta.json();
+export async function atualizarBarbeiro(
+  id,
+  dados
+) {
+  return executar(
+    () => api.put(`/barbeiros/${id}`, dados),
+    "Erro ao atualizar barbeiro."
+  );
 }
 
 export async function excluirBarbeiro(id) {
-  const resposta = await fetch(`${API_URL}/barbeiros/${id}`, {
-    method: "DELETE",
-  });
-
-  if (!resposta.ok) {
-    const erro = await resposta.json();
-    throw new Error(erro.detail || "Erro ao inativar barbeiro.");
-  }
-
-  return resposta.json();
+  return executar(
+    () => api.delete(`/barbeiros/${id}`),
+    "Erro ao inativar barbeiro."
+  );
 }
 
 export async function reativarBarbeiro(id) {
-  const resposta = await fetch(
-    `${API_URL}/barbeiros/${id}/reativar`,
-    {
-      method: "PUT",
-    }
+  return executar(
+    () =>
+      api.put(
+        `/barbeiros/${id}/reativar`
+      ),
+    "Erro ao reativar barbeiro."
   );
-
-  if (!resposta.ok) {
-    const erro = await resposta.json();
-    throw new Error(erro.detail || "Erro ao reativar barbeiro.");
-  }
-
-  return resposta.json();
 }
 
-export async function excluirBarbeiroDefinitivamente(id) {
-  const resposta = await fetch(
-    `${API_URL}/barbeiros/${id}/excluir`,
-    {
-      method: "DELETE",
-    }
+export async function excluirBarbeiroDefinitivamente(
+  id
+) {
+  return executar(
+    () =>
+      api.delete(
+        `/barbeiros/${id}/excluir`
+      ),
+    "Erro ao excluir barbeiro definitivamente."
   );
-
-  if (!resposta.ok) {
-    const erro = await resposta.json();
-    throw new Error(
-      erro.detail || "Erro ao excluir barbeiro definitivamente."
-    );
-  }
-
-  return resposta.json();
 }
