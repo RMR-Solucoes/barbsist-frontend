@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import api from "@/services/api";
+import styles from "./agenda.module.css";
 
 import { listarClientes } from "@/services/clienteService";
 import { listarBarbeiros } from "@/services/barbeiroService";
@@ -29,7 +30,9 @@ export default function AgendaPage() {
   const [agendaSemanal, setAgendaSemanal] = useState([]);
   const [ultimoAgendamento, setUltimoAgendamento] = useState(null);
 
-  const [configuracoesFuncionamento, setConfiguracoesFuncionamento] = useState([]);
+  const [configuracoesFuncionamento, setConfiguracoesFuncionamento] = useState(
+    [],
+  );
   const [disponibilidadeBarbeiro, setDisponibilidadeBarbeiro] = useState([]);
 
   const [mensagem, setMensagem] = useState("");
@@ -63,60 +66,46 @@ export default function AgendaPage() {
     tipo_atendimento: "avulso",
     observacoes: "",
   });
-  
- useEffect(() => {
-  carregarDadosIniciais();
-}, []);
 
-useEffect(() => {
-  carregarAgendamentos();
-}, [filtros]);
+  useEffect(() => {
+    carregarDadosIniciais();
+  }, []);
 
-useEffect(() => {
-  if (form.barbeiro_id) {
-    carregarDisponibilidadeDoBarbeiro(form.barbeiro_id);
-  } else {
-    setDisponibilidadeBarbeiro([]);
-  }
-}, [form.barbeiro_id]);
+  useEffect(() => {
+    carregarAgendamentos();
+  }, [filtros]);
 
-// Carrega a agenda semanal na aba AGENDA
-useEffect(() => {
-  if (abaAtiva === "agenda" && modoVisualizacao === "semanal") {
-    carregarAgendaSemanal();
-  }
-}, [
-  abaAtiva,
-  modoVisualizacao,
-  filtros.barbeiro_id,
-  filtros.data_agenda,
-]);
+  useEffect(() => {
+    if (form.barbeiro_id) {
+      carregarDisponibilidadeDoBarbeiro(form.barbeiro_id);
+    } else {
+      setDisponibilidadeBarbeiro([]);
+    }
+  }, [form.barbeiro_id]);
 
-// Carrega a agenda semanal no ticket do NOVO AGENDAMENTO
-useEffect(() => {
-  if (abaAtiva === "agendamento" && form.barbeiro_id && form.servico_id) {
-    carregarAgendaSemanal();
-  }
-}, [
-  abaAtiva,
-  form.barbeiro_id,
-  form.servico_id,
-  semanaSelecionada,
-]);
+  // Carrega a agenda semanal na aba AGENDA
+  useEffect(() => {
+    if (abaAtiva === "agenda" && modoVisualizacao === "semanal") {
+      carregarAgendaSemanal();
+    }
+  }, [abaAtiva, modoVisualizacao, filtros.barbeiro_id, filtros.data_agenda]);
+
+  // Carrega a agenda semanal no ticket do NOVO AGENDAMENTO
+  useEffect(() => {
+    if (abaAtiva === "agendamento" && form.barbeiro_id && form.servico_id) {
+      carregarAgendaSemanal();
+    }
+  }, [abaAtiva, form.barbeiro_id, form.servico_id, semanaSelecionada]);
 
   async function carregarDadosIniciais() {
     try {
-      const [
-        clientesData,
-        barbeirosData,
-        servicosData,
-        funcionamentoData,
-      ] = await Promise.all([
-        listarClientes(),
-        listarBarbeiros(),
-        listarServicos(),
-        listarConfiguracoesFuncionamento(),
-      ]);
+      const [clientesData, barbeirosData, servicosData, funcionamentoData] =
+        await Promise.all([
+          listarClientes(),
+          listarBarbeiros(),
+          listarServicos(),
+          listarConfiguracoesFuncionamento(),
+        ]);
 
       setClientes(clientesData.filter((c) => c.ativo !== false));
       setBarbeiros(barbeirosData.filter((b) => b.ativo !== false));
@@ -144,7 +133,7 @@ useEffect(() => {
       });
 
       const ordenados = [...dados].sort(
-        (a, b) => new Date(a.data_hora_inicio) - new Date(b.data_hora_inicio)
+        (a, b) => new Date(a.data_hora_inicio) - new Date(b.data_hora_inicio),
       );
 
       setAgendamentos(ordenados);
@@ -154,47 +143,44 @@ useEffect(() => {
   }
 
   async function carregarAgendaSemanal() {
-  try {
-    setErro("");
+    try {
+      setErro("");
 
-    const dataBase = filtros.data_agenda || semanaSelecionada || hoje;
+      const dataBase = filtros.data_agenda || semanaSelecionada || hoje;
 
-    const inicioSemana = new Date(`${dataBase}T00:00:00`);
-    inicioSemana.setDate(
-      inicioSemana.getDate() -
-        (inicioSemana.getDay() === 0 ? 6 : inicioSemana.getDay() - 1)
-    );
-    inicioSemana.setHours(0, 0, 0, 0);
+      const inicioSemana = new Date(`${dataBase}T00:00:00`);
+      inicioSemana.setDate(
+        inicioSemana.getDate() -
+          (inicioSemana.getDay() === 0 ? 6 : inicioSemana.getDay() - 1),
+      );
+      inicioSemana.setHours(0, 0, 0, 0);
 
-    const fimSemana = new Date(inicioSemana);
-    fimSemana.setDate(inicioSemana.getDate() + 6);
-    fimSemana.setHours(23, 59, 59, 999);
+      const fimSemana = new Date(inicioSemana);
+      fimSemana.setDate(inicioSemana.getDate() + 6);
+      fimSemana.setHours(23, 59, 59, 999);
 
-    const barbeiroSelecionado =
-      abaAtiva === "agenda"
-        ? filtros.barbeiro_id
-        : form.barbeiro_id;
+      const barbeiroSelecionado =
+        abaAtiva === "agenda" ? filtros.barbeiro_id : form.barbeiro_id;
 
-    const response = await api.get("/agendamentos/calendario", {
-      params: {
-        barbeiro_id: barbeiroSelecionado || undefined,
-        data_inicio: inicioSemana.toISOString(),
-        data_fim: fimSemana.toISOString(),
-      },
-    });
+      const response = await api.get("/agendamentos/calendario", {
+        params: {
+          barbeiro_id: barbeiroSelecionado || undefined,
+          data_inicio: inicioSemana.toISOString(),
+          data_fim: fimSemana.toISOString(),
+        },
+      });
 
-    setAgendaSemanal(response.data || []);
-    setErro("");
-  } catch (error) {
-    console.error("Erro ao carregar agenda semanal:", error);
-    setAgendaSemanal([]);
+      setAgendaSemanal(response.data || []);
+      setErro("");
+    } catch (error) {
+      console.error("Erro ao carregar agenda semanal:", error);
+      setAgendaSemanal([]);
 
-    setErro(
-      error?.response?.data?.detail ||
-        "Erro ao carregar agenda semanal."
-    );
+      setErro(
+        error?.response?.data?.detail || "Erro ao carregar agenda semanal.",
+      );
+    }
   }
-}
   function limparMensagens() {
     setMensagem("");
     setErro("");
@@ -283,7 +269,7 @@ useEffect(() => {
       const minuto = inicio % 60;
 
       horarios.push(
-        `${String(hora).padStart(2, "0")}:${String(minuto).padStart(2, "0")}`
+        `${String(hora).padStart(2, "0")}:${String(minuto).padStart(2, "0")}`,
       );
 
       inicio += 30;
@@ -300,10 +286,12 @@ useEffect(() => {
   function separarHorariosPorPeriodo(horarios) {
     return {
       manha: horarios.filter(
-        (horario) => transformarEmMinutos(horario) < transformarEmMinutos("12:00")
+        (horario) =>
+          transformarEmMinutos(horario) < transformarEmMinutos("12:00"),
       ),
       tarde: horarios.filter(
-        (horario) => transformarEmMinutos(horario) >= transformarEmMinutos("12:00")
+        (horario) =>
+          transformarEmMinutos(horario) >= transformarEmMinutos("12:00"),
       ),
     };
   }
@@ -345,7 +333,7 @@ useEffect(() => {
     const diaSemana = obterDiaSemanaSistema(form.data);
 
     const funcionamentoDia = configuracoesFuncionamento.find(
-      (c) => Number(c.dia_semana) === Number(diaSemana)
+      (c) => Number(c.dia_semana) === Number(diaSemana),
     );
 
     if (!funcionamentoDia || !funcionamentoDia.trabalha) {
@@ -356,7 +344,7 @@ useEffect(() => {
     let horaFimBase = funcionamentoDia.hora_fim;
 
     const disponibilidadeDia = disponibilidadeBarbeiro.find(
-      (d) => Number(d.dia_semana) === Number(diaSemana)
+      (d) => Number(d.dia_semana) === Number(diaSemana),
     );
 
     if (disponibilidadeDia && disponibilidadeDia.usa_padrao === false) {
@@ -375,17 +363,19 @@ useEffect(() => {
     const minutosAgora = obterMinutosAgora();
 
     const servicoSelecionado = servicos.find(
-      (s) => Number(s.id) === Number(form.servico_id)
+      (s) => Number(s.id) === Number(form.servico_id),
     );
 
-    const duracaoServico = Number(servicoSelecionado?.tempo_medio_minutos || 30);
+    const duracaoServico = Number(
+      servicoSelecionado?.tempo_medio_minutos || 30,
+    );
     const fechamentoMin = transformarEmMinutos(horaFimBase);
 
     const agendamentosDoBarbeiro = agendamentos.filter(
       (ag) =>
         Number(ag.barbeiro_id) === Number(form.barbeiro_id) &&
         ag.status !== "cancelado" &&
-        ag.data_hora_inicio?.startsWith(form.data)
+        ag.data_hora_inicio?.startsWith(form.data),
     );
 
     return horarios.filter((horario) => {
@@ -414,7 +404,7 @@ useEffect(() => {
           inicioNovo,
           fimNovo,
           inicioExistenteMin,
-          fimExistenteMin
+          fimExistenteMin,
         );
       });
     });
@@ -433,62 +423,58 @@ useEffect(() => {
   }, [horariosDisponiveis]);
 
   const agendaVisualDoDia = useMemo(() => {
-  return montarAgendaVisualDoDia();
-}, [agendamentos, horariosDisponiveis]);
+    return montarAgendaVisualDoDia();
+  }, [agendamentos, horariosDisponiveis]);
 
   const resumo = useMemo(() => {
-  const total = agendamentos.length;
+    const total = agendamentos.length;
 
-  const cancelados = agendamentos.filter(
-    (a) => a.status === "cancelado"
-  ).length;
+    const cancelados = agendamentos.filter(
+      (a) => a.status === "cancelado",
+    ).length;
 
-  const ativos = agendamentos.filter(
-    (a) => a.status !== "cancelado"
-  ).length;
+    const ativos = agendamentos.filter((a) => a.status !== "cancelado").length;
 
-  const concluidos = agendamentos.filter(
-    (a) => a.status === "concluido"
-  ).length;
+    const concluidos = agendamentos.filter(
+      (a) => a.status === "concluido",
+    ).length;
 
-  const clientesUnicos = new Set(
-    agendamentos.map((a) => a.cliente_id)
-  ).size;
+    const clientesUnicos = new Set(agendamentos.map((a) => a.cliente_id)).size;
 
-  const faturamentoIdeal = agendamentos.reduce((soma, ag) => {
-  if (ag.status === "cancelado") return soma;
+    const faturamentoIdeal = agendamentos.reduce((soma, ag) => {
+      if (ag.status === "cancelado") return soma;
 
-  const servico = buscarServico(ag.servico_id);
-  return soma + Number(servico?.preco || 0);
-}, 0);
+      const servico = buscarServico(ag.servico_id);
+      return soma + Number(servico?.preco || 0);
+    }, 0);
 
-const faturamentoReal = agendamentos.reduce((soma, ag) => {
-  if (ag.status === "cancelado") return soma;
-  if (ag.tipo_atendimento === "plano") return soma;
+    const faturamentoReal = agendamentos.reduce((soma, ag) => {
+      if (ag.status === "cancelado") return soma;
+      if (ag.tipo_atendimento === "plano") return soma;
 
-  const servico = buscarServico(ag.servico_id);
-  return soma + Number(servico?.preco || 0);
-}, 0);
+      const servico = buscarServico(ag.servico_id);
+      return soma + Number(servico?.preco || 0);
+    }, 0);
 
-const valorAtendimentosPlano = agendamentos.reduce((soma, ag) => {
-  if (ag.status === "cancelado") return soma;
-  if (ag.tipo_atendimento !== "plano") return soma;
+    const valorAtendimentosPlano = agendamentos.reduce((soma, ag) => {
+      if (ag.status === "cancelado") return soma;
+      if (ag.tipo_atendimento !== "plano") return soma;
 
-  const servico = buscarServico(ag.servico_id);
-  return soma + Number(servico?.preco || 0);
-}, 0);
+      const servico = buscarServico(ag.servico_id);
+      return soma + Number(servico?.preco || 0);
+    }, 0);
 
-  return {
-    total,
-    ativos,
-    concluidos,
-    cancelados,
-    clientesUnicos,
-    faturamentoIdeal,
-    faturamentoReal,
-    valorAtendimentosPlano,
-  };
-}, [agendamentos, servicos]);
+    return {
+      total,
+      ativos,
+      concluidos,
+      cancelados,
+      clientesUnicos,
+      faturamentoIdeal,
+      faturamentoReal,
+      valorAtendimentosPlano,
+    };
+  }, [agendamentos, servicos]);
 
   async function salvarAgendamento(e) {
     e.preventDefault();
@@ -511,7 +497,9 @@ const valorAtendimentosPlano = agendamentos.reduce((soma, ag) => {
     }
 
     if (horariosDisponiveis.length === 0) {
-      setErro("Não há horários disponíveis para esta data, barbeiro e serviço.");
+      setErro(
+        "Não há horários disponíveis para esta data, barbeiro e serviço.",
+      );
       return;
     }
 
@@ -547,8 +535,7 @@ const valorAtendimentosPlano = agendamentos.reduce((soma, ag) => {
       const dadosAtualizados = await listarAgendamentos(novosFiltros);
 
       const ordenados = [...dadosAtualizados].sort(
-        (a, b) =>
-          new Date(a.data_hora_inicio) - new Date(b.data_hora_inicio)
+        (a, b) => new Date(a.data_hora_inicio) - new Date(b.data_hora_inicio),
       );
 
       setAgendamentos(ordenados);
@@ -571,7 +558,9 @@ const valorAtendimentosPlano = agendamentos.reduce((soma, ag) => {
   async function cancelar(id) {
     limparMensagens();
 
-    const confirmar = window.confirm("Deseja realmente cancelar este agendamento?");
+    const confirmar = window.confirm(
+      "Deseja realmente cancelar este agendamento?",
+    );
     if (!confirmar) return;
 
     try {
@@ -582,30 +571,30 @@ const valorAtendimentosPlano = agendamentos.reduce((soma, ag) => {
       setErro("Erro ao cancelar agendamento.");
     }
   }
-  
-async function iniciarAtendimento(id) {
-  limparMensagens();
 
-  const confirmar = window.confirm(
-    "Deseja iniciar este atendimento e gerar uma comanda?"
-  );
+  async function iniciarAtendimento(id) {
+    limparMensagens();
 
-  if (!confirmar) return;
-
-  try {
-    const resultado = await converterAgendamentoEmComanda(id);
-
-    setMensagem(
-      `Atendimento iniciado. Comanda nº ${resultado.comanda_id} criada com sucesso.`
+    const confirmar = window.confirm(
+      "Deseja iniciar este atendimento e gerar uma comanda?",
     );
 
-    await carregarAgendamentos();
-    await carregarAgendaSemanal();
-  } catch (error) {
-    const detalhe = error?.response?.data?.detail;
-    setErro(detalhe || "Erro ao iniciar atendimento.");
+    if (!confirmar) return;
+
+    try {
+      const resultado = await converterAgendamentoEmComanda(id);
+
+      setMensagem(
+        `Atendimento iniciado. Comanda nº ${resultado.comanda_id} criada com sucesso.`,
+      );
+
+      await carregarAgendamentos();
+      await carregarAgendaSemanal();
+    } catch (error) {
+      const detalhe = error?.response?.data?.detail;
+      setErro(detalhe || "Erro ao iniciar atendimento.");
+    }
   }
-}
 
   function statusStyle(status) {
     if (status === "cancelado") {
@@ -629,320 +618,325 @@ async function iniciarAtendimento(id) {
   }
 
   function renderTicketDisponibilidadeBarbeiro() {
-  if (!form.barbeiro_id) {
-    return null;
-  }
-
-  if (!form.servico_id) {
-    return (
-      <div style={infoTicketStyle}>
-        <strong>📌 Agenda semanal do barbeiro</strong>
-        <p style={{ margin: "8px 0 0 0", color: "#6b7280" }}>
-          Selecione um serviço para liberar os horários disponíveis.
-        </p>
-      </div>
-    );
-  }
-
-  if (disponibilidadeBarbeiro.length === 0) {
-    return (
-      <div style={infoTicketStyle}>
-        <strong>📌 Agenda semanal do barbeiro</strong>
-        <p style={{ margin: "8px 0 0 0", color: "#6b7280" }}>
-          Carregando disponibilidade...
-        </p>
-      </div>
-    );
-  }
-
-  function formatarDataInput(data) {
-    const ano = data.getFullYear();
-    const mes = String(data.getMonth() + 1).padStart(2, "0");
-    const dia = String(data.getDate()).padStart(2, "0");
-    return `${ano}-${mes}-${dia}`;
-  }
-
-  function obterInicioSemana(dataTexto) {
-    const data = new Date(`${dataTexto}T00:00:00`);
-    const diaSemanaJs = data.getDay();
-    const diferenca = diaSemanaJs === 0 ? -6 : 1 - diaSemanaJs;
-
-    data.setDate(data.getDate() + diferenca);
-    data.setHours(0, 0, 0, 0);
-
-    return data;
-  }
-
-  function gerarDiasDaSemana() {
-    const inicio = obterInicioSemana(semanaSelecionada);
-
-    return Array.from({ length: 7 }, (_, index) => {
-      const data = new Date(inicio);
-      data.setDate(inicio.getDate() + index);
-
-      return {
-        nome: diasSemana[index],
-        dia_semana: index,
-        dataTexto: formatarDataInput(data),
-        dataFormatada: data.toLocaleDateString("pt-BR"),
-      };
-    });
-  }
-
-  function obterHorarioBaseDia(diaSemana) {
-    const funcionamentoDia = configuracoesFuncionamento.find(
-      (c) => Number(c.dia_semana) === Number(diaSemana)
-    );
-
-    const disponibilidadeDia = disponibilidadeBarbeiro.find(
-      (d) => Number(d.dia_semana) === Number(diaSemana)
-    );
-
-    if (!funcionamentoDia || !funcionamentoDia.trabalha) {
+    if (!form.barbeiro_id) {
       return null;
     }
 
-    let horaInicio = funcionamentoDia.hora_inicio;
-    let horaFim = funcionamentoDia.hora_fim;
+    if (!form.servico_id) {
+      return (
+        <div style={infoTicketStyle}>
+          <strong>📌 Agenda semanal do barbeiro</strong>
+          <p style={{ margin: "8px 0 0 0", color: "#6b7280" }}>
+            Selecione um serviço para liberar os horários disponíveis.
+          </p>
+        </div>
+      );
+    }
 
-    if (disponibilidadeDia && disponibilidadeDia.usa_padrao === false) {
-      if (!disponibilidadeDia.trabalha) {
+    if (disponibilidadeBarbeiro.length === 0) {
+      return (
+        <div style={infoTicketStyle}>
+          <strong>📌 Agenda semanal do barbeiro</strong>
+          <p style={{ margin: "8px 0 0 0", color: "#6b7280" }}>
+            Carregando disponibilidade...
+          </p>
+        </div>
+      );
+    }
+
+    function formatarDataInput(data) {
+      const ano = data.getFullYear();
+      const mes = String(data.getMonth() + 1).padStart(2, "0");
+      const dia = String(data.getDate()).padStart(2, "0");
+      return `${ano}-${mes}-${dia}`;
+    }
+
+    function obterInicioSemana(dataTexto) {
+      const data = new Date(`${dataTexto}T00:00:00`);
+      const diaSemanaJs = data.getDay();
+      const diferenca = diaSemanaJs === 0 ? -6 : 1 - diaSemanaJs;
+
+      data.setDate(data.getDate() + diferenca);
+      data.setHours(0, 0, 0, 0);
+
+      return data;
+    }
+
+    function gerarDiasDaSemana() {
+      const inicio = obterInicioSemana(semanaSelecionada);
+
+      return Array.from({ length: 7 }, (_, index) => {
+        const data = new Date(inicio);
+        data.setDate(inicio.getDate() + index);
+
+        return {
+          nome: diasSemana[index],
+          dia_semana: index,
+          dataTexto: formatarDataInput(data),
+          dataFormatada: data.toLocaleDateString("pt-BR"),
+        };
+      });
+    }
+
+    function obterHorarioBaseDia(diaSemana) {
+      const funcionamentoDia = configuracoesFuncionamento.find(
+        (c) => Number(c.dia_semana) === Number(diaSemana),
+      );
+
+      const disponibilidadeDia = disponibilidadeBarbeiro.find(
+        (d) => Number(d.dia_semana) === Number(diaSemana),
+      );
+
+      if (!funcionamentoDia || !funcionamentoDia.trabalha) {
         return null;
       }
 
-      horaInicio = disponibilidadeDia.hora_inicio;
-      horaFim = disponibilidadeDia.hora_fim;
+      let horaInicio = funcionamentoDia.hora_inicio;
+      let horaFim = funcionamentoDia.hora_fim;
+
+      if (disponibilidadeDia && disponibilidadeDia.usa_padrao === false) {
+        if (!disponibilidadeDia.trabalha) {
+          return null;
+        }
+
+        horaInicio = disponibilidadeDia.hora_inicio;
+        horaFim = disponibilidadeDia.hora_fim;
+      }
+
+      return {
+        horaInicio,
+        horaFim,
+      };
     }
 
-    return {
-      horaInicio,
-      horaFim,
-    };
-  }
+    function gerarHorariosDisponiveisDoDia(dia) {
+      const base = obterHorarioBaseDia(dia.dia_semana);
 
-  function gerarHorariosDisponiveisDoDia(dia) {
-    const base = obterHorarioBaseDia(dia.dia_semana);
-
-    if (!base) {
-      return [];
-    }
-
-    const servicoSelecionado = servicos.find(
-      (s) => Number(s.id) === Number(form.servico_id)
-    );
-
-    const duracaoServico = Number(servicoSelecionado?.tempo_medio_minutos || 30);
-    const horarios = gerarHorariosPorIntervalo(base.horaInicio, base.horaFim);
-    const fechamentoMin = transformarEmMinutos(base.horaFim);
-
-    const hojeSistema = new Date().toISOString().split("T")[0];
-    const dataSelecionadaEhHoje = dia.dataTexto === hojeSistema;
-    const minutosAgora = obterMinutosAgora();
-
-    const agendamentosDoDia = agendaSemanal.filter((evento) =>
-      evento.start?.startsWith(dia.dataTexto)
-    );
-
-    return horarios.filter((horario) => {
-      const inicioNovo = transformarEmMinutos(horario);
-      const fimNovo = inicioNovo + duracaoServico;
-
-      if (dataEhPassada(dia.dataTexto)) {
-        return false;
+      if (!base) {
+        return [];
       }
 
-      if (dataSelecionadaEhHoje && inicioNovo <= minutosAgora) {
-        return false;
-      }
+      const servicoSelecionado = servicos.find(
+        (s) => Number(s.id) === Number(form.servico_id),
+      );
 
-      if (fimNovo > fechamentoMin) {
-        return false;
-      }
+      const duracaoServico = Number(
+        servicoSelecionado?.tempo_medio_minutos || 30,
+      );
+      const horarios = gerarHorariosPorIntervalo(base.horaInicio, base.horaFim);
+      const fechamentoMin = transformarEmMinutos(base.horaFim);
 
-      const conflito = agendamentosDoDia.some((evento) => {
-        const inicioExistente = new Date(evento.start);
-        const fimExistente = new Date(evento.end);
+      const hojeSistema = new Date().toISOString().split("T")[0];
+      const dataSelecionadaEhHoje = dia.dataTexto === hojeSistema;
+      const minutosAgora = obterMinutosAgora();
 
-        const inicioExistenteMin =
-          inicioExistente.getHours() * 60 + inicioExistente.getMinutes();
+      const agendamentosDoDia = agendaSemanal.filter((evento) =>
+        evento.start?.startsWith(dia.dataTexto),
+      );
 
-        const fimExistenteMin =
-          fimExistente.getHours() * 60 + fimExistente.getMinutes();
+      return horarios.filter((horario) => {
+        const inicioNovo = transformarEmMinutos(horario);
+        const fimNovo = inicioNovo + duracaoServico;
 
-        return horariosConflitam(
-          inicioNovo,
-          fimNovo,
-          inicioExistenteMin,
-          fimExistenteMin
-        );
-      });
+        if (dataEhPassada(dia.dataTexto)) {
+          return false;
+        }
 
-      return !conflito;
-    });
-  }
+        if (dataSelecionadaEhHoje && inicioNovo <= minutosAgora) {
+          return false;
+        }
 
-  const dias = gerarDiasDaSemana();
+        if (fimNovo > fechamentoMin) {
+          return false;
+        }
 
-  return (
-    <div style={infoTicketStyle}>
-      <strong>📌 Escolha a semana e o horário do barbeiro</strong>
+        const conflito = agendamentosDoDia.some((evento) => {
+          const inicioExistente = new Date(evento.start);
+          const fimExistente = new Date(evento.end);
 
-      <div style={{ marginTop: "12px", marginBottom: "15px" }}>
-        <label>Escolha uma data da semana</label>
-        <input
-          type="date"
-          value={semanaSelecionada}
-          min={hoje}
-          onChange={(e) => {
-            setSemanaSelecionada(e.target.value);
-            setForm((prev) => ({
-              ...prev,
-              data: e.target.value,
-              hora: "",
-            }));
-          }}
-          style={inputStyle}
-        />
-      </div>
+          const inicioExistenteMin =
+            inicioExistente.getHours() * 60 + inicioExistente.getMinutes();
 
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(210px, 1fr))",
-          gap: "12px",
-          marginTop: "12px",
-        }}
-      >
-        {dias.map((dia) => {
-          const base = obterHorarioBaseDia(dia.dia_semana);
-          const horarios = gerarHorariosDisponiveisDoDia(dia);
+          const fimExistenteMin =
+            fimExistente.getHours() * 60 + fimExistente.getMinutes();
 
-          return (
-            <div
-              key={dia.dataTexto}
-              style={{
-                padding: "12px",
-                borderRadius: "10px",
-                background: base ? "#ecfdf5" : "#f3f4f6",
-                color: base ? "#065f46" : "#6b7280",
-                border: base ? "1px solid #a7f3d0" : "1px solid #e5e7eb",
-              }}
-            >
-              <strong>{dia.nome}</strong>
-              <p style={{ margin: "4px 0 10px 0", fontSize: "13px" }}>
-                {dia.dataFormatada}
-              </p>
-
-              {!base ? (
-                <p style={{ margin: 0 }}>Fechado</p>
-              ) : horarios.length === 0 ? (
-                <p style={{ margin: 0, color: "#991b1b" }}>
-                  Sem horários livres
-                </p>
-              ) : (
-                <div
-                  style={{
-                    display: "flex",
-                    flexWrap: "wrap",
-                    gap: "6px",
-                  }}
-                >
-                  {horarios.map((horario) => {
-                    const selecionado =
-                      form.data === dia.dataTexto && form.hora === horario;
-
-                    return (
-                      <button
-                        key={`${dia.dataTexto}-${horario}`}
-                        type="button"
-                        onClick={() => {
-                          setForm((prev) => ({
-                            ...prev,
-                            data: dia.dataTexto,
-                            hora: horario,
-                          }));
-
-                          setFiltros((prev) => ({
-                            ...prev,
-                            data_agenda: dia.dataTexto,
-                            barbeiro_id: form.barbeiro_id,
-                          }));
-                        }}
-                        style={{
-                          padding: "7px 10px",
-                          borderRadius: "8px",
-                          border: selecionado
-                            ? "2px solid #991b1b"
-                            : "1px solid #86efac",
-                          background: selecionado ? "#dc2626" : "#dcfce7",
-                          color: selecionado ? "#ffffff" : "#166534",
-                          fontWeight: "bold",
-                          cursor: "pointer",
-                        }}
-                      >
-                        {horario}
-                      </button>
-                    );
-                  })}
-                </div>
-              )} 
-            </div>
+          return horariosConflitam(
+            inicioNovo,
+            fimNovo,
+            inicioExistenteMin,
+            fimExistenteMin,
           );
-        })}
-      </div>
+        });
 
-      {form.data && form.hora && (
-      <div
-        style={{
-          marginTop: "15px",
-          padding: "12px",
-          borderRadius: "10px",
-          background: "#dcfce7",
-          color: "#166534",
-          border: "1px solid #86efac",
-          fontWeight: "bold",
-        }}
-      >
-        ✅ Horário selecionado: {form.data.split("-").reverse().join("/")} às{" "}
-        {form.hora}
+        return !conflito;
+      });
+    }
+
+    const dias = gerarDiasDaSemana();
+
+    return (
+      <div className={styles.availability} style={infoTicketStyle}>
+        <strong>📌 Escolha a semana e o horário do barbeiro</strong>
+
+        <div style={{ marginTop: "12px", marginBottom: "15px" }}>
+          <label>Escolha uma data da semana</label>
+          <input
+            type="date"
+            value={semanaSelecionada}
+            min={hoje}
+            onChange={(e) => {
+              setSemanaSelecionada(e.target.value);
+              setForm((prev) => ({
+                ...prev,
+                data: e.target.value,
+                hora: "",
+              }));
+            }}
+            style={inputStyle}
+          />
+        </div>
+
+        <div
+          className={styles.availabilityGrid}
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(210px, 1fr))",
+            gap: "12px",
+            marginTop: "12px",
+          }}
+        >
+          {dias.map((dia) => {
+            const base = obterHorarioBaseDia(dia.dia_semana);
+            const horarios = gerarHorariosDisponiveisDoDia(dia);
+
+            return (
+              <div
+                key={dia.dataTexto}
+                style={{
+                  padding: "12px",
+                  borderRadius: "10px",
+                  background: base ? "#ecfdf5" : "#f3f4f6",
+                  color: base ? "#065f46" : "#6b7280",
+                  border: base ? "1px solid #a7f3d0" : "1px solid #e5e7eb",
+                }}
+              >
+                <strong>{dia.nome}</strong>
+                <p style={{ margin: "4px 0 10px 0", fontSize: "13px" }}>
+                  {dia.dataFormatada}
+                </p>
+
+                {!base ? (
+                  <p style={{ margin: 0 }}>Fechado</p>
+                ) : horarios.length === 0 ? (
+                  <p style={{ margin: 0, color: "#991b1b" }}>
+                    Sem horários livres
+                  </p>
+                ) : (
+                  <div
+                    style={{
+                      display: "flex",
+                      flexWrap: "wrap",
+                      gap: "6px",
+                    }}
+                  >
+                    {horarios.map((horario) => {
+                      const selecionado =
+                        form.data === dia.dataTexto && form.hora === horario;
+
+                      return (
+                        <button
+                          className={styles.timeButton}
+                          key={`${dia.dataTexto}-${horario}`}
+                          type="button"
+                          onClick={() => {
+                            setForm((prev) => ({
+                              ...prev,
+                              data: dia.dataTexto,
+                              hora: horario,
+                            }));
+
+                            setFiltros((prev) => ({
+                              ...prev,
+                              data_agenda: dia.dataTexto,
+                              barbeiro_id: form.barbeiro_id,
+                            }));
+                          }}
+                          style={{
+                            padding: "7px 10px",
+                            borderRadius: "8px",
+                            border: selecionado
+                              ? "2px solid #991b1b"
+                              : "1px solid #86efac",
+                            background: selecionado ? "#dc2626" : "#dcfce7",
+                            color: selecionado ? "#ffffff" : "#166534",
+                            fontWeight: "bold",
+                            cursor: "pointer",
+                          }}
+                        >
+                          {horario}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+
+        {form.data && form.hora && (
+          <div
+            style={{
+              marginTop: "15px",
+              padding: "12px",
+              borderRadius: "10px",
+              background: "#dcfce7",
+              color: "#166534",
+              border: "1px solid #86efac",
+              fontWeight: "bold",
+            }}
+          >
+            ✅ Horário selecionado: {form.data.split("-").reverse().join("/")}{" "}
+            às {form.hora}
+          </div>
+        )}
       </div>
-    )}
-    </div>
-  );
-}
+    );
+  }
 
   function montarAgendaVisualDoDia() {
-  const horariosBase = [];
+    const horariosBase = [];
 
-  agendamentos.forEach((agendamento) => {
-    if (agendamento.status === "cancelado") return;
+    agendamentos.forEach((agendamento) => {
+      if (agendamento.status === "cancelado") return;
 
-    const inicio = new Date(agendamento.data_hora_inicio);
+      const inicio = new Date(agendamento.data_hora_inicio);
 
-    const horario = inicio.toLocaleTimeString("pt-BR", {
-      hour: "2-digit",
-      minute: "2-digit",
+      const horario = inicio.toLocaleTimeString("pt-BR", {
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+
+      horariosBase.push({
+        horario,
+        tipo: "ocupado",
+        agendamento,
+      });
     });
 
-    horariosBase.push({
-      horario,
-      tipo: "ocupado",
-      agendamento,
+    horariosDisponiveis.forEach((horario) => {
+      horariosBase.push({
+        horario,
+        tipo: "livre",
+        agendamento: null,
+      });
     });
-  });
 
-  horariosDisponiveis.forEach((horario) => {
-    horariosBase.push({
-      horario,
-      tipo: "livre",
-      agendamento: null,
-    });
-  });
-
-  return horariosBase.sort(
-    (a, b) => transformarEmMinutos(a.horario) - transformarEmMinutos(b.horario)
-  );
-}
+    return horariosBase.sort(
+      (a, b) =>
+        transformarEmMinutos(a.horario) - transformarEmMinutos(b.horario),
+    );
+  }
 
   function renderResumoAgendamento(agendamento) {
     if (!agendamento) {
@@ -955,13 +949,31 @@ async function iniciarAtendimento(id) {
 
     return (
       <div style={cardStyle}>
-        <p><strong>ID:</strong> {agendamento.id}</p>
-        <p><strong>Cliente:</strong> {buscarNome(clientes, agendamento.cliente_id)}</p>
-        <p><strong>Barbeiro:</strong> {buscarNome(barbeiros, agendamento.barbeiro_id)}</p>
-        <p><strong>Serviço:</strong> {buscarNome(servicos, agendamento.servico_id)}</p>
-        <p><strong>Início:</strong> {formatarDataHora(agendamento.data_hora_inicio)}</p>
-        <p><strong>Fim:</strong> {formatarDataHora(agendamento.data_hora_fim)}</p>
-        <p><strong>Status:</strong> {agendamento.status}</p>
+        <p>
+          <strong>ID:</strong> {agendamento.id}
+        </p>
+        <p>
+          <strong>Cliente:</strong>{" "}
+          {buscarNome(clientes, agendamento.cliente_id)}
+        </p>
+        <p>
+          <strong>Barbeiro:</strong>{" "}
+          {buscarNome(barbeiros, agendamento.barbeiro_id)}
+        </p>
+        <p>
+          <strong>Serviço:</strong>{" "}
+          {buscarNome(servicos, agendamento.servico_id)}
+        </p>
+        <p>
+          <strong>Início:</strong>{" "}
+          {formatarDataHora(agendamento.data_hora_inicio)}
+        </p>
+        <p>
+          <strong>Fim:</strong> {formatarDataHora(agendamento.data_hora_fim)}
+        </p>
+        <p>
+          <strong>Status:</strong> {agendamento.status}
+        </p>
       </div>
     );
   }
@@ -1033,52 +1045,52 @@ async function iniciarAtendimento(id) {
   };
 
   const agendaVisualItemStyle = (tipo, status) => {
-  if (tipo === "livre") {
-    return {
-      border: "1px solid #d1d5db",
-      background: "#ffffff",
-      color: "#374151",
-    };
-  }
+    if (tipo === "livre") {
+      return {
+        border: "1px solid #d1d5db",
+        background: "#ffffff",
+        color: "#374151",
+      };
+    }
 
-  if (status === "cancelado") {
-    return {
-      border: "1px solid #fecaca",
-      background: "#fee2e2",
-      color: "#991b1b",
-    };
-  }
+    if (status === "cancelado") {
+      return {
+        border: "1px solid #fecaca",
+        background: "#fee2e2",
+        color: "#991b1b",
+      };
+    }
 
-  if (status === "concluido") {
-    return {
-      border: "1px solid #bbf7d0",
-      background: "#dcfce7",
-      color: "#166534",
-    };
-  }
+    if (status === "concluido") {
+      return {
+        border: "1px solid #bbf7d0",
+        background: "#dcfce7",
+        color: "#166534",
+      };
+    }
 
-  if (status === "confirmado") {
+    if (status === "confirmado") {
+      return {
+        border: "1px solid #bfdbfe",
+        background: "#dbeafe",
+        color: "#1d4ed8",
+      };
+    }
+
+    if (status === "em_atendimento") {
+      return {
+        border: "1px solid #fde68a",
+        background: "#fef3c7",
+        color: "#92400e",
+      };
+    }
+
     return {
       border: "1px solid #bfdbfe",
-      background: "#dbeafe",
-      color: "#1d4ed8",
+      background: "#eff6ff",
+      color: "#1e3a8a",
     };
-  }
-
-  if (status === "em_atendimento") {
-    return {
-      border: "1px solid #fde68a",
-      background: "#fef3c7",
-      color: "#92400e",
-    };
-  }
-
-  return {
-    border: "1px solid #bfdbfe",
-    background: "#eff6ff",
-    color: "#1e3a8a",
   };
-};
 
   const resumoCardStyle = {
     ...cardStyle,
@@ -1087,11 +1099,20 @@ async function iniciarAtendimento(id) {
   };
 
   return (
-    <main style={{ padding: "30px" }}>
+    <main className={styles.page} style={{ padding: "30px" }}>
       <h1>Agenda Interna</h1>
 
-      <div style={{ display: "flex", gap: "20px", marginBottom: "30px", flexWrap: "wrap" }}>
+      <div
+        className={styles.tabs}
+        style={{
+          display: "flex",
+          gap: "20px",
+          marginBottom: "30px",
+          flexWrap: "wrap",
+        }}
+      >
         <button
+          className={styles.tabButton}
           type="button"
           onClick={() => setAbaAtiva("agendamento")}
           onMouseEnter={() => setAbaAtiva("agendamento")}
@@ -1103,6 +1124,7 @@ async function iniciarAtendimento(id) {
         </button>
 
         <button
+          className={styles.tabButton}
           type="button"
           onClick={() => setAbaAtiva("agenda")}
           onMouseEnter={() => setAbaAtiva("agenda")}
@@ -1110,30 +1132,54 @@ async function iniciarAtendimento(id) {
         >
           <div style={ticketIconStyle}>📅</div>
           <h3 style={{ margin: "0 0 6px 0" }}>Agenda</h3>
-          <p style={{ margin: 0, color: "#4b5563" }}>Consultar horários e clientes</p>
+          <p style={{ margin: 0, color: "#4b5563" }}>
+            Consultar horários e clientes
+          </p>
         </button>
       </div>
 
       {mensagem && (
-        <div style={{ background: "#d1fae5", padding: "10px", marginBottom: "10px" }}>
+        <div
+          className={styles.feedback}
+          style={{
+            background: "#d1fae5",
+            padding: "10px",
+            marginBottom: "10px",
+          }}
+        >
           {mensagem}
         </div>
       )}
 
       {erro && (
-        <div style={{ background: "#fee2e2", padding: "10px", marginBottom: "10px" }}>
+        <div
+          className={styles.feedback}
+          style={{
+            background: "#fee2e2",
+            padding: "10px",
+            marginBottom: "10px",
+          }}
+        >
           {erro}
         </div>
       )}
 
       {abaAtiva === "agendamento" && (
         <>
-          <section style={{ ...cardStyle, marginBottom: "30px", maxWidth: "850px" }}>
+          <section
+            className={styles.formCard}
+            style={{ ...cardStyle, marginBottom: "30px", maxWidth: "850px" }}
+          >
             <h2>Novo Agendamento</h2>
 
-            <form onSubmit={salvarAgendamento}>
+            <form className={styles.form} onSubmit={salvarAgendamento}>
               <label>Cliente</label>
-              <select name="cliente_id" value={form.cliente_id} onChange={handleFormChange} style={inputStyle}>
+              <select
+                name="cliente_id"
+                value={form.cliente_id}
+                onChange={handleFormChange}
+                style={inputStyle}
+              >
                 <option value="">Selecione um cliente</option>
                 {clientes.map((cliente) => (
                   <option key={cliente.id} value={cliente.id}>
@@ -1143,7 +1189,12 @@ async function iniciarAtendimento(id) {
               </select>
 
               <label>Barbeiro</label>
-              <select name="barbeiro_id" value={form.barbeiro_id} onChange={handleFormChange} style={inputStyle}>
+              <select
+                name="barbeiro_id"
+                value={form.barbeiro_id}
+                onChange={handleFormChange}
+                style={inputStyle}
+              >
                 <option value="">Selecione um barbeiro</option>
                 {barbeiros.map((barbeiro) => (
                   <option key={barbeiro.id} value={barbeiro.id}>
@@ -1155,27 +1206,35 @@ async function iniciarAtendimento(id) {
               {renderTicketDisponibilidadeBarbeiro()}
 
               <label>Serviço</label>
-              <select name="servico_id" value={form.servico_id} onChange={handleFormChange} style={inputStyle}>
+              <select
+                name="servico_id"
+                value={form.servico_id}
+                onChange={handleFormChange}
+                style={inputStyle}
+              >
                 <option value="">Selecione um serviço</option>
                 {servicos.map((servico) => (
                   <option key={servico.id} value={servico.id}>
-                    {servico.nome} - {formatarMoeda(servico.preco)} - {servico.tempo_medio_minutos} min
+                    {servico.nome} - {formatarMoeda(servico.preco)} -{" "}
+                    {servico.tempo_medio_minutos} min
                   </option>
                 ))}
               </select>
 
-              
-              {form.barbeiro_id && form.servico_id && horariosDisponiveis.length === 0 && (
-                <p style={{ color: "#991b1b", marginTop: "-8px" }}>
-                  Nenhum horário disponível para esta data, barbeiro e serviço.
-                  Verifique a disponibilidade do barbeiro ou escolha outra data.
-                </p>
-              )}
-
+              {form.barbeiro_id &&
+                form.servico_id &&
+                horariosDisponiveis.length === 0 && (
+                  <p style={{ color: "#991b1b", marginTop: "-8px" }}>
+                    Nenhum horário disponível para esta data, barbeiro e
+                    serviço. Verifique a disponibilidade do barbeiro ou escolha
+                    outra data.
+                  </p>
+                )}
 
               <label>Tipo de Atendimento</label>
 
               <div
+                className={styles.attendanceTypes}
                 style={{
                   display: "flex",
                   gap: "15px",
@@ -1185,11 +1244,17 @@ async function iniciarAtendimento(id) {
               >
                 <label
                   style={{
-                    border: form.tipo_atendimento === "avulso" ? "2px solid #111827" : "1px solid #d1d5db",
+                    border:
+                      form.tipo_atendimento === "avulso"
+                        ? "2px solid #111827"
+                        : "1px solid #d1d5db",
                     borderRadius: "10px",
                     padding: "12px 16px",
                     cursor: "pointer",
-                    background: form.tipo_atendimento === "avulso" ? "#f3f4f6" : "#ffffff",
+                    background:
+                      form.tipo_atendimento === "avulso"
+                        ? "#f3f4f6"
+                        : "#ffffff",
                   }}
                 >
                   <input
@@ -1205,11 +1270,15 @@ async function iniciarAtendimento(id) {
 
                 <label
                   style={{
-                    border: form.tipo_atendimento === "plano" ? "2px solid #2563eb" : "1px solid #d1d5db",
+                    border:
+                      form.tipo_atendimento === "plano"
+                        ? "2px solid #2563eb"
+                        : "1px solid #d1d5db",
                     borderRadius: "10px",
                     padding: "12px 16px",
                     cursor: "pointer",
-                    background: form.tipo_atendimento === "plano" ? "#eff6ff" : "#ffffff",
+                    background:
+                      form.tipo_atendimento === "plano" ? "#eff6ff" : "#ffffff",
                   }}
                 >
                   <input
@@ -1247,10 +1316,20 @@ async function iniciarAtendimento(id) {
 
       {abaAtiva === "agenda" && (
         <>
-          <section style={{ ...cardStyle, marginBottom: "30px" }}>
+          <section
+            className={styles.card}
+            style={{ ...cardStyle, marginBottom: "30px" }}
+          >
             <h2>Filtros da Agenda</h2>
 
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
+            <div
+              className={styles.filterGrid}
+              style={{
+                display: "grid",
+                gridTemplateColumns: "1fr 1fr",
+                gap: "20px",
+              }}
+            >
               <div>
                 <label>Data da agenda</label>
                 <input
@@ -1281,44 +1360,53 @@ async function iniciarAtendimento(id) {
             </div>
           </section>
 
-          <section style={{ display: "flex", gap: "15px", flexWrap: "wrap", marginBottom: "25px" }}>
-            <div style={resumoCardStyle}>
+          <section
+            className={styles.metricsGrid}
+            style={{
+              display: "flex",
+              gap: "15px",
+              flexWrap: "wrap",
+              marginBottom: "25px",
+            }}
+          >
+            <div className={styles.metricCard} style={resumoCardStyle}>
               <h3>{resumo.total}</h3>
               <p>Total na agenda</p>
             </div>
 
-            <div style={resumoCardStyle}>
+            <div className={styles.metricCard} style={resumoCardStyle}>
               <h3>{resumo.ativos}</h3>
               <p>Ativos</p>
             </div>
 
-            <div style={resumoCardStyle}>
+            <div className={styles.metricCard} style={resumoCardStyle}>
               <h3>{resumo.cancelados}</h3>
               <p>Cancelados</p>
             </div>
 
-            <div style={resumoCardStyle}>
+            <div className={styles.metricCard} style={resumoCardStyle}>
               <h3>{formatarMoeda(resumo.faturamentoIdeal)}</h3>
               <p>Faturamento ideal</p>
             </div>
 
-            <div style={resumoCardStyle}>
+            <div className={styles.metricCard} style={resumoCardStyle}>
               <h3>{formatarMoeda(resumo.faturamentoReal)}</h3>
               <p>Faturamento real</p>
             </div>
 
-            <div style={resumoCardStyle}>
+            <div className={styles.metricCard} style={resumoCardStyle}>
               <h3>{formatarMoeda(resumo.valorAtendimentosPlano)}</h3>
               <p>Atendimentos por plano</p>
             </div>
 
-            <div style={resumoCardStyle}>
+            <div className={styles.metricCard} style={resumoCardStyle}>
               <h3>{resumo.clientesUnicos}</h3>
               <p>Clientes do dia</p>
             </div>
           </section>
 
           <section
+            className={styles.card}
             style={{
               ...cardStyle,
               marginBottom: "25px",
@@ -1354,326 +1442,372 @@ async function iniciarAtendimento(id) {
           </section>
 
           <section
-          
-          style={{
-            ...cardStyle,
-            marginBottom: "25px",
-          }}
-        >
-          <h2>Agenda Visual do Dia</h2>
+            className={styles.card}
+            style={{
+              ...cardStyle,
+              marginBottom: "25px",
+            }}
+          >
+            <h2>Agenda Visual do Dia</h2>
 
-          {agendaVisualDoDia.length === 0 ? (
-            <p style={{ color: "#6b7280" }}>
-              Nenhum horário disponível ou ocupado para os filtros selecionados.
-            </p>
-          ) : (
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-                gap: "10px",
-              }}
-            >
-              {agendaVisualDoDia.map((item, index) => {
-                const agendamento = item.agendamento;
-                const servico = agendamento ? buscarServico(agendamento.servico_id) : null;
+            {agendaVisualDoDia.length === 0 ? (
+              <p style={{ color: "#6b7280" }}>
+                Nenhum horário disponível ou ocupado para os filtros
+                selecionados.
+              </p>
+            ) : (
+              <div
+                className={styles.visualGrid}
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+                  gap: "10px",
+                }}
+              >
+                {agendaVisualDoDia.map((item, index) => {
+                  const agendamento = item.agendamento;
+                  const servico = agendamento
+                    ? buscarServico(agendamento.servico_id)
+                    : null;
 
-                return (
-                  <div
-                    key={`${item.horario}-${index}`}
-                    style={{
-                      padding: "12px",
-                      borderRadius: "10px",
-                      ...agendaVisualItemStyle(
-                        item.tipo,
-                        agendamento?.status
-                      ),
-                    }}
-                  >
-                    <strong>{item.horario}</strong>
-
-                    {item.tipo === "livre" ? (
-                      <p style={{ margin: "6px 0 0 0" }}>Livre</p>
-                    ) : (
-                      <>
-                        <p style={{ margin: "6px 0 0 0" }}>
-                          {buscarNome(clientes, agendamento.cliente_id)}
-                        </p>
-
-                        <p style={{ margin: "4px 0 0 0", fontSize: "13px" }}>
-                          {servico?.nome || "Serviço"}
-                        </p>
-
-                        <p style={{ margin: "4px 0 0 0", fontSize: "13px" }}>
-                          Status: {agendamento.status}
-                        </p>
-                      </>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </section>
-
-          <div
-  style={{
-    display: "flex",
-    gap: "10px",
-    marginBottom: "20px",
-  }}
->
-  <button
-    type="button"
-    onClick={() => setModoVisualizacao("diario")}
-    style={{
-      padding: "10px 20px",
-      borderRadius: "8px",
-      border: "none",
-      cursor: "pointer",
-      background: modoVisualizacao === "diario" ? "#111827" : "#e5e7eb",
-      color: modoVisualizacao === "diario" ? "#ffffff" : "#111827",
-    }}
-  >
-    📅 Diário
-  </button>
-
-  <button
-    type="button"
-    onClick={() => setModoVisualizacao("semanal")}
-    style={{
-      padding: "10px 20px",
-      borderRadius: "8px",
-      border: "none",
-      cursor: "pointer",
-      background: modoVisualizacao === "semanal" ? "#111827" : "#e5e7eb",
-      color: modoVisualizacao === "semanal" ? "#ffffff" : "#111827",
-    }}
-  >
-    🗓️ Semanal
-  </button>
-</div>
-
-{modoVisualizacao === "diario" && (
-  <>
-    <h2>Agendamentos do Dia</h2>
-
-    <table width="100%" cellPadding="10" style={{ borderCollapse: "collapse" }}>
-      <thead>
-        <tr style={{ background: "#f3f4f6" }}>
-          <th>ID</th>
-          <th>Início</th>
-          <th>Fim</th>
-          <th>Cliente</th>
-          <th>Barbeiro</th>
-          <th>Serviço</th>
-          <th>Tipo</th>
-          <th>Duração</th>
-          <th>Status</th>
-          <th>Observações</th>
-          <th>Ações</th>
-        </tr>
-      </thead>
-      
-      <tbody>
-        {agendamentos.map((agendamento) => {
-          const servico = buscarServico(agendamento.servico_id);
-
-          return (
-            <tr key={agendamento.id} style={{ borderBottom: "1px solid #ddd" }}>
-              <td>{agendamento.id}</td>
-              <td>{formatarDataHora(agendamento.data_hora_inicio)}</td>
-              <td>{formatarDataHora(agendamento.data_hora_fim)}</td>
-              <td>{buscarNome(clientes, agendamento.cliente_id)}</td>
-              <td>{buscarNome(barbeiros, agendamento.barbeiro_id)}</td>
-              <td>{servico?.nome || "-"}</td>
-
-              <td>
-                <span
-                  style={{
-                    padding: "5px 10px",
-                    borderRadius: "20px",
-                    fontWeight: "bold",
-                    fontSize: "12px",
-                    background:
-                      agendamento.tipo_atendimento === "plano"
-                        ? "#dbeafe"
-                        : "#dcfce7",
-                    color:
-                      agendamento.tipo_atendimento === "plano"
-                        ? "#1d4ed8"
-                        : "#166534",
-                  }}
-                >
-                  {agendamento.tipo_atendimento === "plano"
-                    ? "💳 PLANO"
-                    : "💵 AVULSO"}
-                </span>
-              </td>
-
-              <td>{servico?.tempo_medio_minutos || "-"} min</td>
-
-              <td>
-                <span
-                  style={{
-                    padding: "5px 10px",
-                    borderRadius: "20px",
-                    fontWeight: "bold",
-                    fontSize: "13px",
-                    ...statusStyle(agendamento.status),
-                  }}
-                >
-                  {agendamento.status}
-                </span>
-              </td>
-
-              <td>{agendamento.observacoes || "-"}</td>
-
-              <td>
-                <div
-                  style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: "6px",
-                  }}
-                >
-                  {agendamento.status === "agendado" && (
-                    <button
-                      type="button"
-                      onClick={() => iniciarAtendimento(agendamento.id)}
+                  return (
+                    <div
+                      key={`${item.horario}-${index}`}
                       style={{
-                        background: "#16a34a",
-                        color: "#fff",
-                        border: "none",
-                        padding: "6px 10px",
-                        borderRadius: "6px",
-                        cursor: "pointer",
-                        fontWeight: "bold",
+                        padding: "12px",
+                        borderRadius: "10px",
+                        ...agendaVisualItemStyle(
+                          item.tipo,
+                          agendamento?.status,
+                        ),
                       }}
                     >
-                      ▶ Iniciar
-                    </button>
-                  )}
+                      <strong>{item.horario}</strong>
 
-                  {agendamento.status !== "cancelado" &&
-                    agendamento.status !== "concluido" &&
-                    agendamento.status !== "atendido" && (
-                      <button
-                        type="button"
-                        onClick={() => cancelar(agendamento.id)}
-                        style={cancelButtonStyle}
-                      >
-                        Cancelar
-                      </button>
-                    )}
+                      {item.tipo === "livre" ? (
+                        <p style={{ margin: "6px 0 0 0" }}>Livre</p>
+                      ) : (
+                        <>
+                          <p style={{ margin: "6px 0 0 0" }}>
+                            {buscarNome(clientes, agendamento.cliente_id)}
+                          </p>
 
-                  {agendamento.status === "cancelado" && (
-                    <span style={{ color: "#991b1b", fontWeight: "bold" }}>
-                      Cancelado
-                    </span>
-                  )}
+                          <p style={{ margin: "4px 0 0 0", fontSize: "13px" }}>
+                            {servico?.nome || "Serviço"}
+                          </p>
 
-                  {(agendamento.status === "concluido" ||
-                    agendamento.status === "atendido") && (
-                    <span style={{ color: "#166534", fontWeight: "bold" }}>
-                      Atendido
-                    </span>
-                  )}
-                </div>
-              </td>
-            </tr>
-          );
-        })}
+                          <p style={{ margin: "4px 0 0 0", fontSize: "13px" }}>
+                            Status: {agendamento.status}
+                          </p>
+                        </>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </section>
 
-        {agendamentos.length === 0 && (
-          <tr>
-            <td colSpan="11" align="center">
-              Nenhum agendamento encontrado para os filtros selecionados.
-            </td>
-          </tr>
-        )}
-      </tbody>
-      </table>
-      </>
-      )}
-
-{modoVisualizacao === "semanal" && (
-  <section style={cardStyle}>
-    <h2>Agenda Semanal</h2>
-
-    {agendaSemanal.length === 0 ? (
-      <p style={{ color: "#6b7280" }}>
-        Nenhum agendamento encontrado para a semana.
-      </p>
-    ) : (
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))",
-          gap: "15px",
-        }}
-      >
-        {agendaSemanal.map((evento) => (
-        <div
-          key={evento.id}
-          style={{
-            border: "1px solid #bbf7d0",
-            borderRadius: "10px",
-            padding: "15px",
-            background: "#f0fdf4",
-          }}
->
-            <h4>{evento.title}</h4>
-
-            <p>
-              <strong>Início:</strong>
-              <br />
-              {formatarDataHora(evento.start)}
-            </p>
-
-            <p>
-              <strong>Fim:</strong>
-              <br />
-              {formatarDataHora(evento.end)}
-            </p>
-
-            <p>
-              <strong>Barbeiro:</strong>
-              <br />
-              {evento.barbeiro}
-            </p>
-
-            <span
+          <div
+            className={styles.viewToggle}
+            style={{
+              display: "flex",
+              gap: "10px",
+              marginBottom: "20px",
+            }}
+          >
+            <button
+              type="button"
+              onClick={() => setModoVisualizacao("diario")}
               style={{
-                padding: "5px 10px",
-                borderRadius: "20px",
-                fontWeight: "bold",
+                padding: "10px 20px",
+                borderRadius: "8px",
+                border: "none",
+                cursor: "pointer",
                 background:
-                  evento.status === "cancelado"
-                    ? "#fee2e2"
-                    : evento.status === "concluido" || evento.status === "atendido"
-                    ? "#dcfce7"
-                    : "#dbeafe",
-                color:
-                  evento.status === "cancelado"
-                    ? "#991b1b"
-                    : evento.status === "concluido" || evento.status === "atendido"
-                    ? "#166534"
-                    : "#1d4ed8",
+                  modoVisualizacao === "diario" ? "#111827" : "#e5e7eb",
+                color: modoVisualizacao === "diario" ? "#ffffff" : "#111827",
               }}
             >
-              {evento.status === "cancelado"
-                ? "Cancelado"
-                : evento.status === "concluido" || evento.status === "atendido"
-                ? "Atendido"
-                : "Agendado"}
-            </span>
+              📅 Diário
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setModoVisualizacao("semanal")}
+              style={{
+                padding: "10px 20px",
+                borderRadius: "8px",
+                border: "none",
+                cursor: "pointer",
+                background:
+                  modoVisualizacao === "semanal" ? "#111827" : "#e5e7eb",
+                color: modoVisualizacao === "semanal" ? "#ffffff" : "#111827",
+              }}
+            >
+              🗓️ Semanal
+            </button>
           </div>
-        ))}
-      </div>
-    )}
-  </section>
-)}
+
+          {modoVisualizacao === "diario" && (
+            <>
+              <h2>Agendamentos do Dia</h2>
+
+              <div className={styles.tableScroll}>
+                <table
+                  className={styles.agendaTable}
+                  width="100%"
+                  cellPadding="10"
+                  style={{ borderCollapse: "collapse" }}
+                >
+                  <thead>
+                    <tr style={{ background: "#f3f4f6" }}>
+                      <th>ID</th>
+                      <th>Início</th>
+                      <th>Fim</th>
+                      <th>Cliente</th>
+                      <th>Barbeiro</th>
+                      <th>Serviço</th>
+                      <th>Tipo</th>
+                      <th>Duração</th>
+                      <th>Status</th>
+                      <th>Observações</th>
+                      <th>Ações</th>
+                    </tr>
+                  </thead>
+
+                  <tbody>
+                    {agendamentos.map((agendamento) => {
+                      const servico = buscarServico(agendamento.servico_id);
+
+                      return (
+                        <tr
+                          key={agendamento.id}
+                          style={{ borderBottom: "1px solid #ddd" }}
+                        >
+                          <td data-label="ID">{agendamento.id}</td>
+                          <td data-label="Início">
+                            {formatarDataHora(agendamento.data_hora_inicio)}
+                          </td>
+                          <td data-label="Fim">
+                            {formatarDataHora(agendamento.data_hora_fim)}
+                          </td>
+                          <td data-label="Cliente">
+                            {buscarNome(clientes, agendamento.cliente_id)}
+                          </td>
+                          <td data-label="Barbeiro">
+                            {buscarNome(barbeiros, agendamento.barbeiro_id)}
+                          </td>
+                          <td data-label="Serviço">{servico?.nome || "-"}</td>
+
+                          <td data-label="Tipo">
+                            <span
+                              style={{
+                                padding: "5px 10px",
+                                borderRadius: "20px",
+                                fontWeight: "bold",
+                                fontSize: "12px",
+                                background:
+                                  agendamento.tipo_atendimento === "plano"
+                                    ? "#dbeafe"
+                                    : "#dcfce7",
+                                color:
+                                  agendamento.tipo_atendimento === "plano"
+                                    ? "#1d4ed8"
+                                    : "#166534",
+                              }}
+                            >
+                              {agendamento.tipo_atendimento === "plano"
+                                ? "💳 PLANO"
+                                : "💵 AVULSO"}
+                            </span>
+                          </td>
+
+                          <td data-label="Duração">
+                            {servico?.tempo_medio_minutos || "-"} min
+                          </td>
+
+                          <td data-label="Status">
+                            <span
+                              style={{
+                                padding: "5px 10px",
+                                borderRadius: "20px",
+                                fontWeight: "bold",
+                                fontSize: "13px",
+                                ...statusStyle(agendamento.status),
+                              }}
+                            >
+                              {agendamento.status}
+                            </span>
+                          </td>
+
+                          <td data-label="Observações">
+                            {agendamento.observacoes || "-"}
+                          </td>
+
+                          <td data-label="Ações">
+                            <div
+                              style={{
+                                display: "flex",
+                                flexDirection: "column",
+                                gap: "6px",
+                              }}
+                            >
+                              {agendamento.status === "agendado" && (
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    iniciarAtendimento(agendamento.id)
+                                  }
+                                  style={{
+                                    background: "#16a34a",
+                                    color: "#fff",
+                                    border: "none",
+                                    padding: "6px 10px",
+                                    borderRadius: "6px",
+                                    cursor: "pointer",
+                                    fontWeight: "bold",
+                                  }}
+                                >
+                                  ▶ Iniciar
+                                </button>
+                              )}
+
+                              {agendamento.status !== "cancelado" &&
+                                agendamento.status !== "concluido" &&
+                                agendamento.status !== "atendido" && (
+                                  <button
+                                    type="button"
+                                    onClick={() => cancelar(agendamento.id)}
+                                    style={cancelButtonStyle}
+                                  >
+                                    Cancelar
+                                  </button>
+                                )}
+
+                              {agendamento.status === "cancelado" && (
+                                <span
+                                  style={{
+                                    color: "#991b1b",
+                                    fontWeight: "bold",
+                                  }}
+                                >
+                                  Cancelado
+                                </span>
+                              )}
+
+                              {(agendamento.status === "concluido" ||
+                                agendamento.status === "atendido") && (
+                                <span
+                                  style={{
+                                    color: "#166534",
+                                    fontWeight: "bold",
+                                  }}
+                                >
+                                  Atendido
+                                </span>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+
+                    {agendamentos.length === 0 && (
+                      <tr>
+                        <td colSpan="11" align="center">
+                          Nenhum agendamento encontrado para os filtros
+                          selecionados.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </>
+          )}
+
+          {modoVisualizacao === "semanal" && (
+            <section className={styles.card} style={cardStyle}>
+              <h2>Agenda Semanal</h2>
+
+              {agendaSemanal.length === 0 ? (
+                <p style={{ color: "#6b7280" }}>
+                  Nenhum agendamento encontrado para a semana.
+                </p>
+              ) : (
+                <div
+                  className={styles.weeklyGrid}
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))",
+                    gap: "15px",
+                  }}
+                >
+                  {agendaSemanal.map((evento) => (
+                    <div
+                      key={evento.id}
+                      style={{
+                        border: "1px solid #bbf7d0",
+                        borderRadius: "10px",
+                        padding: "15px",
+                        background: "#f0fdf4",
+                      }}
+                    >
+                      <h4>{evento.title}</h4>
+
+                      <p>
+                        <strong>Início:</strong>
+                        <br />
+                        {formatarDataHora(evento.start)}
+                      </p>
+
+                      <p>
+                        <strong>Fim:</strong>
+                        <br />
+                        {formatarDataHora(evento.end)}
+                      </p>
+
+                      <p>
+                        <strong>Barbeiro:</strong>
+                        <br />
+                        {evento.barbeiro}
+                      </p>
+
+                      <span
+                        style={{
+                          padding: "5px 10px",
+                          borderRadius: "20px",
+                          fontWeight: "bold",
+                          background:
+                            evento.status === "cancelado"
+                              ? "#fee2e2"
+                              : evento.status === "concluido" ||
+                                  evento.status === "atendido"
+                                ? "#dcfce7"
+                                : "#dbeafe",
+                          color:
+                            evento.status === "cancelado"
+                              ? "#991b1b"
+                              : evento.status === "concluido" ||
+                                  evento.status === "atendido"
+                                ? "#166534"
+                                : "#1d4ed8",
+                        }}
+                      >
+                        {evento.status === "cancelado"
+                          ? "Cancelado"
+                          : evento.status === "concluido" ||
+                              evento.status === "atendido"
+                            ? "Atendido"
+                            : "Agendado"}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </section>
+          )}
         </>
       )}
     </main>

@@ -1,0 +1,314 @@
+.page {
+  width: 100%;
+  max-width: 1500px;
+  margin: 0 auto;
+  color: #111827;
+  overflow-x: hidden;
+}
+
+.page h1 {
+  margin: 0 0 24px;
+  font-size: clamp(1.75rem, 3vw, 2.4rem);
+  line-height: 1.15;
+}
+
+.page h2 {
+  margin-top: 0;
+  color: #111827;
+}
+
+.page label {
+  display: inline-block;
+  color: #1f2937;
+  font-weight: 700;
+}
+
+.tabs,
+.viewToggle {
+  align-items: stretch;
+}
+
+.tabButton {
+  touch-action: manipulation;
+}
+
+.feedback {
+  border-radius: 10px;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+.formCard,
+.card {
+  box-shadow: 0 8px 22px rgba(15, 23, 42, 0.06);
+}
+
+.form input,
+.form select,
+.form textarea,
+.filterGrid input,
+.filterGrid select {
+  min-height: 48px;
+}
+
+.attendanceTypes > label {
+  min-height: 48px;
+  display: flex !important;
+  align-items: center;
+}
+
+.availabilityGrid,
+.visualGrid,
+.weeklyGrid {
+  min-width: 0;
+}
+
+.timeButton {
+  min-width: 52px;
+  min-height: 42px;
+  touch-action: manipulation;
+}
+
+.metricsGrid {
+  align-items: stretch;
+}
+
+.metricCard {
+  min-height: 118px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.metricCard h3 {
+  margin: 0 0 8px;
+  font-size: clamp(1.45rem, 2.5vw, 2rem);
+  line-height: 1.15;
+}
+
+.metricCard p {
+  margin: 0;
+  color: #374151;
+  font-size: 0.95rem;
+}
+
+.tableScroll {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.agendaTable {
+  min-width: 1050px;
+  background: #fff;
+}
+
+.agendaTable th {
+  text-align: left;
+  white-space: nowrap;
+}
+
+.agendaTable td {
+  vertical-align: top;
+}
+
+@media (max-width: 768px) {
+  .page {
+    padding: 20px 16px 36px !important;
+  }
+
+  .page h1 {
+    margin-bottom: 18px;
+  }
+
+  .page h2 {
+    font-size: 1.35rem;
+  }
+
+  .tabs {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px !important;
+    margin-bottom: 20px !important;
+  }
+
+  .tabButton {
+    width: 100% !important;
+    min-height: 104px !important;
+    padding: 14px !important;
+    transform: none !important;
+  }
+
+  .tabButton h3 {
+    font-size: 1rem;
+  }
+
+  .tabButton p {
+    font-size: 0.85rem;
+    line-height: 1.35;
+  }
+
+  .formCard,
+  .card {
+    width: 100%;
+    max-width: none !important;
+    padding: 16px !important;
+    border-radius: 14px !important;
+  }
+
+  .filterGrid {
+    grid-template-columns: 1fr !important;
+    gap: 4px !important;
+  }
+
+  .metricsGrid {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px !important;
+  }
+
+  .metricCard {
+    min-width: 0 !important;
+    min-height: 110px;
+    padding: 14px !important;
+  }
+
+  .metricCard h3 {
+    overflow-wrap: anywhere;
+  }
+
+  .availability {
+    padding: 12px !important;
+  }
+
+  .availabilityGrid,
+  .visualGrid,
+  .weeklyGrid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .viewToggle {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .viewToggle button {
+    width: 100%;
+    min-height: 48px;
+    padding: 10px 12px !important;
+  }
+
+  .tableScroll {
+    overflow: visible;
+  }
+
+  .agendaTable,
+  .agendaTable tbody,
+  .agendaTable tr,
+  .agendaTable td {
+    display: block;
+    width: 100%;
+  }
+
+  .agendaTable {
+    min-width: 0;
+    background: transparent;
+  }
+
+  .agendaTable thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  .agendaTable tr {
+    margin-bottom: 14px;
+    padding: 8px 14px;
+    border: 1px solid #d1d5db !important;
+    border-radius: 14px;
+    background: #fff;
+    box-shadow: 0 6px 16px rgba(15, 23, 42, 0.07);
+  }
+
+  .agendaTable td {
+    display: grid;
+    grid-template-columns: 104px minmax(0, 1fr);
+    gap: 10px;
+    align-items: start;
+    padding: 10px 0;
+    border-bottom: 1px solid #e5e7eb;
+    overflow-wrap: anywhere;
+  }
+
+  .agendaTable td:last-child {
+    border-bottom: 0;
+  }
+
+  .agendaTable td::before {
+    content: attr(data-label);
+    color: #374151;
+    font-size: 0.82rem;
+    font-weight: 800;
+  }
+
+  .agendaTable td[colspan] {
+    display: block;
+    padding: 16px 4px;
+  }
+
+  .agendaTable td[colspan]::before {
+    content: none;
+  }
+
+  .agendaTable td[data-label="Ações"] button {
+    min-height: 44px;
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .page {
+    padding: 16px 12px 32px !important;
+  }
+
+  .tabs {
+    grid-template-columns: 1fr;
+  }
+
+  .tabButton {
+    min-height: 82px !important;
+  }
+
+  .tabButton > div:first-child {
+    font-size: 30px !important;
+    margin-bottom: 4px !important;
+  }
+
+  .attendanceTypes {
+    display: grid !important;
+    grid-template-columns: 1fr;
+    gap: 8px !important;
+  }
+
+  .attendanceTypes > label {
+    width: 100%;
+  }
+
+  .metricsGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .metricCard {
+    min-height: 96px;
+  }
+
+  .agendaTable td {
+    grid-template-columns: 92px minmax(0, 1fr);
+  }
+}

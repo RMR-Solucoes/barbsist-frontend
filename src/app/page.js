@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 
+import styles from "./dashboard.module.css";
 import { listarClientes } from "@/services/clienteService";
 import { listarBarbeiros } from "@/services/barbeiroService";
 import { listarComandas } from "@/services/comandaService";
@@ -14,12 +15,17 @@ export default function Home() {
   const [comandas, setComandas] = useState([]);
   const [caixa, setCaixa] = useState([]);
   const [produtos, setProdutos] = useState([]);
+  const [carregando, setCarregando] = useState(true);
+  const [erro, setErro] = useState("");
 
   useEffect(() => {
     carregarDashboard();
   }, []);
 
   async function carregarDashboard() {
+    setCarregando(true);
+    setErro("");
+
     try {
       const [
         dadosClientes,
@@ -40,8 +46,11 @@ export default function Home() {
       setComandas(dadosComandas || []);
       setCaixa(dadosCaixa || []);
       setProdutos(dadosProdutos || []);
-    } catch (erro) {
-      console.error("Erro Dashboard:", erro);
+    } catch (error) {
+      console.error("Erro Dashboard:", error);
+      setErro("Não foi possível carregar os indicadores do Dashboard.");
+    } finally {
+      setCarregando(false);
     }
   }
 
@@ -53,26 +62,24 @@ export default function Home() {
   }
 
   const resumo = useMemo(() => {
-    const clientesAtivos = clientes.filter((c) => c.ativo).length;
-    const barbeirosAtivos = barbeiros.filter((b) => b.ativo).length;
-
+    const clientesAtivos = clientes.filter((cliente) => cliente.ativo).length;
+    const barbeirosAtivos = barbeiros.filter((barbeiro) => barbeiro.ativo).length;
     const comandasAbertas = comandas.filter(
-      (c) => c.status === "aberta"
+      (comanda) => comanda.status === "aberta"
     ).length;
-
     const faturamento = caixa
-      .filter((c) => c.tipo === "entrada")
+      .filter((movimento) => movimento.tipo === "entrada")
       .reduce((soma, item) => soma + Number(item.valor || 0), 0);
-
-    const produtosAtivos = produtos.filter((p) => p.ativo !== false).length;
-
-    const produtosEstoqueBaixo = produtos.filter(
-      (p) => Number(p.estoque || 0) <= 2
+    const produtosAtivos = produtos.filter(
+      (produto) => produto.ativo !== false
     ).length;
-
+    const produtosEstoqueBaixo = produtos.filter(
+      (produto) => Number(produto.estoque || 0) <= 2
+    ).length;
     const valorEstoque = produtos.reduce(
-      (soma, p) =>
-        soma + Number(p.preco_venda || 0) * Number(p.estoque || 0),
+      (soma, produto) =>
+        soma +
+        Number(produto.preco_venda || 0) * Number(produto.estoque || 0),
       0
     );
 
@@ -87,102 +94,57 @@ export default function Home() {
     };
   }, [clientes, barbeiros, comandas, caixa, produtos]);
 
-  const cardStyle = {
-    background: "white",
-    padding: "20px",
-    borderRadius: "12px",
-    minWidth: "220px",
-    boxShadow: "0 2px 6px rgba(0,0,0,0.08)",
-  };
+  const indicadores = [
+    ["Clientes Ativos", resumo.clientesAtivos],
+    ["Barbeiros Ativos", resumo.barbeirosAtivos],
+    ["Comandas Abertas", resumo.comandasAbertas],
+    ["Faturamento", formatarMoeda(resumo.faturamento)],
+    ["Produtos Ativos", resumo.produtosAtivos],
+    ["Estoque Baixo", resumo.produtosEstoqueBaixo, true],
+    ["Valor em Estoque", formatarMoeda(resumo.valorEstoque)],
+  ];
 
   return (
-    <>
-      <h1>Sistema de Gestão para Barbearia</h1>
+    <section>
+      <header className={styles.pageHeader}>
+        <h1 className={styles.title}>Sistema de Gestão para Barbearia</h1>
+        <p className={styles.subtitle}>Bem-vindo ao painel administrativo.</p>
+      </header>
 
-      <p>Bem-vindo ao painel administrativo.</p>
+      {carregando && <div className={styles.status}>Carregando indicadores...</div>}
+      {erro && <div className={`${styles.status} ${styles.error}`}>{erro}</div>}
 
-      <div
-        style={{
-          display: "flex",
-          gap: "20px",
-          flexWrap: "wrap",
-          marginTop: "30px",
-        }}
-      >
-        <div style={cardStyle}>
-          <h3>Clientes Ativos</h3>
-          <h2>{resumo.clientesAtivos}</h2>
-        </div>
-
-        <div style={cardStyle}>
-          <h3>Barbeiros Ativos</h3>
-          <h2>{resumo.barbeirosAtivos}</h2>
-        </div>
-
-        <div style={cardStyle}>
-          <h3>Comandas Abertas</h3>
-          <h2>{resumo.comandasAbertas}</h2>
-        </div>
-
-        <div style={cardStyle}>
-          <h3>Faturamento</h3>
-          <h2>{formatarMoeda(resumo.faturamento)}</h2>
-        </div>
-
-        <div style={cardStyle}>
-          <h3>Produtos Ativos</h3>
-          <h2>{resumo.produtosAtivos}</h2>
-        </div>
-
-        <div style={cardStyle}>
-          <h3>Estoque Baixo</h3>
-          <h2 style={{ color: "#dc2626" }}>
-            {resumo.produtosEstoqueBaixo}
-          </h2>
-        </div>
-
-        <div style={cardStyle}>
-          <h3>Valor em Estoque</h3>
-          <h2>{formatarMoeda(resumo.valorEstoque)}</h2>
-        </div>
+      <div className={styles.grid} aria-busy={carregando}>
+        {indicadores.map(([titulo, valor, alerta]) => (
+          <article className={styles.card} key={titulo}>
+            <h2 className={styles.cardTitle}>{titulo}</h2>
+            <p className={`${styles.cardValue} ${alerta ? styles.danger : ""}`}>
+              {valor}
+            </p>
+          </article>
+        ))}
       </div>
 
-      <div
-        style={{
-          marginTop: "30px",
-          background: "white",
-          padding: "20px",
-          borderRadius: "12px",
-          boxShadow: "0 2px 6px rgba(0,0,0,0.08)",
-        }}
-      >
+      <section className={styles.summary}>
         <h2>Resumo Operacional</h2>
-
-        <p>
-          Total de clientes:
-          <strong> {clientes.length}</strong>
-        </p>
-
-        <p>
-          Total de barbeiros:
-          <strong> {barbeiros.length}</strong>
-        </p>
-
-        <p>
-          Total de comandas:
-          <strong> {comandas.length}</strong>
-        </p>
-
-        <p>
-          Movimentações de caixa:
-          <strong> {caixa.length}</strong>
-        </p>
-
-        <p>
-          Total de produtos:
-          <strong> {produtos.length}</strong>
-        </p>
-      </div>
-    </>
+        <div className={styles.summaryGrid}>
+          <p className={styles.summaryItem}>
+            Total de clientes: <strong>{clientes.length}</strong>
+          </p>
+          <p className={styles.summaryItem}>
+            Total de barbeiros: <strong>{barbeiros.length}</strong>
+          </p>
+          <p className={styles.summaryItem}>
+            Total de comandas: <strong>{comandas.length}</strong>
+          </p>
+          <p className={styles.summaryItem}>
+            Movimentações de caixa: <strong>{caixa.length}</strong>
+          </p>
+          <p className={styles.summaryItem}>
+            Total de produtos: <strong>{produtos.length}</strong>
+          </p>
+        </div>
+      </section>
+    </section>
   );
 }
