@@ -13,10 +13,17 @@ import {
   cancelarAgendamentoOnline,
 } from "@/services/agendamentoOnlineService";
 
-import { obterBarbearia } from "@/services/barbeariaService";
+import { obterBarbeariaPublica } from "@/services/barbeariaService";
 
 
 export default function AgendamentoOnlinePage() {
+  const barbeariaSlug =
+    (typeof window !== "undefined"
+      ? new URLSearchParams(window.location.search).get("barbearia")
+      : null) ||
+    process.env.NEXT_PUBLIC_BARBEARIA_SLUG ||
+    "barbsist-admin";
+
   const [barbearia, setBarbearia] = useState(null);
   const hoje = new Date().toISOString().split("T")[0];
 
@@ -73,7 +80,7 @@ export default function AgendamentoOnlinePage() {
 
   async function carregarBarbearia() {
   try {
-    const dados = await obterBarbearia();
+    const dados = await obterBarbeariaPublica(barbeariaSlug);
 
     console.log("BARBEARIA:", dados);
 
@@ -89,8 +96,8 @@ export default function AgendamentoOnlinePage() {
       setErro("");
 
       const [dadosServicos, dadosBarbeiros] = await Promise.all([
-        listarServicosOnline(),
-        listarBarbeirosOnline(),
+        listarServicosOnline(barbeariaSlug),
+        listarBarbeirosOnline(barbeariaSlug),
       ]);
 
       setServicos(dadosServicos || []);
@@ -120,6 +127,7 @@ export default function AgendamentoOnlinePage() {
 
       if (modo === "barbeiro") {
         const dados = await listarHorariosSemanaOnline(
+          barbeariaSlug,
           barbeiroId,
           servicoId,
           dataSelecionada
@@ -128,7 +136,11 @@ export default function AgendamentoOnlinePage() {
         setHorariosSemana(dados || []);
         setHorariosDia([]);
       } else {
-        const dados = await listarHorariosDiaOnline(servicoId, dataSelecionada);
+        const dados = await listarHorariosDiaOnline(
+          barbeariaSlug,
+          servicoId,
+          dataSelecionada
+        );
 
         setHorariosDia(dados || []);
         setHorariosSemana([]);
@@ -191,7 +203,7 @@ export default function AgendamentoOnlinePage() {
   try {
     setSalvando(true);
 
-    await criarAgendamentoOnline(dados);
+    await criarAgendamentoOnline(barbeariaSlug, dados);
 
     setAgendamentoConfirmado({
         cliente: cliente.nome,
@@ -238,6 +250,7 @@ async function consultarAgendamento() {
     setResultadoConsulta(null);
 
     const resultado = await consultarAgendamentoOnline(
+      barbeariaSlug,
       telefoneConsulta
     );
 
@@ -279,6 +292,7 @@ async function buscarAgendamentosParaCancelar() {
 
     const resultado =
       await consultarAgendamentoOnline(
+        barbeariaSlug,
         telefoneCancelamento
       );
 
@@ -301,7 +315,11 @@ async function cancelarAgendamento(id) {
   try {
     setCancelando(true);
 
-    await cancelarAgendamentoOnline(id);
+    await cancelarAgendamentoOnline(
+      barbeariaSlug,
+      telefoneCancelamento,
+      id
+    );
 
     setMensagem(
       "Agendamento cancelado com sucesso."
@@ -323,34 +341,31 @@ async function cancelarAgendamento(id) {
   function abrirWhatsApp() {
   if (!agendamentoConfirmado) return;
 
-  const mensagemWhatsapp = `
-    Olá ${agendamentoConfirmado.cliente}!
+  const mensagemWhatsapp = [
+    `Olá ${agendamentoConfirmado.cliente}!`,
+    "",
+    "Seu agendamento foi confirmado com sucesso.",
+    "",
+    `Serviço: ${agendamentoConfirmado.servico}`,
+    `Barbeiro: ${agendamentoConfirmado.barbeiro}`,
+    `Data: ${formatarData(agendamentoConfirmado.data)}`,
+    `Horário: ${agendamentoConfirmado.horario}`,
+    `Protocolo: ${agendamentoConfirmado.protocolo}`,
+    "",
+    "Obrigado pela preferência.",
+  ].join("\n");
 
-    Seu agendamento foi confirmado com sucesso.
+  const telefoneBarbearia = String(
+    barbearia?.telefone_whatsapp || ""
+  ).replace(/\D/g, "");
 
-    📌 Serviço: ${agendamentoConfirmado.servico}
+  const url = telefoneBarbearia
+    ? `https://wa.me/${telefoneBarbearia}?text=${encodeURIComponent(
+        mensagemWhatsapp
+      )}`
+    : `https://wa.me/?text=${encodeURIComponent(mensagemWhatsapp)}`;
 
-    ✂️ Barbeiro: ${agendamentoConfirmado.barbeiro}
-
-    📅 Data: ${formatarData(
-    agendamentoConfirmado.data
-    )}
-
-    ⏰ Horário: ${agendamentoConfirmado.horario}
-
-    🧾 Protocolo: ${agendamentoConfirmado.protocolo}
-
-    Obrigado pela preferência.
-    `.trim();
-
-  const telefoneBarbearia = barbearia?.telefone_whatsapp || "";
-
-const url = telefoneBarbearia
-  ? `https://wa.me/${telefoneBarbearia}?text=${encodeURIComponent(mensagemWhatsapp)}`
-  : `https://wa.me/?text=${encodeURIComponent(mensagemWhatsapp)}`;
-  
-
-  window.open(url, "_blank");
+  window.open(url, "_blank", "noopener,noreferrer");
 }
 
   function montarObservacoesCliente() {

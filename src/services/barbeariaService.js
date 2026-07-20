@@ -18,3 +18,11 @@ export async function atualizarBarbearia(dados) {
 
   return response.data;
 }
+
+export async function obterBarbeariaPublica(barbeariaSlug) {
+  const slug = encodeURIComponent(barbeariaSlug);
+  const response = await api.get(
+    `/agendamento-online/${slug}/barbearia`
+  );
+  return response.data;
+}

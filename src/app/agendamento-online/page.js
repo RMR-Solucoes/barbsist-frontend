@@ -12,9 +12,16 @@ import {
   cancelarAgendamentoOnline,
 } from "@/services/agendamentoOnlineService";
 
-import { obterBarbearia } from "@/services/barbeariaService";
+import { obterBarbeariaPublica } from "@/services/barbeariaService";
 
 export default function AgendamentoOnlinePage() {
+  const barbeariaSlug =
+    (typeof window !== "undefined"
+      ? new URLSearchParams(window.location.search).get("barbearia")
+      : null) ||
+    process.env.NEXT_PUBLIC_BARBEARIA_SLUG ||
+    "barbsist-admin";
+
   const hoje = new Date().toISOString().split("T")[0];
 
   const [abaAtiva, setAbaAtiva] = useState("agendar");
@@ -69,7 +76,7 @@ export default function AgendamentoOnlinePage() {
   
   async function carregarBarbearia() {
     try {
-      const dados = await obterBarbearia();
+      const dados = await obterBarbeariaPublica(barbeariaSlug);
       setBarbearia(dados);
     } catch (error) {
       console.error(error);
@@ -82,8 +89,8 @@ export default function AgendamentoOnlinePage() {
       setErro("");
 
       const [dadosServicos, dadosBarbeiros] = await Promise.all([
-        listarServicosOnline(),
-        listarBarbeirosOnline(),
+        listarServicosOnline(barbeariaSlug),
+        listarBarbeirosOnline(barbeariaSlug),
       ]);
 
       setServicos(dadosServicos || []);
@@ -113,6 +120,7 @@ export default function AgendamentoOnlinePage() {
 
       if (modo === "barbeiro") {
         const dados = await listarHorariosSemanaOnline(
+          barbeariaSlug,
           barbeiroId,
           servicoId,
           dataSelecionada
@@ -121,7 +129,11 @@ export default function AgendamentoOnlinePage() {
         setHorariosSemana(dados || []);
         setHorariosDia([]);
       } else {
-        const dados = await listarHorariosDiaOnline(servicoId, dataSelecionada);
+        const dados = await listarHorariosDiaOnline(
+          barbeariaSlug,
+          servicoId,
+          dataSelecionada
+        );
 
         setHorariosDia(dados || []);
         setHorariosSemana([]);
@@ -200,7 +212,10 @@ export default function AgendamentoOnlinePage() {
     try {
       setSalvando(true);
 
-      const agendamentoCriado = await criarAgendamentoOnline(dados);
+      const agendamentoCriado = await criarAgendamentoOnline(
+        barbeariaSlug,
+        dados
+      );
 
       setAgendamentoConfirmado({
         cliente: cliente.nome.trim(),
@@ -248,7 +263,10 @@ export default function AgendamentoOnlinePage() {
     try {
       setCarregando(true);
 
-      const dados = await consultarAgendamentoOnline(telefoneConsulta.trim());
+      const dados = await consultarAgendamentoOnline(
+        barbeariaSlug,
+        telefoneConsulta.trim()
+      );
 
       setResultadoConsulta(dados);
     } catch (error) {
@@ -276,6 +294,7 @@ export default function AgendamentoOnlinePage() {
       setCarregando(true);
 
       const dados = await consultarAgendamentoOnline(
+        barbeariaSlug,
         telefoneCancelamento.trim()
       );
 
@@ -305,6 +324,7 @@ export default function AgendamentoOnlinePage() {
       setSalvando(true);
 
       await cancelarAgendamentoOnline(
+        barbeariaSlug,
         telefoneCancelamento.trim(),
         agendamentoId
       );
