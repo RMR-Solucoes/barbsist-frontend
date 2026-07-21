@@ -34,6 +34,7 @@ export default function ConfiguracoesPage() {
   const [barbearia, setBarbearia] = useState({
 
   id: null,
+  slug: "",
   nome: "",
   responsavel: "",
   email: "",
@@ -54,6 +55,7 @@ export default function ConfiguracoesPage() {
 
 const [barbeariaExiste, setBarbeariaExiste] = useState(false);
 const [salvandoBarbearia, setSalvandoBarbearia] = useState(false);
+const [linkAgendamento, setLinkAgendamento] = useState("");
 
   const diasSemana = [
     "SEGUNDA",
@@ -77,9 +79,68 @@ const [salvandoBarbearia, setSalvandoBarbearia] = useState(false);
     }
   }, [barbeiroSelecionado]);
 
+  useEffect(() => {
+    if (typeof window !== "undefined" && barbearia.slug) {
+      const slugSeguro = encodeURIComponent(barbearia.slug);
+
+      setLinkAgendamento(
+        `${window.location.origin}/agendar?barbearia=${slugSeguro}`
+      );
+    } else {
+      setLinkAgendamento("");
+    }
+  }, [barbearia.slug]);
+
   function limparMensagens() {
     setMensagem("");
     setErro("");
+  }
+
+  async function copiarLinkAgendamento() {
+    limparMensagens();
+
+    if (!linkAgendamento) {
+      setErro(
+        "O link ainda não está disponível. Salve primeiro os dados da barbearia."
+      );
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(linkAgendamento);
+      setMensagem("Link público de agendamento copiado com sucesso.");
+    } catch {
+      setErro(
+        "Não foi possível copiar o link automaticamente. Selecione e copie o endereço manualmente."
+      );
+    }
+  }
+
+  function compartilharLinkWhatsApp() {
+    limparMensagens();
+
+    if (!linkAgendamento) {
+      setErro(
+        "O link ainda não está disponível. Salve primeiro os dados da barbearia."
+      );
+      return;
+    }
+
+    const nomeBarbearia =
+      barbearia.nome || "nossa barbearia";
+
+    const mensagemWhatsApp =
+      `Olá! Agende seu horário na ${nomeBarbearia} pelo link:\n\n` +
+      linkAgendamento;
+
+    const urlWhatsApp =
+      `https://wa.me/?text=${encodeURIComponent(mensagemWhatsApp)}`;
+
+    window.open(
+      urlWhatsApp,
+      "_blank",
+      "noopener,noreferrer"
+    );
   }
 
   async function carregarConfiguracoes() {
@@ -190,6 +251,7 @@ const [salvandoBarbearia, setSalvandoBarbearia] = useState(false);
 
     setBarbearia({
   id: dados.id || null,
+  slug: dados.slug || "",
   nome: dados.nome || "",
   responsavel: dados.responsavel || "",
   email: dados.email || "",
@@ -249,15 +311,23 @@ async function salvarBarbearia() {
 
     let dadosSalvos;
 
+    const {
+      id,
+      slug,
+      created_at,
+      ...dadosParaSalvar
+    } = barbearia;
+
     if (barbeariaExiste) {
-      dadosSalvos = await atualizarBarbearia(barbearia);
+      dadosSalvos = await atualizarBarbearia(dadosParaSalvar);
     } else {
-      dadosSalvos = await criarBarbearia(barbearia);
+      dadosSalvos = await criarBarbearia(dadosParaSalvar);
       setBarbeariaExiste(true);
     }
 
     setBarbearia({
   id: dadosSalvos.id || null,
+  slug: dadosSalvos.slug || "",
   nome: dadosSalvos.nome || "",
   responsavel: dadosSalvos.responsavel || "",
   email: dadosSalvos.email || "",
@@ -582,6 +652,103 @@ const estadosBrasil = [
         <strong>{barbearia.id || "—"}</strong>
       </div>
     </div>
+
+        <div
+          style={{
+            ...cardStyle,
+            maxWidth: "1000px",
+            background: "#f8fafc",
+            border: "1px solid #bfdbfe",
+          }}
+        >
+          <h3 style={{ marginTop: 0, marginBottom: "8px" }}>
+            🌐 Link Público de Agendamento
+          </h3>
+
+          <p
+            style={{
+              color: "#6b7280",
+              marginTop: 0,
+              marginBottom: "16px",
+              lineHeight: 1.5,
+            }}
+          >
+            Copie este endereço e envie aos clientes para que eles possam
+            realizar agendamentos online.
+          </p>
+
+          {linkAgendamento ? (
+            <>
+              <input
+                type="text"
+                value={linkAgendamento}
+                readOnly
+                onFocus={(e) => e.target.select()}
+                style={{
+                  ...inputPadraoStyle,
+                  marginBottom: "12px",
+                  background: "#ffffff",
+                  cursor: "text",
+                }}
+              />
+
+              <div
+                style={{
+                  display: "flex",
+                  gap: "10px",
+                  flexWrap: "wrap",
+                }}
+              >
+                <button
+                  type="button"
+                  onClick={copiarLinkAgendamento}
+                  style={buttonStyle}
+                >
+                  📋 Copiar Link
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    window.open(
+                      linkAgendamento,
+                      "_blank",
+                      "noopener,noreferrer"
+                    )
+                  }
+                  style={{
+                    ...buttonStyle,
+                    background: "#2563eb",
+                  }}
+                >
+                  🌐 Abrir Link
+                </button>
+                <button
+                  type="button"
+                  onClick={compartilharLinkWhatsApp}
+                  style={{
+                    ...buttonStyle,
+                    background: "#16a34a",
+                  }}
+                >
+                  📱 Compartilhar no WhatsApp
+                </button>
+              </div>
+            </>
+          ) : (
+            <div
+              style={{
+                padding: "14px",
+                borderRadius: "8px",
+                background: "#fef3c7",
+                color: "#92400e",
+              }}
+            >
+              O link será gerado após o cadastro da barbearia possuir um
+              identificador público.
+            </div>
+          )}
+        </div>
 
     <div style={{ ...cardStyle, maxWidth: "1000px" }}>
       <h3 style={{ marginTop: 0 }}>Dados cadastrais</h3>

@@ -48,7 +48,7 @@ export default function LayoutAdmin({ children }) {
       background: "#1e293b",
       items: [
         { label: "📅 Agenda", href: "/agenda" },
-        { label: "🌐 Agendamento Online", href: "/agendar" },
+        
       ],
     },
     {
