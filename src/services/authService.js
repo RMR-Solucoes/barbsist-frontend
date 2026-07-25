@@ -14,3 +14,23 @@ export async function buscarUsuarioLogado() {
 
   return resposta.data;
 }
+
+export async function solicitarRecuperacaoSenha(
+  dados
+) {
+  const resposta = await api.post(
+    "/auth/esqueci-senha",
+    dados
+  );
+
+  return resposta.data;
+}
+
+export async function redefinirSenha(dados) {
+  const resposta = await api.post(
+    "/auth/redefinir-senha",
+    dados
+  );
+
+  return resposta.data;
+}

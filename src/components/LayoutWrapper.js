@@ -21,12 +21,14 @@ export default function LayoutWrapper({
   } = useAuth();
 
   const paginasPublicas = [
-    "/login",
-    "/agendar",
-    "/consultar-agendamento",
-    "/cancelar-agendamento",
-  ];
-
+  "/login",
+  "/cadastro",
+  "/esqueci-senha",
+  "/redefinir-senha",
+  "/agendar",
+  "/consultar-agendamento",
+  "/cancelar-agendamento",
+];
   const paginaPublica = paginasPublicas.some(
     (rota) =>
       pathname === rota ||

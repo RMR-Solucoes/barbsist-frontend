@@ -1,41 +1,24 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-
-import { useAuth } from "@/contexts/AuthContext";
-
-import styles from "./login.module.css";
+import { useState } from "react";
 import Link from "next/link";
 
-export default function LoginPage() {
-  const router = useRouter();
+import {
+  solicitarRecuperacaoSenha,
+} from "@/services/authService";
 
-  const {
-    entrar,
-    autenticado,
-    carregando,
-  } = useAuth();
+import styles from "../login/login.module.css";
 
+export default function EsqueciSenhaPage() {
   const [formulario, setFormulario] = useState({
     barbearia_slug: "",
     email: "",
-    senha: "",
   });
 
   const [erro, setErro] = useState("");
+  const [mensagem, setMensagem] = useState("");
   const [enviando, setEnviando] =
     useState(false);
-
-  useEffect(() => {
-    if (!carregando && autenticado) {
-      router.replace("/");
-    }
-  }, [
-    carregando,
-    autenticado,
-    router,
-  ]);
 
   function alterarCampo(evento) {
     const { name, value } = evento.target;
@@ -46,6 +29,7 @@ export default function LoginPage() {
     }));
 
     setErro("");
+    setMensagem("");
   }
 
   async function enviarFormulario(evento) {
@@ -56,19 +40,23 @@ export default function LoginPage() {
     }
 
     setErro("");
+    setMensagem("");
     setEnviando(true);
 
     try {
-      await entrar({
-        barbearia_slug:
-          formulario.barbearia_slug.trim(),
-        email: formulario.email
-          .trim()
-          .toLowerCase(),
-        senha: formulario.senha,
-      });
+      const resposta =
+        await solicitarRecuperacaoSenha({
+          barbearia_slug:
+            formulario.barbearia_slug.trim(),
+          email: formulario.email
+            .trim()
+            .toLowerCase(),
+        });
 
-      router.replace("/");
+      setMensagem(
+        resposta.mensagem ||
+          "As instruções foram enviadas."
+      );
     } catch (error) {
       const detalhe =
         error.response?.data?.detail;
@@ -76,19 +64,11 @@ export default function LoginPage() {
       setErro(
         typeof detalhe === "string"
           ? detalhe
-          : "Não foi possível realizar o login."
+          : "Não foi possível solicitar a recuperação."
       );
     } finally {
       setEnviando(false);
     }
-  }
-
-  if (carregando || autenticado) {
-    return (
-      <main className={styles.carregando}>
-        Verificando acesso...
-      </main>
-    );
   }
 
   return (
@@ -103,14 +83,12 @@ export default function LoginPage() {
         </div>
 
         <div>
-          <h1>
-            Gestão completa para sua barbearia
-          </h1>
+          <h1>Recupere seu acesso</h1>
 
           <p>
-            Organize clientes, agenda, comandas,
-            planos e o financeiro em um único
-            lugar.
+            Informe os dados cadastrados para
+            receber o link de redefinição de
+            senha.
           </p>
         </div>
 
@@ -129,11 +107,11 @@ export default function LoginPage() {
               💈 BarbSist
             </span>
 
-            <h2>Acessar o sistema</h2>
+            <h2>Esqueci minha senha</h2>
 
             <p>
-              Informe os dados fornecidos no
-              cadastro da sua barbearia.
+              Informe a barbearia e o e-mail
+              da sua conta.
             </p>
           </div>
 
@@ -143,6 +121,24 @@ export default function LoginPage() {
               role="alert"
             >
               {erro}
+            </div>
+          )}
+
+          {mensagem && (
+            <div
+              style={{
+                marginBottom: "20px",
+                padding: "13px 14px",
+                border: "1px solid #bbf7d0",
+                borderRadius: "10px",
+                color: "#166534",
+                background: "#f0fdf4",
+                fontSize: "14px",
+                lineHeight: "1.4",
+              }}
+              role="status"
+            >
+              {mensagem}
             </div>
           )}
 
@@ -172,44 +168,10 @@ export default function LoginPage() {
               value={formulario.email}
               onChange={alterarCampo}
               placeholder="seuemail@exemplo.com"
-              autoComplete="username"
+              autoComplete="email"
               required
             />
           </label>
-
-          <label className={styles.campo}>
-            <span>Senha</span>
-
-            <input
-              type="password"
-              name="senha"
-              value={formulario.senha}
-              onChange={alterarCampo}
-              placeholder="Digite sua senha"
-              autoComplete="current-password"
-              required
-            />
-          </label>
-
-          <div
-            style={{
-              marginTop: "-8px",
-              marginBottom: "18px",
-              textAlign: "right",
-            }}
-          >
-            <Link
-              href="/esqueci-senha"
-              style={{
-                color: "#2563eb",
-                fontSize: "14px",
-                fontWeight: "600",
-                textDecoration: "none",
-              }}
-            >
-              Esqueceu sua senha?
-            </Link>
-          </div>
 
           <button
             type="submit"
@@ -217,13 +179,14 @@ export default function LoginPage() {
             disabled={enviando}
           >
             {enviando
-              ? "Entrando..."
-              : "Entrar"}
+              ? "Enviando..."
+              : "Enviar instruções"}
           </button>
 
           <p className={styles.ajuda}>
-            Não possui acesso? Entre em contato
-            com o administrador da sua barbearia.
+            <Link href="/login">
+              Voltar para o login
+            </Link>
           </p>
         </form>
       </section>
