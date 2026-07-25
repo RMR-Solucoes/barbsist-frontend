@@ -221,6 +221,17 @@ export default function LoginPage() {
               : "Entrar"}
           </button>
 
+          <Link
+            href="/cadastro"
+            style={{
+              color: "#2563eb",
+              fontWeight: "600",
+              textDecoration: "none",
+            }}
+          >
+            Criar minha barbearia
+          </Link>
+
           <p className={styles.ajuda}>
             Não possui acesso? Entre em contato
             com o administrador da sua barbearia.
