@@ -41,3 +41,8 @@ export async function converterAgendamentoEmComanda(id) {
   const response = await api.post(`/agendamentos/${id}/converter-comanda`);
   return response.data;
 }
+
+export async function listarMinhaAgenda(params = {}) {
+  const resposta = await api.get("/agendamentos/minha-agenda", { params });
+  return resposta.data;
+}

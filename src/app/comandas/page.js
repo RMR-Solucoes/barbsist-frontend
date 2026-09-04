@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 
 import {
   listarComandas,
+  criarComanda,
   buscarComanda,
   adicionarServicoComanda,
   adicionarProdutoComanda,
@@ -14,12 +15,20 @@ import {
 
 import { listarServicos } from "@/services/servicoService";
 import { listarProdutos } from "@/services/produtoService";
+import { listarClientes } from "@/services/clienteService";
+import { listarBarbeiros } from "@/services/barbeiroService";
 
 
 export default function ComandasPage() {
   const [comandas, setComandas] = useState([]);
   const [servicos, setServicos] = useState([]);
   const [produtos, setProdutos] = useState([]);
+  const [clientes, setClientes] = useState([]);
+  const [barbeiros, setBarbeiros] = useState([]);
+
+  const [novoClienteId, setNovoClienteId] = useState("");
+  const [novoBarbeiroId, setNovoBarbeiroId] = useState("");
+  const [abrindoComanda, setAbrindoComanda] = useState(false);
 
   const [
     comandaSelecionada,
@@ -88,6 +97,20 @@ export default function ComandasPage() {
       const dadosServicos = await listarServicos();
       setServicos(dadosServicos || []);
 
+      const dadosClientes = await listarClientes();
+      setClientes(
+        Array.isArray(dadosClientes)
+          ? dadosClientes
+          : []
+      );
+
+      const dadosBarbeiros = await listarBarbeiros();
+      setBarbeiros(
+        Array.isArray(dadosBarbeiros)
+          ? dadosBarbeiros
+          : []
+      );
+
       try {
         const dadosProdutos = await listarProdutos();
         setProdutos(dadosProdutos || []);
@@ -132,6 +155,45 @@ export default function ComandasPage() {
           "Erro ao carregar comandas."
         )
       );
+    }
+  }
+
+
+  async function abrirNovaComanda() {
+    try {
+      setErro("");
+      setMensagem("");
+      setAbrindoComanda(true);
+
+      const novaComanda = await criarComanda({
+        cliente_id: novoClienteId
+          ? Number(novoClienteId)
+          : null,
+        barbeiro_id: novoBarbeiroId
+          ? Number(novoBarbeiroId)
+          : null,
+      });
+
+      setNovoClienteId("");
+      setNovoBarbeiroId("");
+
+      await carregarComandas();
+      await selecionarComanda(novaComanda.id);
+
+      setMensagem(
+        `Comanda #${novaComanda.id} aberta com sucesso.`
+      );
+    } catch (error) {
+      console.error(error);
+
+      setErro(
+        obterDetalheErro(
+          error,
+          "Erro ao abrir nova comanda."
+        )
+      );
+    } finally {
+      setAbrindoComanda(false);
     }
   }
 
@@ -314,7 +376,6 @@ export default function ComandasPage() {
     try {
       setErro("");
       setMensagem("");
-utilizar
       await adicionarProdutoComanda(
         comandaSelecionada.id,
         {
@@ -717,7 +778,7 @@ utilizar
           color: "#4b5563",
         }}
       >
-        Controle operacional de comandas abertas e fechadas.
+        Atendimentos e vendas de produtos em um único fluxo.
       </p>
 
       {mensagem && (
@@ -747,6 +808,149 @@ utilizar
           {erro}
         </div>
       )}
+
+      <section
+        style={{
+          ...cardStyle,
+          marginBottom: "25px",
+        }}
+      >
+        <div style={{ marginBottom: "18px" }}>
+          <h2 style={{ margin: 0 }}>
+            Abrir nova comanda
+          </h2>
+
+          <p
+            style={{
+              color: "#6b7280",
+              margin: "6px 0 0",
+            }}
+          >
+            Use a mesma comanda para atendimento,
+            venda de produtos ou ambos.
+          </p>
+        </div>
+
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns:
+              "repeat(auto-fit, minmax(220px, 1fr))",
+            gap: "15px",
+            alignItems: "end",
+          }}
+        >
+          <div>
+            <label
+              style={{
+                display: "block",
+                marginBottom: "6px",
+                fontWeight: "600",
+              }}
+            >
+              Cliente
+            </label>
+
+            <select
+              value={novoClienteId}
+              onChange={(event) =>
+                setNovoClienteId(event.target.value)
+              }
+              style={inputStyle}
+            >
+              <option value="">
+                Cliente avulso
+              </option>
+
+              {clientes
+                .filter(
+                  (cliente) =>
+                    cliente.ativo !== false
+                )
+                .map((cliente) => (
+                  <option
+                    key={cliente.id}
+                    value={cliente.id}
+                  >
+                    {cliente.nome}
+                  </option>
+                ))}
+            </select>
+          </div>
+
+          <div>
+            <label
+              style={{
+                display: "block",
+                marginBottom: "6px",
+                fontWeight: "600",
+              }}
+            >
+              Barbeiro
+            </label>
+
+            <select
+              value={novoBarbeiroId}
+              onChange={(event) =>
+                setNovoBarbeiroId(event.target.value)
+              }
+              style={inputStyle}
+            >
+              <option value="">
+                Sem barbeiro
+              </option>
+
+              {barbeiros
+                .filter(
+                  (barbeiro) =>
+                    barbeiro.ativo !== false
+                )
+                .map((barbeiro) => (
+                  <option
+                    key={barbeiro.id}
+                    value={barbeiro.id}
+                  >
+                    {barbeiro.nome}
+                  </option>
+                ))}
+            </select>
+          </div>
+
+          <div>
+            <button
+              type="button"
+              onClick={abrirNovaComanda}
+              disabled={abrindoComanda}
+              style={{
+                ...buttonStyle,
+                width: "100%",
+                opacity: abrindoComanda
+                  ? 0.6
+                  : 1,
+              }}
+            >
+              {abrindoComanda
+                ? "Abrindo..."
+                : "Abrir Comanda"}
+            </button>
+          </div>
+        </div>
+
+        <div
+          style={{
+            marginTop: "12px",
+            padding: "10px 12px",
+            borderRadius: "8px",
+            background: "#f3f4f6",
+            color: "#4b5563",
+            fontSize: "13px",
+          }}
+        >
+          Para venda somente de produtos, cliente e
+          barbeiro podem ficar em branco. Para serviços,
+          selecione um barbeiro.
+        </div>
+      </section>
 
       <section
         style={{
@@ -785,7 +989,7 @@ utilizar
       <section
         style={{
           display: "grid",
-          gridTemplateColumns: "1.3fr 1fr",
+          gridTemplateColumns: "1.65fr 1fr",
           gap: "20px",
           alignItems: "start",
         }}
@@ -819,26 +1023,28 @@ utilizar
               style={{
                 borderCollapse: "collapse",
                 background: "#fff",
+                fontSize: "13px",
               }}
             >
               <thead>
                 <tr
                   style={{
-                    background: "#f3f4f6",
+                    background: "#334155",
+                    color: "#ffffff",
                     textAlign: "left",
                   }}
                 >
-                  <th>ID</th>
-                  <th>Cliente</th>
-                  <th>Barbeiro</th>
-                  <th>Status</th>
-                  <th>Total</th>
+                  <th style={{ padding: "14px 12px" }}>ID</th>
+                  <th style={{ padding: "14px 12px" }}>Cliente</th>
+                  <th style={{ padding: "14px 12px" }}>Barbeiro</th>
+                  <th style={{ padding: "14px 12px" }}>Status</th>
+                  <th style={{ padding: "14px 12px", textAlign: "right" }}>Total</th>
                   <th>Ações</th>
                 </tr>
               </thead>
 
               <tbody>
-                {comandas.map((comanda) => (
+                {comandas.map((comanda, index) => (
                   <tr
                     key={comanda.id}
                     style={{
@@ -847,8 +1053,10 @@ utilizar
                       background:
                         comandaSelecionada?.id ===
                         comanda.id
-                          ? "#eff6ff"
-                          : "#fff",
+                          ? "#dbeafe"
+                          : index % 2 === 0
+                            ? "#ffffff"
+                            : "#f1f5f9",
                     }}
                   >
                     <td>#{comanda.id}</td>
@@ -867,7 +1075,7 @@ utilizar
                         style={{
                           padding: "5px 8px",
                           borderRadius: "999px",
-                          fontSize: "12px",
+                          fontSize: "13px",
                           fontWeight: "700",
                           background:
                             comanda.status === "aberta"
@@ -929,7 +1137,12 @@ utilizar
           </div>
         </div>
 
-        <aside style={cardStyle}>
+        <aside
+          style={{
+            ...cardStyle,
+            fontSize: "13px",
+          }}
+        >
           {!comandaSelecionada ? (
             <div>
               <h2>Operação da Comanda</h2>
@@ -1156,7 +1369,7 @@ utilizar
                                 item.quantidade === 1 &&
                                 (
                                   assinatura?.servicos_permitidos_ids || []
-                                ).includes(Number(item.servico_id)) (
+                                ).includes(Number(item.servico_id)) && (
                                     <div>
                                       <button
                                         onClick={() =>

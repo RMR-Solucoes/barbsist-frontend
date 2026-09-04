@@ -105,7 +105,7 @@ export default function ContasPagarPage() {
         ) : contas.length === 0 ? (
           <p>Nenhuma conta encontrada.</p>
         ) : (
-          <table
+          <table className="financeTableBarbSist"
             width="100%"
             cellPadding="10"
             style={{ borderCollapse: "collapse" }}

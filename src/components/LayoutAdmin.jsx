@@ -13,7 +13,11 @@ export default function LayoutAdmin({ children }) {
   const { usuario, sair } = useAuth();
   const [menuAberto, setMenuAberto] = useState(false);
 
-  const rotasCadastros = ["/clientes", "/barbeiro", "/servicos", "/planos"];
+  const superadminGlobal =
+    String(usuario?.perfil || "").toLowerCase() === "superadmin" &&
+    usuario?.barbearia_id == null;
+
+  const rotasCadastros = ["/clientes", "/barbeiro", "/servicos", "/planos", "/assinaturas", "/usuarios", "/estilos"];
   const estaNaAreaCadastros = rotasCadastros.some(
     (rota) => pathname === rota || pathname.startsWith(`${rota}/`)
   );
@@ -66,6 +70,7 @@ export default function LayoutAdmin({ children }) {
         { label: "💵 Financeiro", href: "/financeiro" },
         { label: "💰 Caixa", href: "/caixa" },
         { label: "🏆 Comissões", href: "/comissoes" },
+        { label: "💳 Mercado Pago", href: "/mercado-pago" },
       ],
     },
   ];
@@ -75,6 +80,9 @@ export default function LayoutAdmin({ children }) {
     { label: "✂️ Barbeiros", href: "/barbeiro" },
     { label: "🧰 Serviços", href: "/servicos" },
     { label: "💳 Planos", href: "/planos" },
+    { label: "🪪 Assinaturas", href: "/assinaturas" },
+    { label: "👤 Usuários", href: "/usuarios" },
+    { label: "🎨 Estilos", href: "/estilos" },
   ];
 
   function itemEstaAtivo(href) {
@@ -120,64 +128,167 @@ export default function LayoutAdmin({ children }) {
         <hr className={styles.divider} />
 
         <nav aria-label="Menu administrativo">
-          <Link href="/" className={classesLink(styles.dashboardLink, "/")}>
-            📊 Dashboard
-          </Link>
+          {superadminGlobal ? (
+            <>
+              <Link
+                href="/admin-plataforma"
+                className={classesLink(
+                  styles.dashboardLink,
+                  "/admin-plataforma"
+                )}
+              >
+                Admin Plataforma
+              </Link>
 
-          {menuGroups.map((grupo) => (
-            <div
-              key={grupo.titulo}
-              className={styles.menuGroup}
-              style={{ background: grupo.background }}
-            >
-              <div className={styles.groupTitle}>{grupo.titulo}</div>
-              {grupo.items.map((item) => (
+              <div className={styles.systemGroup}>
+                <div className={styles.groupTitle}>
+                  ADMINISTRACAO
+                </div>
+
                 <Link
-                  key={item.href}
-                  href={item.href}
-                  className={classesLink(styles.menuLink, item.href)}
+                  href="/minha-conta"
+                  className={classesLink(
+                    styles.menuLink,
+                    "/minha-conta"
+                  )}
                 >
-                  {item.label}
+                  &#128274; Minha Conta
                 </Link>
-              ))}
-            </div>
-          ))}
-
-          <div className={`${styles.systemGroup}`}>
-            <div className={styles.groupTitle}>⚙️ SISTEMA</div>
-            <Link
-              href="/configuracoes"
-              className={classesLink(styles.menuLink, "/configuracoes")}
-            >
-              ⚙️ Configurações
-            </Link>
-
-            <button
-              type="button"
-              onClick={() => setCadastrosAbertos((aberto) => !aberto)}
-              className={`${styles.cadastroButton} ${
-                estaNaAreaCadastros ? styles.active : ""
-              }`}
-              aria-expanded={cadastrosAbertos}
-            >
-              <span>📋 Cadastros</span>
-              <span aria-hidden="true">{cadastrosAbertos ? "▾" : "▸"}</span>
-            </button>
-
-            {cadastrosAbertos && (
-              <div className={styles.submenu}>
-                {menuCadastros.map((item) => (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    className={classesLink(styles.submenuLink, item.href)}
-                  >
-                    {item.label}
-                  </Link>
-                ))}
               </div>
-            )}
-          </div>
+            </>
+          ) : (
+            <>
+              <Link
+                href="/"
+                className={classesLink(
+                  styles.dashboardLink,
+                  "/"
+                )}
+              >
+                📊 Dashboard
+              </Link>
+
+              {menuGroups.map((grupo) => (
+                <div
+                  key={grupo.titulo}
+                  className={styles.menuGroup}
+                  style={{ background: grupo.background }}
+                >
+                  <div className={styles.groupTitle}>
+                    {grupo.titulo}
+                  </div>
+
+                  {grupo.items.map((item) => (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      className={classesLink(
+                        styles.menuLink,
+                        item.href
+                      )}
+                    >
+                      {item.label}
+                    </Link>
+                  ))}
+                </div>
+              ))}
+
+              <div className={styles.systemGroup}>
+                <div className={styles.groupTitle}>
+                  ⚙️ SISTEMA
+                </div>
+
+                <Link
+                  href="/configuracoes"
+                  className={classesLink(
+                    styles.menuLink,
+                    "/configuracoes"
+                  )}
+                >
+                  ⚙️ Configurações
+                </Link>
+
+                {String(usuario?.perfil || "").toLowerCase() ===
+                  "barbeiro" && (
+                  <Link
+                    href="/meu-trabalho"
+                    className={classesLink(
+                      styles.menuLink,
+                      "/meu-trabalho"
+                    )}
+                  >
+                    💼 Meu Trabalho
+                  </Link>
+                )}
+
+                <Link
+                  href="/minha-conta"
+                  className={classesLink(
+                    styles.menuLink,
+                    "/minha-conta"
+                  )}
+                >
+                  &#128274; Minha Conta
+                </Link>
+
+                <Link
+                  href="/minha-assinatura"
+                  className={classesLink(
+                    styles.menuLink,
+                    "/minha-assinatura"
+                  )}
+                >
+                  💳 Minha Assinatura BarbSist
+                </Link>
+
+                {String(usuario?.perfil || "").toLowerCase() ===
+                  "superadmin" && (
+                  <Link
+                    href="/admin-plataforma"
+                    className={classesLink(
+                      styles.menuLink,
+                      "/admin-plataforma"
+                    )}
+                  >
+                    Admin Plataforma
+                  </Link>
+                )}
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    setCadastrosAbertos((aberto) => !aberto)
+                  }
+                  className={`${styles.cadastroButton} ${
+                    estaNaAreaCadastros ? styles.active : ""
+                  }`}
+                  aria-expanded={cadastrosAbertos}
+                >
+                  <span>📁 Cadastros</span>
+                  <span aria-hidden="true">
+                    {cadastrosAbertos ? "▲" : "▼"}
+                  </span>
+                </button>
+
+                {cadastrosAbertos && (
+                  <div className={styles.submenu}>
+                    {menuCadastros.map((item) => (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        className={classesLink(
+                          styles.submenuLink,
+                          item.href
+                        )}
+                      >
+                        {item.label}
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </>
+          )}
         </nav>
 
         <div className={styles.userArea}>

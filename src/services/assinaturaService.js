@@ -43,3 +43,40 @@ export async function atualizarAssinatura(id, dados) {
 
   return response.data;
 }
+
+export async function cancelarAssinatura(id, dados = {}) {
+  const response = await api.put(
+    `/planos/assinaturas/${id}/cancelar`,
+    dados
+  );
+  return response.data;
+}
+
+export async function verificarInadimplencia() {
+  const response = await api.put(
+    "/planos/assinaturas/verificar-inadimplencia"
+  );
+  return response.data;
+}
+
+export async function listarPagamentosCliente(clienteId) {
+  const response = await api.get(
+    `/planos/cliente/${clienteId}/pagamentos`
+  );
+  return response.data;
+}
+
+export async function registrarPagamentoPlano(dados) {
+  const response = await api.post("/planos/pagamento", dados);
+  return response.data;
+}
+
+export async function listarPagamentosPlanos(params = {}) {
+  const response = await api.get("/planos/pagamentos", { params });
+  return response.data;
+}
+
+export async function usarPlanoDireto(dados) {
+  const response = await api.post("/planos/usar", dados);
+  return response.data;
+}

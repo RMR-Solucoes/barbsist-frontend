@@ -24,3 +24,8 @@ export async function deletarProduto(id) {
   const response = await api.delete(`/produtos/${id}`);
   return response.data;
 }
+
+export async function reativarProduto(id) {
+  const response = await api.put(`/produtos/${id}/reativar`);
+  return response.data;
+}

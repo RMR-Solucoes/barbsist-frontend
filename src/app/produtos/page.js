@@ -219,49 +219,202 @@ export default function ProdutosPage() {
         </div>
       </section>
 
-      <section style={{ display: "grid", gridTemplateColumns: "380px 1fr", gap: "20px", alignItems: "start" }}>
-        <form onSubmit={salvarProduto} style={cardStyle}>
-          <h2>{editandoId ? "Editar Produto" : "Cadastrar Produto"}</h2>
+      <section
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: "20px",
+        }}
+      >
+        <form
+          onSubmit={salvarProduto}
+          style={cardStyle}
+        >
+          <h2 style={{ marginTop: 0 }}>
+            {editandoId ? "Editar Produto" : "Cadastrar Produto"}
+          </h2>
 
-          <label>Nome</label>
-          <input value={form.nome} onChange={(e) => alterarCampo("nome", e.target.value)} style={inputStyle} />
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns:
+                "minmax(220px, 1.4fr) minmax(180px, 1fr) 140px 140px 120px minmax(180px, 1fr)",
+              gap: "14px",
+              alignItems: "end",
+            }}
+          >
+            <div>
+              <label
+                style={{
+                  display: "block",
+                  marginBottom: "6px",
+                  fontWeight: "600",
+                }}
+              >
+                Nome
+              </label>
 
-          <br /><br />
+              <input
+                value={form.nome}
+                onChange={(e) =>
+                  alterarCampo("nome", e.target.value)
+                }
+                style={inputStyle}
+              />
+            </div>
 
-          <label>Categoria</label>
-          <input value={form.categoria} onChange={(e) => alterarCampo("categoria", e.target.value)} placeholder="EX: BARBA, CABELO, COSMÉTICO" style={inputStyle} />
+            <div>
+              <label
+                style={{
+                  display: "block",
+                  marginBottom: "6px",
+                  fontWeight: "600",
+                }}
+              >
+                Categoria
+              </label>
 
-          <br /><br />
+              <input
+                value={form.categoria}
+                onChange={(e) =>
+                  alterarCampo(
+                    "categoria",
+                    e.target.value
+                  )
+                }
+                placeholder="EX: BARBA, CABELO, COSM?TICO"
+                style={inputStyle}
+              />
+            </div>
 
-          <label>Preço de custo</label>
-          <input type="number" step="0.01" value={form.preco_custo} onChange={(e) => alterarCampo("preco_custo", e.target.value)} style={inputStyle} />
+            <div>
+              <label
+                style={{
+                  display: "block",
+                  marginBottom: "6px",
+                  fontWeight: "600",
+                }}
+              >
+                Preço de custo
+              </label>
 
-          <br /><br />
+              <input
+                type="number"
+                step="0.01"
+                value={form.preco_custo}
+                onChange={(e) =>
+                  alterarCampo(
+                    "preco_custo",
+                    e.target.value
+                  )
+                }
+                style={inputStyle}
+              />
+            </div>
 
-          <label>Preço de venda</label>
-          <input type="number" step="0.01" value={form.preco_venda} onChange={(e) => alterarCampo("preco_venda", e.target.value)} style={inputStyle} />
+            <div>
+              <label
+                style={{
+                  display: "block",
+                  marginBottom: "6px",
+                  fontWeight: "600",
+                }}
+              >
+                Preço de venda
+              </label>
 
-          <br /><br />
+              <input
+                type="number"
+                step="0.01"
+                value={form.preco_venda}
+                onChange={(e) =>
+                  alterarCampo(
+                    "preco_venda",
+                    e.target.value
+                  )
+                }
+                style={inputStyle}
+              />
+            </div>
 
-          <label>Estoque</label>
-          <input type="number" value={form.estoque} onChange={(e) => alterarCampo("estoque", e.target.value)} style={inputStyle} />
+            <div>
+              <label
+                style={{
+                  display: "block",
+                  marginBottom: "6px",
+                  fontWeight: "600",
+                }}
+              >
+                Estoque
+              </label>
 
-          <br /><br />
+              <input
+                type="number"
+                value={form.estoque}
+                onChange={(e) =>
+                  alterarCampo(
+                    "estoque",
+                    e.target.value
+                  )
+                }
+                style={inputStyle}
+              />
+            </div>
 
-          <label>Código QR / Código interno</label>
-          <input value={form.codigo_qr} onChange={(e) => alterarCampo("codigo_qr", e.target.value)} style={inputStyle} />
+            <div>
+              <label
+                style={{
+                  display: "block",
+                  marginBottom: "6px",
+                  fontWeight: "600",
+                }}
+              >
+                Código QR / interno
+              </label>
 
-          <br /><br />
+              <input
+                value={form.codigo_qr}
+                onChange={(e) =>
+                  alterarCampo(
+                    "codigo_qr",
+                    e.target.value
+                  )
+                }
+                style={inputStyle}
+              />
+            </div>
+          </div>
 
-          <button type="submit" style={buttonStyle}>
-            {editandoId ? "Atualizar Produto" : "Cadastrar Produto"}
-          </button>
-
-          {editandoId && (
-            <button type="button" onClick={limparFormulario} style={{ ...buttonStyle, background: "#6b7280", marginLeft: "10px" }}>
-              Cancelar
+          <div
+            style={{
+              display: "flex",
+              gap: "10px",
+              marginTop: "16px",
+              justifyContent: "flex-end",
+            }}
+          >
+            <button
+              type="submit"
+              style={buttonStyle}
+            >
+              {editandoId
+                ? "Atualizar Produto"
+                : "Cadastrar Produto"}
             </button>
-          )}
+
+            {editandoId && (
+              <button
+                type="button"
+                onClick={limparFormulario}
+                style={{
+                  ...buttonStyle,
+                  background: "#6b7280",
+                }}
+              >
+                Cancelar
+              </button>
+            )}
+          </div>
         </form>
 
         <div style={cardStyle}>
@@ -277,33 +430,180 @@ export default function ProdutosPage() {
           </div>
 
           <div style={{ overflowX: "auto" }}>
-            <table width="100%" cellPadding="10" style={{ borderCollapse: "collapse" }}>
+            <table
+              width="100%"
+              style={{
+                borderCollapse: "separate",
+                borderSpacing: 0,
+                width: "100%",
+                tableLayout: "auto",
+              }}
+            >
               <thead>
-                <tr style={{ background: "#f3f4f6", textAlign: "left" }}>
-                  <th>ID</th>
-                  <th>Produto</th>
-                  <th>Categoria</th>
-                  <th>Estoque</th>
-                  <th>Custo</th>
-                  <th>Venda</th>
-                  <th>Ações</th>
+                <tr
+                  style={{
+                    background: "#334155",
+                    textAlign: "left",
+                  }}
+                >
+                  <th
+                    style={{
+                      padding: "15px 18px",
+                      color: "#FFFFFF",
+                      fontSize: "13px",
+                      fontWeight: "700",
+                      textAlign: "left",
+                      whiteSpace: "nowrap",
+                      borderBottom:
+                        "1px solid #475569",
+                    }}
+                  >
+                    ID
+                  </th>
+                  <th
+                    style={{
+                      padding: "15px 18px",
+                      color: "#FFFFFF",
+                      fontSize: "13px",
+                      fontWeight: "700",
+                      textAlign: "left",
+                      whiteSpace: "nowrap",
+                      borderBottom:
+                        "1px solid #475569",
+                    }}
+                  >
+                    Produto
+                  </th>
+                  <th
+                    style={{
+                      padding: "15px 18px",
+                      color: "#FFFFFF",
+                      fontSize: "13px",
+                      fontWeight: "700",
+                      textAlign: "left",
+                      whiteSpace: "nowrap",
+                      borderBottom:
+                        "1px solid #475569",
+                    }}
+                  >
+                    Categoria
+                  </th>
+                  <th
+                    style={{
+                      padding: "15px 18px",
+                      color: "#FFFFFF",
+                      fontSize: "13px",
+                      fontWeight: "700",
+                      textAlign: "left",
+                      whiteSpace: "nowrap",
+                      borderBottom:
+                        "1px solid #475569",
+                    }}
+                  >
+                    Estoque
+                  </th>
+                  <th
+                    style={{
+                      padding: "15px 18px",
+                      color: "#FFFFFF",
+                      fontSize: "13px",
+                      fontWeight: "700",
+                      textAlign: "right",
+                      whiteSpace: "nowrap",
+                      borderBottom:
+                        "1px solid #475569",
+                    }}
+                  >
+                    Custo
+                  </th>
+                  <th
+                    style={{
+                      padding: "15px 18px",
+                      color: "#FFFFFF",
+                      fontSize: "13px",
+                      fontWeight: "700",
+                      textAlign: "right",
+                      whiteSpace: "nowrap",
+                      borderBottom:
+                        "1px solid #475569",
+                    }}
+                  >
+                    Venda
+                  </th>
+                  <th
+                    style={{
+                      padding: "15px 18px",
+                      color: "#FFFFFF",
+                      fontSize: "13px",
+                      fontWeight: "700",
+                      textAlign: "left",
+                      whiteSpace: "nowrap",
+                      borderBottom:
+                        "1px solid #475569",
+                    }}
+                  >
+                    Ações
+                  </th>
                 </tr>
               </thead>
 
               <tbody>
-                {produtosFiltrados.map((produto) => (
-                  <tr key={produto.id} style={{ borderBottom: "1px solid #e5e7eb" }}>
-                    <td>#{produto.id}</td>
-                    <td>{produto.nome}</td>
-                    <td>{produto.categoria || "-"}</td>
-                    <td>
+                {produtosFiltrados.map((produto, index) => (
+                  <tr
+                    key={produto.id}
+                    style={{
+                      background:
+                        index % 2 === 0
+                          ? "#FFFFFF"
+                          : "#F1F5F9",
+                      borderBottom:
+                        "1px solid #E2E8F0",
+                    }}
+                  >
+                    <td style={{ padding: "15px 18px", whiteSpace: "nowrap" }}>
+                      #{produto.id}
+                    </td>
+                    <td style={{ padding: "15px 18px", fontWeight: "600" }}>
+                      {produto.nome}
+                    </td>
+                    <td style={{ padding: "15px 18px" }}>
+                      {produto.categoria || "-"}
+                    </td>
+                    <td
+                      style={{
+                        padding: "15px 18px",
+                        textAlign: "center",
+                      }}
+                    >
                       <strong style={{ color: Number(produto.estoque || 0) <= 2 ? "#dc2626" : "#111827" }}>
                         {produto.estoque}
                       </strong>
                     </td>
-                    <td>{formatarMoeda(produto.preco_custo)}</td>
-                    <td>{formatarMoeda(produto.preco_venda)}</td>
-                    <td>
+                    <td
+                      style={{
+                        padding: "15px 18px",
+                        textAlign: "right",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {formatarMoeda(produto.preco_custo)}
+                    </td>
+                    <td
+                      style={{
+                        padding: "15px 18px",
+                        textAlign: "right",
+                        whiteSpace: "nowrap",
+                        fontWeight: "700",
+                      }}
+                    >
+                      {formatarMoeda(produto.preco_venda)}
+                    </td>
+                    <td
+                      style={{
+                        padding: "15px 18px",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
                       <button onClick={() => editarProduto(produto)} style={{ ...buttonStyle, padding: "8px 10px", marginRight: "6px" }}>
                         Editar
                       </button>

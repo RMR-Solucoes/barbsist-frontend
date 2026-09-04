@@ -203,7 +203,7 @@ export default function ComissoesPage() {
         </div>
 
         <div style={{ overflowX: "auto" }}>
-          <table width="100%" cellPadding="10" style={{ borderCollapse: "collapse" }}>
+          <table className="financeTableBarbSist" width="100%" cellPadding="10" style={{ borderCollapse: "collapse" }}>
             <thead>
               <tr style={{ background: "#f3f4f6", textAlign: "left" }}>
                 <th>ID</th>

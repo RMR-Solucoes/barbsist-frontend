@@ -20,3 +20,7 @@ export async function deletarServico(id) {
   return response.data;
 }
 
+export async function reativarServico(id) {
+  const response = await api.put(`/servicos/${id}/reativar`);
+  return response.data;
+}

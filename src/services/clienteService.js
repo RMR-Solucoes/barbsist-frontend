@@ -90,3 +90,13 @@ export async function excluirCliente(id) {
     throw error;
   }
 }
+
+export async function listarMeusClientes(params = {}) {
+  const response = await api.get("/clientes/meus", { params });
+  return response.data;
+}
+
+export async function reativarCliente(id) {
+  const response = await api.put(`/clientes/${id}/reativar`);
+  return response.data;
+}

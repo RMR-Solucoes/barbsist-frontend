@@ -89,3 +89,92 @@ img {
     animation-iteration-count: 1 !important;
   }
 }
+
+/* BARBSIST_FINANCE_TABLE_STANDARD */
+
+/*
+  Padrao visual oficial das tabelas financeiras BarbSist.
+  Cabecalho grafite + zebra branco/cinza.
+*/
+
+.financeTableBarbSist {
+  width: 100%;
+}
+
+/* CABECALHO */
+.financeTableBarbSist thead,
+.financeTableBarbSist thead tr,
+.financeTableBarbSist thead th {
+  background: #334155 !important;
+  color: #ffffff !important;
+}
+
+/* LINHA IMPAR */
+.financeTableBarbSist tbody tr:nth-child(odd),
+.financeTableBarbSist tbody tr:nth-child(odd) td {
+  background: #ffffff !important;
+}
+
+/* LINHA PAR */
+.financeTableBarbSist tbody tr:nth-child(even),
+.financeTableBarbSist tbody tr:nth-child(even) td {
+  background: #f1f5f9 !important;
+}
+
+/* SEPARADORES */
+.financeTableBarbSist tbody td {
+  border-bottom-color: #e2e8f0 !important;
+}
+
+
+
+/* BARBSIST_AGENDA_TABLE_STANDARD */
+
+.agendaTableBarbSist {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.agendaTableBarbSist thead,
+.agendaTableBarbSist thead tr,
+.agendaTableBarbSist thead th {
+  background: #334155 !important;
+  color: #ffffff !important;
+}
+
+.agendaTableBarbSist thead th {
+  padding: 12px 10px !important;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.agendaTableBarbSist tbody tr:nth-child(odd),
+.agendaTableBarbSist tbody tr:nth-child(odd) td {
+  background: #ffffff !important;
+}
+
+.agendaTableBarbSist tbody tr:nth-child(even),
+.agendaTableBarbSist tbody tr:nth-child(even) td {
+  background: #f1f5f9 !important;
+}
+
+.agendaTableBarbSist tbody td {
+  padding: 10px !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+  vertical-align: middle;
+}
+
+.agendaTableBarbSist td[data-label="In?cio"],
+.agendaTableBarbSist td[data-label="Fim"],
+.agendaTableBarbSist td[data-label="Dura??o"] {
+  white-space: nowrap;
+}
+
+.agendaTableBarbSist td[data-label="A??es"] {
+  min-width: 105px;
+}
+
+.agendaTableBarbSist td[data-label="Observa??es"] {
+  min-width: 110px;
+}

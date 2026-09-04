@@ -237,71 +237,163 @@ export default function CaixaPage() {
 
       <section
         style={{
-          display: "grid",
-          gridTemplateColumns: "380px 1fr",
+          display: "flex",
+          flexDirection: "column",
           gap: "20px",
-          alignItems: "start",
         }}
       >
-        <form onSubmit={salvarMovimentacao} style={cardStyle}>
-          <h2>Nova Movimentação</h2>
+        <form
+          onSubmit={salvarMovimentacao}
+          style={cardStyle}
+        >
+          <h2 style={{ marginTop: 0 }}>
+            Nova Movimentação
+          </h2>
 
-          <label>Tipo</label>
-          <select
-            value={form.tipo}
-            onChange={(e) => alterarCampo("tipo", e.target.value)}
-            style={inputStyle}
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns:
+                "150px minmax(300px, 1fr) 150px 190px auto",
+              gap: "14px",
+              alignItems: "end",
+            }}
           >
-            <option value="entrada">Entrada</option>
-            <option value="saida">Saída</option>
-          </select>
+            <div>
+              <label
+                style={{
+                  display: "block",
+                  marginBottom: "6px",
+                  fontWeight: "600",
+                }}
+              >
+                Tipo
+              </label>
 
-          <br />
-          <br />
+              <select
+                value={form.tipo}
+                onChange={(e) =>
+                  alterarCampo("tipo", e.target.value)
+                }
+                style={inputStyle}
+              >
+                <option value="entrada">
+                  Entrada
+                </option>
 
-          <label>Descrição</label>
-          <input
-            value={form.descricao}
-            onChange={(e) => alterarCampo("descricao", e.target.value)}
-            placeholder="EX: COMPRA DE TOALHAS"
-            style={inputStyle}
-          />
+                <option value="saida">
+                  Saída
+                </option>
+              </select>
+            </div>
 
-          <br />
-          <br />
+            <div>
+              <label
+                style={{
+                  display: "block",
+                  marginBottom: "6px",
+                  fontWeight: "600",
+                }}
+              >
+                Descrição
+              </label>
 
-          <label>Valor</label>
-          <input
-            type="number"
-            step="0.01"
-            value={form.valor}
-            onChange={(e) => alterarCampo("valor", e.target.value)}
-            style={inputStyle}
-          />
+              <input
+                value={form.descricao}
+                onChange={(e) =>
+                  alterarCampo(
+                    "descricao",
+                    e.target.value
+                  )
+                }
+                placeholder="EX: COMPRA DE TOALHAS"
+                style={inputStyle}
+              />
+            </div>
 
-          <br />
-          <br />
+            <div>
+              <label
+                style={{
+                  display: "block",
+                  marginBottom: "6px",
+                  fontWeight: "600",
+                }}
+              >
+                Valor
+              </label>
 
-          <label>Forma de pagamento</label>
-          <select
-            value={form.forma_pagamento}
-            onChange={(e) => alterarCampo("forma_pagamento", e.target.value)}
-            style={inputStyle}
-          >
-            <option value="pix">Pix</option>
-            <option value="dinheiro">Dinheiro</option>
-            <option value="debito">Débito</option>
-            <option value="credito">Crédito</option>
-            <option value="transferencia">Transferência</option>
-            <option value="outro">Outro</option>
-          </select>
+              <input
+                type="number"
+                step="0.01"
+                value={form.valor}
+                onChange={(e) =>
+                  alterarCampo(
+                    "valor",
+                    e.target.value
+                  )
+                }
+                style={inputStyle}
+              />
+            </div>
 
-          <br />
-          <br />
+            <div>
+              <label
+                style={{
+                  display: "block",
+                  marginBottom: "6px",
+                  fontWeight: "600",
+                }}
+              >
+                Forma de pagamento
+              </label>
 
-          <button type="submit" style={buttonStyle}>
-            Registrar Movimentação
-          </button>
+              <select
+                value={form.forma_pagamento}
+                onChange={(e) =>
+                  alterarCampo(
+                    "forma_pagamento",
+                    e.target.value
+                  )
+                }
+                style={inputStyle}
+              >
+                <option value="pix">
+                  Pix
+                </option>
+
+                <option value="dinheiro">
+                  Dinheiro
+                </option>
+
+                <option value="debito">
+                  Débito
+                </option>
+
+                <option value="credito">
+                  Crédito
+                </option>
+
+                <option value="transferencia">
+                  Transferência
+                </option>
+
+                <option value="outro">
+                  Outro
+                </option>
+              </select>
+            </div>
+
+            <button
+              type="submit"
+              style={{
+                ...buttonStyle,
+                minHeight: "42px",
+                whiteSpace: "nowrap",
+              }}
+            >
+              Registrar Movimentação
+            </button>
+          </div>
         </form>
 
         <div style={cardStyle}>
@@ -331,24 +423,143 @@ export default function CaixaPage() {
           </div>
 
           <div style={{ overflowX: "auto" }}>
-            <table width="100%" cellPadding="10" style={{ borderCollapse: "collapse" }}>
+            <table
+              width="100%"
+              style={{
+                borderCollapse: "separate",
+                borderSpacing: 0,
+                width: "100%",
+                tableLayout: "auto",
+              }}
+            >
               <thead>
-                <tr style={{ background: "#f3f4f6", textAlign: "left" }}>
-                  <th>ID</th>
-                  <th>Data</th>
-                  <th>Tipo</th>
-                  <th>Descrição</th>
-                  <th>Forma</th>
-                  <th>Valor</th>
+                <tr
+                  style={{
+                    background: "#334155",
+                    textAlign: "left",
+                  }}
+                >
+                  <th
+                    style={{
+                      padding: "15px 18px",
+                      fontSize: "13px",
+                      fontWeight: "700",
+                      color: "#FFFFFF",
+                      textAlign: "left",
+                      whiteSpace: "nowrap",
+                      borderBottom:
+                        "1px solid #dbe3ec",
+                    }}
+                  >
+                    ID
+                  </th>
+                  <th
+                    style={{
+                      padding: "15px 18px",
+                      fontSize: "13px",
+                      fontWeight: "700",
+                      color: "#FFFFFF",
+                      textAlign: "left",
+                      whiteSpace: "nowrap",
+                      borderBottom:
+                        "1px solid #dbe3ec",
+                    }}
+                  >
+                    Data
+                  </th>
+                  <th
+                    style={{
+                      padding: "15px 18px",
+                      fontSize: "13px",
+                      fontWeight: "700",
+                      color: "#FFFFFF",
+                      textAlign: "left",
+                      whiteSpace: "nowrap",
+                      borderBottom:
+                        "1px solid #dbe3ec",
+                    }}
+                  >
+                    Tipo
+                  </th>
+                  <th
+                    style={{
+                      padding: "15px 18px",
+                      fontSize: "13px",
+                      fontWeight: "700",
+                      color: "#FFFFFF",
+                      textAlign: "left",
+                      whiteSpace: "nowrap",
+                      borderBottom:
+                        "1px solid #dbe3ec",
+                    }}
+                  >
+                    Descrição
+                  </th>
+                  <th
+                    style={{
+                      padding: "15px 18px",
+                      fontSize: "13px",
+                      fontWeight: "700",
+                      color: "#FFFFFF",
+                      textAlign: "left",
+                      whiteSpace: "nowrap",
+                      borderBottom:
+                        "1px solid #dbe3ec",
+                    }}
+                  >
+                    Forma
+                  </th>
+                  <th
+                    style={{
+                      padding: "15px 18px",
+                      fontSize: "13px",
+                      fontWeight: "700",
+                      color: "#FFFFFF",
+                      textAlign: "right",
+                      whiteSpace: "nowrap",
+                      borderBottom:
+                        "1px solid #dbe3ec",
+                    }}
+                  >
+                    Valor
+                  </th>
                 </tr>
               </thead>
 
               <tbody>
-                {movimentacoesFiltradas.map((item) => (
-                  <tr key={item.id} style={{ borderBottom: "1px solid #e5e7eb" }}>
-                    <td>#{item.id}</td>
-                    <td>{formatarData(item.data)}</td>
-                    <td>
+                {movimentacoesFiltradas.map((item, index) => (
+                  <tr
+                    key={item.id}
+                    style={{
+                      background:
+                        index % 2 === 0
+                          ? "#FFFFFF"
+                          : "#F1F5F9",
+                      borderBottom:
+                        "1px solid #e5e7eb",
+                    }}
+                  >
+                    <td
+                      style={{
+                        padding: "15px 18px",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      #{item.id}
+                    </td>
+                    <td
+                      style={{
+                        padding: "15px 18px",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {formatarData(item.data)}
+                    </td>
+                    <td
+                      style={{
+                        padding: "15px 18px",
+                      }}
+                    >
                       <span
                         style={{
                           padding: "5px 8px",
@@ -364,12 +575,33 @@ export default function CaixaPage() {
                         {item.tipo?.toUpperCase()}
                       </span>
                     </td>
-                    <td>{item.descricao}</td>
-                    <td>{item.forma_pagamento || "-"}</td>
                     <td
                       style={{
+                        padding: "15px 18px",
+                        minWidth: "300px",
+                      }}
+                    >
+                      {item.descricao}
+                    </td>
+                    <td
+                      style={{
+                        padding: "15px 18px",
+                        textTransform: "uppercase",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {item.forma_pagamento || "-"}
+                    </td>
+                    <td
+                      style={{
+                        padding: "15px 18px",
                         fontWeight: "700",
-                        color: item.tipo === "entrada" ? "#166534" : "#dc2626",
+                        textAlign: "right",
+                        whiteSpace: "nowrap",
+                        color:
+                          item.tipo === "entrada"
+                            ? "#166534"
+                            : "#dc2626",
                       }}
                     >
                       {item.tipo === "entrada" ? "+" : "-"}{" "}

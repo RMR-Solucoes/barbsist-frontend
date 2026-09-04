@@ -34,3 +34,8 @@ export async function redefinirSenha(dados) {
 
   return resposta.data;
 }
+
+export async function alterarMinhaSenha(dados) {
+  const resposta = await api.put("/auth/minha-senha", dados);
+  return resposta.data;
+}

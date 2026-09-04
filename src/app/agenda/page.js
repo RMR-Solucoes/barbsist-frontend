@@ -38,7 +38,13 @@ export default function AgendaPage() {
   const [mensagem, setMensagem] = useState("");
   const [erro, setErro] = useState("");
 
-  const hoje = new Date().toISOString().split("T")[0];
+  const agoraInicial = new Date();
+  const hoje =
+    `${agoraInicial.getFullYear()}-${String(
+      agoraInicial.getMonth() + 1
+    ).padStart(2, "0")}-${String(
+      agoraInicial.getDate()
+    ).padStart(2, "0")}`;
 
   const [semanaSelecionada, setSemanaSelecionada] = useState(hoje);
 
@@ -251,6 +257,16 @@ export default function AgendaPage() {
     return agora.getHours() * 60 + agora.getMinutes();
   }
 
+  function obterDataLocalHoje() {
+    const agora = new Date();
+
+    const ano = agora.getFullYear();
+    const mes = String(agora.getMonth() + 1).padStart(2, "0");
+    const dia = String(agora.getDate()).padStart(2, "0");
+
+    return `${ano}-${mes}-${dia}`;
+  }
+
   function obterDiaSemanaSistema(dataTexto) {
     const data = new Date(`${dataTexto}T00:00:00`);
     const diaJs = data.getDay();
@@ -279,7 +295,7 @@ export default function AgendaPage() {
   }
 
   function dataEhPassada(dataTexto) {
-    const hojeSistema = new Date().toISOString().split("T")[0];
+    const hojeSistema = obterDataLocalHoje();
     return dataTexto < hojeSistema;
   }
 
@@ -358,7 +374,7 @@ export default function AgendaPage() {
 
     const horarios = gerarHorariosPorIntervalo(horaInicioBase, horaFimBase);
 
-    const hojeSistema = new Date().toISOString().split("T")[0];
+    const hojeSistema = obterDataLocalHoje();
     const dataSelecionadaEhHoje = form.data === hojeSistema;
     const minutosAgora = obterMinutosAgora();
 
@@ -726,7 +742,7 @@ export default function AgendaPage() {
       const horarios = gerarHorariosPorIntervalo(base.horaInicio, base.horaFim);
       const fechamentoMin = transformarEmMinutos(base.horaFim);
 
-      const hojeSistema = new Date().toISOString().split("T")[0];
+      const hojeSistema = obterDataLocalHoje();
       const dataSelecionadaEhHoje = dia.dataTexto === hojeSistema;
       const minutosAgora = obterMinutosAgora();
 
@@ -925,11 +941,17 @@ export default function AgendaPage() {
     });
 
     horariosDisponiveis.forEach((horario) => {
-      horariosBase.push({
-        horario,
-        tipo: "livre",
-        agendamento: null,
-      });
+      const horarioJaOcupado = horariosBase.some(
+        (item) => item.horario === horario && item.tipo === "ocupado"
+      );
+
+      if (!horarioJaOcupado) {
+        horariosBase.push({
+          horario,
+          tipo: "livre",
+          agendamento: null,
+        });
+      }
     });
 
     return horariosBase.sort(
@@ -1555,7 +1577,7 @@ export default function AgendaPage() {
 
               <div className={styles.tableScroll}>
                 <table
-                  className={styles.agendaTable}
+                  className={`${styles.agendaTable} agendaTableBarbSist`}
                   width="100%"
                   cellPadding="10"
                   style={{ borderCollapse: "collapse" }}
