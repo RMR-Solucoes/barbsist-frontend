@@ -5,17 +5,26 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { useAuth } from "@/contexts/AuthContext";
+import { salvarToken } from "@/services/authStorage";
+import { sairContextoBarbearia } from "@/services/adminPlataformaService";
 import styles from "./LayoutAdmin.module.css";
 
 export default function LayoutAdmin({ children }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { usuario, sair } = useAuth();
+  const { usuario, sair, recarregarUsuario } = useAuth();
   const [menuAberto, setMenuAberto] = useState(false);
 
+  const ehSuperadmin =
+    String(usuario?.perfil || "").toLowerCase() === "superadmin";
+
   const superadminGlobal =
-    String(usuario?.perfil || "").toLowerCase() === "superadmin" &&
-    usuario?.barbearia_id == null;
+    ehSuperadmin &&
+    usuario?.contexto_barbearia_id == null;
+
+  const superadminContextual =
+    ehSuperadmin &&
+    usuario?.contexto_barbearia_id != null;
 
   const rotasCadastros = ["/clientes", "/barbeiro", "/servicos", "/planos", "/assinaturas", "/usuarios", "/estilos"];
   const estaNaAreaCadastros = rotasCadastros.some(
@@ -44,6 +53,30 @@ export default function LayoutAdmin({ children }) {
   function realizarLogout() {
     sair();
     router.replace("/login");
+  }
+
+  async function voltarAdministracaoPlataforma() {
+    try {
+      const resultado =
+        await sairContextoBarbearia();
+
+      if (!resultado?.access_token) {
+        throw new Error(
+          "Token global nao recebido."
+        );
+      }
+
+      salvarToken(resultado.access_token);
+
+      await recarregarUsuario();
+
+      router.replace("/admin-plataforma");
+    } catch (erro) {
+      console.error(
+        "Erro ao sair do contexto da barbearia:",
+        erro
+      );
+    }
   }
 
   const menuGroups = [
@@ -301,6 +334,20 @@ export default function LayoutAdmin({ children }) {
             </div>
             <div className={styles.userRole}>{usuario?.perfil || ""}</div>
           </div>
+          {superadminContextual && (
+            <button
+              type="button"
+              onClick={voltarAdministracaoPlataforma}
+              className={styles.logoutButton}
+              style={{
+                marginBottom: 8,
+                background: "#2563eb",
+              }}
+            >
+              {"Voltar \u00e0 Plataforma"}
+            </button>
+          )}
+
           <button
             type="button"
             onClick={realizarLogout}

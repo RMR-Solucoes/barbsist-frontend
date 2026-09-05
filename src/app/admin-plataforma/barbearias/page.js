@@ -1,12 +1,17 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+
+import { useAuth } from "@/contexts/AuthContext";
+import { salvarToken } from "@/services/authStorage";
 
 import {
   listarBarbearias,
   obterBarbeariaAdministracao,
   ativarBarbearia,
   desativarBarbearia,
+  entrarContextoBarbearia,
 } from "@/services/adminPlataformaService";
 
 const estilos = {
@@ -149,6 +154,11 @@ const estilos = {
     color: "#fff",
   },
 
+  acessar: {
+    background: "#2563eb",
+    color: "#fff",
+  },
+
   ativar: {
     background: "#dcfce7",
     color: "#166534",
@@ -191,6 +201,9 @@ const estilos = {
 };
 
 export default function Page() {
+  const router = useRouter();
+  const { recarregarUsuario } = useAuth();
+
   const [barbearias, setBarbearias] = useState([]);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState("");
@@ -280,6 +293,42 @@ export default function Page() {
         e?.response?.data?.detail ||
           "Erro ao carregar detalhes."
       );
+    }
+  }
+
+  async function acessarBarbearia(item) {
+    if (!item?.ativa) {
+      setErro("Nao e possivel acessar uma barbearia inativa.");
+      return;
+    }
+
+    setErro("");
+    setSucesso("");
+    setProcessandoId(item.id);
+
+    try {
+      const resultado =
+        await entrarContextoBarbearia(item.id);
+
+      if (!resultado?.access_token) {
+        throw new Error(
+          "Token contextual nao recebido."
+        );
+      }
+
+      salvarToken(resultado.access_token);
+
+      await recarregarUsuario();
+
+      router.replace("/");
+    } catch (e) {
+      setErro(
+        e?.response?.data?.detail ||
+          e?.message ||
+          "Nao foi possivel acessar a barbearia."
+      );
+    } finally {
+      setProcessandoId(null);
     }
   }
 
@@ -513,6 +562,30 @@ export default function Page() {
                           }}
                         >
                           Detalhes
+                        </button>
+
+                        <button
+                          type="button"
+                          disabled={
+                            !item.ativa ||
+                            processandoId === item.id
+                          }
+                          onClick={() =>
+                            acessarBarbearia(item)
+                          }
+                          style={{
+                            ...estilos.botao,
+                            ...estilos.acessar,
+                            opacity:
+                              !item.ativa ||
+                              processandoId === item.id
+                                ? 0.6
+                                : 1,
+                          }}
+                        >
+                          {processandoId === item.id
+                            ? "Acessando..."
+                            : "Acessar"}
                         </button>
 
                         <button
