@@ -14,6 +14,10 @@ import {
   atualizarAssinatura,
 } from "@/services/assinaturaService";
 
+import {
+  cobrarAssinaturaPix,
+} from "@/services/mercadoPagoService";
+
 export default function AssinaturasPage() {
   const [clientes, setClientes] = useState([]);
   const [planos, setPlanos] = useState([]);
@@ -34,6 +38,10 @@ export default function AssinaturasPage() {
   const [pagamentosHistorico, setPagamentosHistorico] = useState([]);
 
   const [assinaturaSelecionada, setAssinaturaSelecionada] = useState(null);
+
+  const [pixAberto, setPixAberto] = useState(false);
+  const [pixCobranca, setPixCobranca] = useState(null);
+  const [pixCarregando, setPixCarregando] = useState(false);
 
   const [modalEditar, setModalEditar] = useState(false);
 
@@ -214,6 +222,50 @@ export default function AssinaturasPage() {
     const plano = planos.find((item) => Number(item.id) === Number(planoId));
     return plano?.valor || 0;
     }
+
+  async function cobrarPix(assinatura) {
+    setMensagem("");
+    setErro("");
+    setPixCarregando(true);
+
+    try {
+      const cliente = clientes.find(
+        (item) =>
+          Number(item.id) ===
+          Number(assinatura.cliente_id)
+      );
+
+      const dados = {};
+
+      if (cliente?.email) {
+        dados.payer_email = cliente.email;
+      }
+
+      const cobranca = await cobrarAssinaturaPix(
+        assinatura.id,
+        dados
+      );
+
+      setPixCobranca({
+        ...cobranca,
+        assinatura,
+      });
+
+      setPixAberto(true);
+      setMenuAbertoId(null);
+
+      setMensagem("Cobrança PIX gerada com sucesso.");
+    } catch (error) {
+      console.error("Erro ao gerar cobrança PIX:", error);
+
+      setErro(
+        error?.response?.data?.detail ||
+        "Erro ao gerar cobrança PIX."
+      );
+    } finally {
+      setPixCarregando(false);
+    }
+  }
 
   async function abrirHistorico(assinatura) {
   try {
@@ -483,6 +535,15 @@ export default function AssinaturasPage() {
                                     </button>
 
                                 <button
+                                    type="button"
+                                    style={itemMenu}
+                                    onClick={() => cobrarPix(assinatura)}
+                                    disabled={pixCarregando}
+                                >
+                                    Cobrar via PIX
+                                </button>
+
+                                <button
                                     style={itemMenu}
                                     onClick={() => renovar(assinatura)}
                                 >
@@ -730,6 +791,105 @@ historicoAberto && (
     </div>
   </div>
 )}    
+
+      {pixAberto && pixCobranca && (
+        <div style={overlayModal}>
+          <div style={modalGrande}>
+            <div style={cabecalhoModal}>
+              <h2>Pagamento via PIX</h2>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setPixAberto(false);
+                  setPixCobranca(null);
+                }}
+                style={botaoFechar}
+              >
+                X
+              </button>
+            </div>
+
+            <p>
+              <strong>Cliente:</strong>{" "}
+              {buscarNomeCliente(
+                pixCobranca.assinatura.cliente_id
+              )}
+            </p>
+
+            <p>
+              <strong>Plano:</strong>{" "}
+              {buscarNomePlano(
+                pixCobranca.assinatura.plano_id
+              )}
+            </p>
+
+            {pixCobranca.qr_code_base64 && (
+              <div
+                style={{
+                  textAlign: "center",
+                  margin: "20px 0",
+                }}
+              >
+                <img
+                  src={`data:image/png;base64,${pixCobranca.qr_code_base64}`}
+                  alt="QR Code PIX"
+                  style={{
+                    width: 260,
+                    maxWidth: "100%",
+                  }}
+                />
+              </div>
+            )}
+
+            {pixCobranca.qr_code && (
+              <>
+                <label>PIX Copia e Cola</label>
+
+                <textarea
+                  readOnly
+                  value={pixCobranca.qr_code}
+                  style={{
+                    ...campo,
+                    minHeight: 110,
+                  }}
+                />
+
+                <button
+                  type="button"
+                  style={botaoPrincipal}
+                  onClick={async () => {
+                    try {
+                      await navigator.clipboard.writeText(
+                        pixCobranca.qr_code
+                      );
+                      setMensagem("Código PIX copiado.");
+                    } catch {
+                      setErro(
+                        "Não foi possível copiar o código PIX."
+                      );
+                    }
+                  }}
+                >
+                  Copiar PIX
+                </button>
+              </>
+            )}
+
+            {pixCobranca.ticket_url && (
+              <p style={{ marginTop: 20 }}>
+                <a
+                  href={pixCobranca.ticket_url}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  Abrir pagamento no Mercado Pago
+                </a>
+              </p>
+            )}
+          </div>
+        </div>
+      )}
 
     </main>
   );
