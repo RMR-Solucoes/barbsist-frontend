@@ -288,6 +288,18 @@ export default function AssinaturasPage() {
     setErro("");
 
     try {
+      const cliente = clientes.find(
+        (item) =>
+          Number(item.id) ===
+          Number(cartaoAssinatura.cliente_id)
+      );
+
+      if (!cliente?.email) {
+        throw new Error(
+          "Cliente sem e-mail cadastrado para pagamento com cartao."
+        );
+      }
+
       const dados = {
         token: formData.token,
         installments: Number(formData.installments || 1),
@@ -296,6 +308,7 @@ export default function AssinaturasPage() {
         issuer_id: formData.issuer_id
           ? Number(formData.issuer_id)
           : null,
+        payer_email: cliente.email,
       };
 
       const cobranca =
