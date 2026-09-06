@@ -1,6 +1,10 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import {
+  CardPayment,
+  initMercadoPago,
+} from "@mercadopago/sdk-react";
 
 import { listarClientes } from "@/services/clienteService";
 import { listarPlanos } from "@/services/planoService";
@@ -16,6 +20,8 @@ import {
 
 import {
   cobrarAssinaturaPix,
+  cobrarAssinaturaCartao,
+  obterConfiguracaoMercadoPago,
 } from "@/services/mercadoPagoService";
 
 export default function AssinaturasPage() {
@@ -43,6 +49,11 @@ export default function AssinaturasPage() {
   const [pixCobranca, setPixCobranca] = useState(null);
   const [pixCarregando, setPixCarregando] = useState(false);
 
+  const [cartaoAberto, setCartaoAberto] = useState(false);
+  const [cartaoAssinatura, setCartaoAssinatura] = useState(null);
+  const [cartaoCarregando, setCartaoCarregando] = useState(false);
+  const [mercadoPagoPublicKey, setMercadoPagoPublicKey] = useState("");
+
   const [modalEditar, setModalEditar] = useState(false);
 
   const [assinaturaEditando, setAssinaturaEditando] = useState(null);
@@ -63,7 +74,34 @@ export default function AssinaturasPage() {
 
   useEffect(() => {
     carregarDados();
+    carregarMercadoPago();
   }, []);
+
+  async function carregarMercadoPago() {
+    try {
+      const configuracao = await obterConfiguracaoMercadoPago();
+
+      const publicKey =
+        configuracao?.public_key ||
+        configuracao?.mercado_pago_public_key ||
+        "";
+
+      if (!publicKey) {
+        return;
+      }
+
+      initMercadoPago(publicKey, {
+        locale: "pt-BR",
+      });
+
+      setMercadoPagoPublicKey(publicKey);
+    } catch (error) {
+      console.error(
+        "Erro ao carregar configuracao Mercado Pago:",
+        error
+      );
+    }
+  }
 
   async function carregarDados() {
   try {
@@ -222,6 +260,74 @@ export default function AssinaturasPage() {
     const plano = planos.find((item) => Number(item.id) === Number(planoId));
     return plano?.valor || 0;
     }
+
+  function abrirCartao(assinatura) {
+    setMensagem("");
+    setErro("");
+    setMenuAbertoId(null);
+
+    if (!mercadoPagoPublicKey) {
+      setErro(
+        "Public Key do Mercado Pago nao esta disponivel."
+      );
+      return;
+    }
+
+    setCartaoAssinatura(assinatura);
+    setCartaoAberto(true);
+  }
+
+  async function processarCartao(formData) {
+    if (!cartaoAssinatura) {
+      setErro("Assinatura nao selecionada.");
+      return;
+    }
+
+    setCartaoCarregando(true);
+    setMensagem("");
+    setErro("");
+
+    try {
+      const dados = {
+        token: formData.token,
+        installments: Number(formData.installments || 1),
+        payment_method_id:
+          formData.payment_method_id,
+        issuer_id: formData.issuer_id
+          ? Number(formData.issuer_id)
+          : null,
+      };
+
+      const cobranca =
+        await cobrarAssinaturaCartao(
+          cartaoAssinatura.id,
+          dados
+        );
+
+      setMensagem(
+        cobranca?.status === "processed"
+          ? "Pagamento com cartao aprovado."
+          : "Pagamento com cartao enviado ao Mercado Pago."
+      );
+
+      setCartaoAberto(false);
+      setCartaoAssinatura(null);
+
+      await carregarDados();
+    } catch (error) {
+      console.error(
+        "Erro ao processar pagamento com cartao:",
+        error
+      );
+
+      setErro(
+        error?.response?.data?.detail ||
+        "Erro ao processar pagamento com cartao."
+      );
+    } finally {
+      setCartaoCarregando(false);
+    }
+  }
 
   async function cobrarPix(assinatura) {
     setMensagem("");
@@ -544,6 +650,15 @@ export default function AssinaturasPage() {
                                 </button>
 
                                 <button
+                                    type="button"
+                                    style={itemMenu}
+                                    onClick={() => abrirCartao(assinatura)}
+                                    disabled={cartaoCarregando}
+                                >
+                                    Cobrar com cartao
+                                </button>
+
+                                <button
                                     style={itemMenu}
                                     onClick={() => renovar(assinatura)}
                                 >
@@ -791,6 +906,99 @@ historicoAberto && (
     </div>
   </div>
 )}    
+
+      {cartaoAberto && cartaoAssinatura && (
+        <div style={overlayModal}>
+          <div style={modalGrande}>
+            <div style={cabecalhoModal}>
+              <h2>Pagamento com cartão</h2>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setCartaoAberto(false);
+                  setCartaoAssinatura(null);
+                }}
+                style={botaoFechar}
+              >
+                ✕
+              </button>
+            </div>
+
+            <p>
+              <strong>Cliente:</strong>{" "}
+              {buscarNomeCliente(
+                cartaoAssinatura.cliente_id
+              )}
+            </p>
+
+            <p>
+              <strong>Plano:</strong>{" "}
+              {buscarNomePlano(
+                cartaoAssinatura.plano_id
+              )}
+            </p>
+
+            {mercadoPagoPublicKey ? (
+              <CardPayment
+                initialization={{
+                  amount: Number(
+                    planos.find(
+                      (plano) =>
+                        Number(plano.id) ===
+                        Number(
+                          cartaoAssinatura.plano_id
+                        )
+                    )?.valor_cartao ??
+                    planos.find(
+                      (plano) =>
+                        Number(plano.id) ===
+                        Number(
+                          cartaoAssinatura.plano_id
+                        )
+                    )?.valor ??
+                    cartaoAssinatura.valor_mensal ??
+                    0
+                  ),
+                }}
+                customization={{
+                  paymentMethods: {
+                    minInstallments: 1,
+                    maxInstallments: Number(
+                      planos.find(
+                        (plano) =>
+                          Number(plano.id) ===
+                          Number(
+                            cartaoAssinatura.plano_id
+                          )
+                      )?.max_parcelas_cartao ?? 1
+                    ),
+                  },
+                }}
+                onSubmit={processarCartao}
+                onReady={() => {
+                  console.log(
+                    "CardPayment Mercado Pago pronto."
+                  );
+                }}
+                onError={(error) => {
+                  console.error(
+                    "Erro CardPayment Mercado Pago:",
+                    error
+                  );
+                  setErro(
+                    "Erro ao carregar pagamento com cartao."
+                  );
+                }}
+              />
+            ) : (
+              <p>
+                Carregando Mercado Pago...
+              </p>
+            )}
+          </div>
+        </div>
+      )}
 
       {pixAberto && pixCobranca && (
         <div style={overlayModal}>
