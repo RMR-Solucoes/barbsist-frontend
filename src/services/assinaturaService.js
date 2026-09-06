@@ -44,6 +44,29 @@ export async function atualizarAssinatura(id, dados) {
   return response.data;
 }
 
+// TROCA_PLANO_ETAPA5
+export async function solicitarTrocaPlano(id, planoId) {
+  const response = await api.put(
+    `/planos/assinaturas/${id}/trocar-plano`,
+    { plano_id: Number(planoId) }
+  );
+  return response.data;
+}
+
+export async function cancelarTrocaPlano(id) {
+  const response = await api.delete(
+    `/planos/assinaturas/${id}/troca-plano`
+  );
+  return response.data;
+}
+
+export async function listarTrocasPlano(id) {
+  const response = await api.get(
+    `/planos/assinaturas/${id}/trocas-plano`
+  );
+  return response.data;
+}
+
 export async function cancelarAssinatura(id, dados = {}) {
   const response = await api.put(
     `/planos/assinaturas/${id}/cancelar`,

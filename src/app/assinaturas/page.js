@@ -15,7 +15,8 @@ import {
   suspenderAssinatura,
   reativarAssinatura,
   listarPagamentosAssinatura,
-  atualizarAssinatura,
+  solicitarTrocaPlano,
+  cancelarTrocaPlano,
 } from "@/services/assinaturaService";
 
 import {
@@ -24,6 +25,7 @@ import {
   obterConfiguracaoMercadoPago,
 } from "@/services/mercadoPagoService";
 
+// TROCA_PLANO_ETAPA6
 export default function AssinaturasPage() {
   const [clientes, setClientes] = useState([]);
   const [planos, setPlanos] = useState([]);
@@ -54,24 +56,11 @@ export default function AssinaturasPage() {
   const [cartaoCarregando, setCartaoCarregando] = useState(false);
   const [mercadoPagoPublicKey, setMercadoPagoPublicKey] = useState("");
 
-  const [modalEditar, setModalEditar] = useState(false);
-
-  const [assinaturaEditando, setAssinaturaEditando] = useState(null);
-
-  const [formEditar, setFormEditar] = useState({
-    data_inicio: "",
-    data_fim: "",
-    dias_tolerancia: 5,
-    usos_disponiveis: 0,
-    valor_mensal: 0,
-    status: "",
-    status_pagamento: "",
-});
-
-
-
-
-
+  // TROCA_PLANO_ETAPA5
+  const [modalTrocaPlano, setModalTrocaPlano] = useState(false);
+  const [assinaturaTroca, setAssinaturaTroca] = useState(null);
+  const [novoPlanoId, setNovoPlanoId] = useState("");
+  const [trocaPlanoCarregando, setTrocaPlanoCarregando] = useState(false);
   useEffect(() => {
     carregarDados();
     carregarMercadoPago();
@@ -181,7 +170,10 @@ export default function AssinaturasPage() {
             await carregarDados();
         } catch (error) {
             console.error(error);
-            setErro("Erro ao renovar assinatura.");
+            setErro(
+              error?.response?.data?.detail ||
+                "Erro ao renovar assinatura."
+            );
         }
         }
 
@@ -218,22 +210,15 @@ export default function AssinaturasPage() {
             setErro("Erro ao reativar assinatura.");
         }
         }
-
-        function abrirEdicao(assinatura) {
-
-            setAssinaturaEditando(assinatura);
-
-            setFormEditar({
-                data_inicio: assinatura.data_inicio?.substring(0,10),
-                data_fim: assinatura.data_fim?.substring(0,10),
-                dias_tolerancia: assinatura.dias_tolerancia,
-                usos_disponiveis: assinatura.usos_disponiveis,
-                valor_mensal: assinatura.valor_mensal,
-                status: assinatura.status,
-                status_pagamento: assinatura.status_pagamento,
-            });
-
-            setModalEditar(true);
+        function abrirTrocaPlano(assinatura) {
+            setMensagem("");
+            setErro("");
+            setMenuAbertoId(null);
+            setAssinaturaTroca(assinatura);
+            setNovoPlanoId(
+              String(assinatura.plano_programado_id || assinatura.plano_id || "")
+            );
+            setModalTrocaPlano(true);
         }
 
   function formatarData(data) {
@@ -409,48 +394,80 @@ export default function AssinaturasPage() {
     setErro("Erro ao carregar histórico.");
 
   }
-}  
+}
+    async function confirmarTrocaPlano() {
+      if (!assinaturaTroca || !novoPlanoId) {
+        setErro("Selecione o novo plano.");
+        return;
+      }
 
-    async function salvarEdicaoAssinatura() {
-    try {
-        const dados = {
-        data_inicio: formEditar.data_inicio,
-        data_fim: formEditar.data_fim,
-        data_proximo_vencimento: formEditar.data_fim,
-        dias_tolerancia: Number(formEditar.dias_tolerancia),
-        usos_disponiveis: Number(formEditar.usos_disponiveis),
-        valor_mensal: Number(formEditar.valor_mensal),
-        status: formEditar.status,
-        status_pagamento: formEditar.status_pagamento,
-        };
+      const planoEfetivoId =
+        assinaturaTroca.plano_programado_id || assinaturaTroca.plano_id;
+      if (Number(novoPlanoId) === Number(planoEfetivoId)) {
+        setErro("Selecione um plano diferente do plano atual ou programado.");
+        return;
+      }
 
-        await atualizarAssinatura(assinaturaEditando.id, dados);
-
-        setMensagem("Assinatura atualizada com sucesso.");
+      try {
+        setTrocaPlanoCarregando(true);
         setErro("");
-        setModalEditar(false);
-        setAssinaturaEditando(null);
+        const resultado = await solicitarTrocaPlano(
+          assinaturaTroca.id,
+          novoPlanoId
+        );
 
+        setMensagem(
+          resultado.plano_programado_id
+            ? "Troca de plano programada para o proximo pagamento. Os usos atuais foram preservados."
+            : "Plano alterado imediatamente. A assinatura ainda nao possuia pagamento confirmado."
+        );
+        setModalTrocaPlano(false);
+        setAssinaturaTroca(null);
         await carregarDados();
-    } catch (error) {
-        console.error("Erro ao salvar edição:", error);
-        setErro("Erro ao salvar alterações da assinatura.");
+      } catch (error) {
+        console.error("Erro ao trocar plano:", error);
+        setErro(
+          error?.response?.data?.detail || "Erro ao solicitar troca de plano."
+        );
+      } finally {
+        setTrocaPlanoCarregando(false);
+      }
     }
+
+    async function desfazerTrocaPlano() {
+      if (!assinaturaTroca?.plano_programado_id) return;
+
+      try {
+        setTrocaPlanoCarregando(true);
+        setErro("");
+        await cancelarTrocaPlano(assinaturaTroca.id);
+        setMensagem("Troca de plano programada cancelada.");
+        setModalTrocaPlano(false);
+        setAssinaturaTroca(null);
+        await carregarDados();
+      } catch (error) {
+        console.error("Erro ao cancelar troca de plano:", error);
+        setErro(
+          error?.response?.data?.detail || "Erro ao cancelar troca de plano."
+        );
+      } finally {
+        setTrocaPlanoCarregando(false);
+      }
     }
 
   const resumo = useMemo(() => {
     const total = assinaturas.length;
 
     const ativas = assinaturas.filter(
-      (assinatura) => assinatura.status === "ATIVA"
+      (assinatura) => String(assinatura.status).toUpperCase() === "ATIVO"
     ).length;
 
     const suspensas = assinaturas.filter(
-      (assinatura) => assinatura.status === "SUSPENSA"
+      (assinatura) => String(assinatura.status).toUpperCase() === "SUSPENSO"
     ).length;
 
     const encerradas = assinaturas.filter(
-      (assinatura) => assinatura.status === "ENCERRADA"
+      (assinatura) => String(assinatura.status).toUpperCase() === "ENCERRADO"
     ).length;
 
     return {
@@ -604,7 +621,7 @@ export default function AssinaturasPage() {
                     <td style={tdCentro}>
                         <span
                         style={
-                            assinatura.status === "ATIVA"
+                            String(assinatura.status).toUpperCase() === "ATIVO"
                             ? badgeAtivo
                             : badgeInativo
                         }
@@ -644,14 +661,12 @@ export default function AssinaturasPage() {
                         {menuAbertoId === assinatura.id && (
                             <div style={menuAcoes}>
                                 <button
+                                    type="button"
                                     style={itemMenu}
-                                    onClick={() => {
-                                        console.log("CLICOU EDITAR", assinatura);
-                                        abrirEdicao(assinatura);
-                                    }}
-                                    >
-                                    ✏ Editar
-                                    </button>
+                                    onClick={() => abrirTrocaPlano(assinatura)}
+                                >
+                                    Trocar plano
+                                </button>
 
                                 <button
                                     type="button"
@@ -811,114 +826,89 @@ historicoAberto && (
 )
 }
        
-   {modalEditar && assinaturaEditando && (
+   {modalTrocaPlano && assinaturaTroca && (
   <div style={overlayModal}>
     <div style={modalGrande}>
       <div style={cabecalhoModal}>
-        <h2>Editar Assinatura</h2>
-
+        <h2>Trocar plano</h2>
         <button
           type="button"
-          onClick={() => setModalEditar(false)}
+          onClick={() => {
+            setModalTrocaPlano(false);
+            setAssinaturaTroca(null);
+          }}
           style={botaoFechar}
+          disabled={trocaPlanoCarregando}
         >
-          ✖
+          X
         </button>
       </div>
 
-      <label>Data de início</label>
-      <input
-        type="date"
-        value={formEditar.data_inicio}
-        onChange={(e) =>
-          setFormEditar({ ...formEditar, data_inicio: e.target.value })
-        }
-        style={campo}
-      />
+      <p>
+        <strong>Cliente:</strong>{" "}
+        {buscarNomeCliente(assinaturaTroca.cliente_id)}
+      </p>
+      <p>
+        <strong>Plano atual:</strong>{" "}
+        {buscarNomePlano(assinaturaTroca.plano_id)}
+      </p>
 
-      <label>Vencimento</label>
-      <input
-        type="date"
-        value={formEditar.data_fim}
-        onChange={(e) =>
-          setFormEditar({ ...formEditar, data_fim: e.target.value })
-        }
-        style={campo}
-      />
+      {assinaturaTroca.plano_programado_id && (
+        <p style={{ color: "#b45309", fontWeight: 600 }}>
+          Troca programada: {buscarNomePlano(assinaturaTroca.plano_programado_id)}
+        </p>
+      )}
 
-      <label>Dias de tolerância</label>
-      <input
-        type="number"
-        value={formEditar.dias_tolerancia}
-        onChange={(e) =>
-          setFormEditar({ ...formEditar, dias_tolerancia: e.target.value })
-        }
-        style={campo}
-      />
-
-      <label>Serviços disponíveis</label>
-      <input
-        type="number"
-        value={formEditar.usos_disponiveis}
-        onChange={(e) =>
-          setFormEditar({ ...formEditar, usos_disponiveis: e.target.value })
-        }
-        style={campo}
-      />
-
-      <label>Valor mensal</label>
-      <input
-        type="number"
-        step="0.01"
-        value={formEditar.valor_mensal}
-        onChange={(e) =>
-          setFormEditar({ ...formEditar, valor_mensal: e.target.value })
-        }
-        style={campo}
-      />
-
-      <label>Status</label>
+      <label>Novo plano</label>
       <select
-        value={formEditar.status}
-        onChange={(e) =>
-          setFormEditar({ ...formEditar, status: e.target.value })
-        }
+        value={novoPlanoId}
+        onChange={(e) => setNovoPlanoId(e.target.value)}
         style={campo}
+        disabled={trocaPlanoCarregando}
       >
-        <option value="ATIVO">ATIVO</option>
-        <option value="VENCIDO">VENCIDO</option>
-        <option value="SUSPENSO">SUSPENSO</option>
-        <option value="INATIVO">INATIVO</option>
-        <option value="ENCERRADO">ENCERRADO</option>
+        <option value="">Selecione</option>
+        {planos
+          .filter((plano) => plano.ativo !== false)
+          .map((plano) => (
+            <option key={plano.id} value={plano.id}>
+              {plano.nome} - {Number(plano.valor || 0).toLocaleString("pt-BR", {
+                style: "currency",
+                currency: "BRL",
+              })}
+            </option>
+          ))}
       </select>
 
-      <label>Status do pagamento</label>
-      <select
-        value={formEditar.status_pagamento}
-        onChange={(e) =>
-          setFormEditar({
-            ...formEditar,
-            status_pagamento: e.target.value,
-          })
-        }
-        style={campo}
-      >
-        <option value="PAGO">PAGO</option>
-        <option value="VENCIDO">VENCIDO</option>
-        <option value="PENDENTE_PAGAMENTO">PENDENTE_PAGAMENTO</option>
-        <option value="INADIMPLENTE">INADIMPLENTE</option>
-      </select>
+      <p style={{ marginTop: 12, color: "#555" }}>
+        Se a assinatura ja possui pagamento confirmado, a troca sera aplicada
+        somente no proximo pagamento. Os usos e o plano atual permanecem
+        inalterados ate a confirmacao.
+      </p>
 
-      <button
-        type="button"
-        style={botaoPrincipal}
-        onClick={salvarEdicaoAssinatura}
+      <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+        <button
+          type="button"
+          style={botaoPrincipal}
+          onClick={confirmarTrocaPlano}
+          disabled={trocaPlanoCarregando}
         >
-        Salvar Alterações
+          {trocaPlanoCarregando ? "Processando..." : "Confirmar troca"}
         </button>
+
+        {assinaturaTroca.plano_programado_id && (
+          <button
+            type="button"
+            style={itemMenu}
+            onClick={desfazerTrocaPlano}
+            disabled={trocaPlanoCarregando}
+          >
+            Cancelar troca programada
+          </button>
+        )}
+      </div>
     </div>
   </div>
-)}    
+)}
 
       {cartaoAberto && cartaoAssinatura && (
         <div style={overlayModal}>
@@ -948,7 +938,7 @@ historicoAberto && (
             <p>
               <strong>Plano:</strong>{" "}
               {buscarNomePlano(
-                cartaoAssinatura.plano_id
+                (cartaoAssinatura.plano_programado_id || cartaoAssinatura.plano_id)
               )}
             </p>
 
@@ -960,14 +950,14 @@ historicoAberto && (
                       (plano) =>
                         Number(plano.id) ===
                         Number(
-                          cartaoAssinatura.plano_id
+                          (cartaoAssinatura.plano_programado_id || cartaoAssinatura.plano_id)
                         )
                     )?.valor_cartao ??
                     planos.find(
                       (plano) =>
                         Number(plano.id) ===
                         Number(
-                          cartaoAssinatura.plano_id
+                          (cartaoAssinatura.plano_programado_id || cartaoAssinatura.plano_id)
                         )
                     )?.valor ??
                     cartaoAssinatura.valor_mensal ??
@@ -982,7 +972,7 @@ historicoAberto && (
                         (plano) =>
                           Number(plano.id) ===
                           Number(
-                            cartaoAssinatura.plano_id
+                            (cartaoAssinatura.plano_programado_id || cartaoAssinatura.plano_id)
                           )
                       )?.max_parcelas_cartao ?? 1
                     ),
@@ -1041,7 +1031,7 @@ historicoAberto && (
             <p>
               <strong>Plano:</strong>{" "}
               {buscarNomePlano(
-                pixCobranca.assinatura.plano_id
+                (pixCobranca.assinatura.plano_programado_id || pixCobranca.assinatura.plano_id)
               )}
             </p>
 
