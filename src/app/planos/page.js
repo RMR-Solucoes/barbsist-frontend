@@ -21,6 +21,9 @@ export default function PlanosPage() {
     nome: "",
     descricao: "",
     valor: "",
+    valor_pix: "",
+    valor_cartao: "",
+    max_parcelas_cartao: 1,
     quantidade_servicos: "",
     validade_dias: "30",
   });
@@ -49,6 +52,9 @@ export default function PlanosPage() {
       nome: "",
       descricao: "",
       valor: "",
+      valor_pix: "",
+      valor_cartao: "",
+      max_parcelas_cartao: 1,
       quantidade_servicos: "",
       validade_dias: "30",
     });
@@ -61,6 +67,9 @@ export default function PlanosPage() {
       nome: plano.nome || "",
       descricao: plano.descricao || "",
       valor: plano.valor ?? "",
+      valor_pix: plano.valor_pix ?? "",
+      valor_cartao: plano.valor_cartao ?? "",
+      max_parcelas_cartao: plano.max_parcelas_cartao ?? 1,
       quantidade_servicos: plano.quantidade_servicos ?? "",
       validade_dias: plano.validade_dias ?? "30",
     });
@@ -133,6 +142,13 @@ export default function PlanosPage() {
         nome: form.nome.trim().toUpperCase(),
         descricao: form.descricao.trim(),
         valor: Number(form.valor),
+        valor_pix: form.valor_pix !== ""
+          ? Number(form.valor_pix)
+          : null,
+        valor_cartao: form.valor_cartao !== ""
+          ? Number(form.valor_cartao)
+          : null,
+        max_parcelas_cartao: Number(form.max_parcelas_cartao || 1),
         quantidade_servicos: Number(form.quantidade_servicos),
         validade_dias: Number(form.validade_dias),
         ativo: true,
@@ -274,6 +290,52 @@ export default function PlanosPage() {
             style={campo}
           />
 
+          <label>Valor para pagamento via PIX</label>
+          <input
+            type="number"
+            step="0.01"
+            min="0"
+            placeholder="Ex: 159.90"
+            value={form.valor_pix}
+            onChange={(e) =>
+              setForm({ ...form, valor_pix: e.target.value })
+            }
+            style={campo}
+          />
+
+          <label>Valor para pagamento no cartao</label>
+          <input
+            type="number"
+            step="0.01"
+            min="0"
+            placeholder="Ex: 169.90"
+            value={form.valor_cartao}
+            onChange={(e) =>
+              setForm({ ...form, valor_cartao: e.target.value })
+            }
+            style={campo}
+          />
+
+          <label>Maximo de parcelas no cartao</label>
+          <select
+            value={form.max_parcelas_cartao}
+            onChange={(e) =>
+              setForm({
+                ...form,
+                max_parcelas_cartao: Number(e.target.value),
+              })
+            }
+            style={campo}
+          >
+            {Array.from({ length: 12 }, (_, i) => i + 1).map(
+              (parcela) => (
+                <option key={parcela} value={parcela}>
+                  {parcela}x
+                </option>
+              )
+            )}
+          </select>
+
           <label>Quantidade de serviços inclusos</label>
           <input
             type="number"
@@ -323,7 +385,10 @@ export default function PlanosPage() {
                   <th style={th}>ID</th>
                   <th style={th}>Plano</th>
                   <th style={th}>Descrição</th>
-                  <th style={thDireita}>Valor</th>
+                  <th style={thDireita}>Valor base</th>
+                  <th style={thDireita}>PIX</th>
+                  <th style={thDireita}>Cartao</th>
+                  <th style={thCentro}>Parcelas</th>
                   <th style={thCentro}>Serviços</th>
                   <th style={thCentro}>Validade</th>
                   <th style={thCentro}>Status</th>
@@ -349,7 +414,25 @@ export default function PlanosPage() {
                       {limitarTexto(plano.descricao)}
                     </td>
 
-                    <td style={tdDireita}>{formatarMoeda(plano.valor)}/mês</td>
+                    <td style={tdDireita}>
+                      {formatarMoeda(plano.valor)}
+                    </td>
+
+                    <td style={tdDireita}>
+                      {plano.valor_pix != null
+                        ? formatarMoeda(plano.valor_pix)
+                        : "-"}
+                    </td>
+
+                    <td style={tdDireita}>
+                      {plano.valor_cartao != null
+                        ? formatarMoeda(plano.valor_cartao)
+                        : "-"}
+                    </td>
+
+                    <td style={tdCentro}>
+                      {plano.max_parcelas_cartao ?? 1}x
+                    </td>
 
                     <td style={tdCentro}>{plano.quantidade_servicos}</td>
 
