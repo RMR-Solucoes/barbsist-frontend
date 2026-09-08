@@ -15,8 +15,12 @@ export default function LayoutAdmin({ children }) {
   const { usuario, sair, recarregarUsuario } = useAuth();
   const [menuAberto, setMenuAberto] = useState(false);
 
-  const ehSuperadmin =
-    String(usuario?.perfil || "").toLowerCase() === "superadmin";
+  const perfilAtual = String(
+    usuario?.perfil || ""
+  ).toLowerCase();
+
+  const ehSuperadmin = perfilAtual === "superadmin";
+  const ehBarbeiro = perfilAtual === "barbeiro";
 
   const superadminGlobal =
     ehSuperadmin &&
@@ -38,6 +42,26 @@ export default function LayoutAdmin({ children }) {
     setMenuAberto(false);
     if (estaNaAreaCadastros) setCadastrosAbertos(true);
   }, [pathname, estaNaAreaCadastros]);
+
+  useEffect(() => {
+    if (!usuario || !ehBarbeiro) return;
+
+    const rotasPermitidas = [
+      "/meu-trabalho",
+      "/agenda",
+      "/comandas",
+      "/minha-conta",
+    ];
+
+    const rotaPermitida = rotasPermitidas.some(
+      (rota) =>
+        pathname === rota || pathname.startsWith(`${rota}/`)
+    );
+
+    if (!rotaPermitida) {
+      router.replace("/meu-trabalho");
+    }
+  }, [usuario, ehBarbeiro, pathname, router]);
 
   useEffect(() => {
     if (!menuAberto) return undefined;
@@ -186,6 +210,47 @@ export default function LayoutAdmin({ children }) {
                   )}
                 >
                   &#128274; Minha Conta
+                </Link>
+              </div>
+            </>
+          ) : ehBarbeiro ? (
+            <>
+              <Link
+                href="/meu-trabalho"
+                className={classesLink(
+                  styles.dashboardLink,
+                  "/meu-trabalho"
+                )}
+              >
+                &#128188; Meu Painel
+              </Link>
+
+              <div className={styles.menuGroup} style={{ background: "#1e293b" }}>
+                <div className={styles.groupTitle}>MINHA ROTINA</div>
+
+                <Link
+                  href="/agenda"
+                  className={classesLink(styles.menuLink, "/agenda")}
+                >
+                  &#128197; Minha Agenda
+                </Link>
+
+                <Link
+                  href="/comandas"
+                  className={classesLink(styles.menuLink, "/comandas")}
+                >
+                  &#129534; Minhas Comandas
+                </Link>
+              </div>
+
+              <div className={styles.systemGroup}>
+                <div className={styles.groupTitle}>MINHA CONTA</div>
+
+                <Link
+                  href="/minha-conta"
+                  className={classesLink(styles.menuLink, "/minha-conta")}
+                >
+                  &#128274; Meus Dados
                 </Link>
               </div>
             </>
