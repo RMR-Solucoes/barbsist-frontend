@@ -107,7 +107,13 @@ export function Painel({ titulo, children, acoes }) {
   );
 }
 
-export function Botao({ children, onClick, tipo = "primario", disabled = false }) {
+export function Botao({
+  children,
+  onClick,
+  tipo = "primario",
+  disabled = false,
+  type = "button",
+}) {
   const estilos = {
     primario: { background: "#2563eb", color: "#fff", border: "1px solid #2563eb" },
     neutro: { background: "#fff", color: "#0f172a", border: "1px solid #cbd5e1" },
@@ -117,7 +123,7 @@ export function Botao({ children, onClick, tipo = "primario", disabled = false }
 
   return (
     <button
-      type="button"
+      type={type}
       onClick={onClick}
       disabled={disabled}
       style={{

@@ -17,6 +17,7 @@ import {
   listarPagamentosAssinatura,
   solicitarTrocaPlano,
   cancelarTrocaPlano,
+  atualizarAssinatura,
 } from "@/services/assinaturaService";
 
 import {
@@ -37,6 +38,7 @@ export default function AssinaturasPage() {
   const [form, setForm] = useState({
     cliente_id: "",
     plano_id: "",
+    dia_vencimento: "",
   });
 
   const [menuAbertoId, setMenuAbertoId] = useState(null);
@@ -61,6 +63,10 @@ export default function AssinaturasPage() {
   const [assinaturaTroca, setAssinaturaTroca] = useState(null);
   const [novoPlanoId, setNovoPlanoId] = useState("");
   const [trocaPlanoCarregando, setTrocaPlanoCarregando] = useState(false);
+  const [modalVencimento, setModalVencimento] = useState(false);
+  const [assinaturaVencimento, setAssinaturaVencimento] = useState(null);
+  const [novoDiaVencimento, setNovoDiaVencimento] = useState("");
+  const [vencimentoCarregando, setVencimentoCarregando] = useState(false);
   useEffect(() => {
     carregarDados();
     carregarMercadoPago();
@@ -133,10 +139,17 @@ export default function AssinaturasPage() {
       return;
     }
 
+    const diaVencimento = Number(form.dia_vencimento);
+    if (!Number.isInteger(diaVencimento) || diaVencimento < 1 || diaVencimento > 28) {
+      setErro("Escolha um dia de vencimento entre 1 e 28.");
+      return;
+    }
+
     try {
       const dados = {
         cliente_id: Number(form.cliente_id),
         plano_id: Number(form.plano_id),
+        dia_vencimento: diaVencimento,
       };
 
       await criarAssinatura(dados);
@@ -146,6 +159,7 @@ export default function AssinaturasPage() {
       setForm({
         cliente_id: "",
         plano_id: "",
+        dia_vencimento: "",
       });
 
       await carregarDados();
@@ -219,6 +233,61 @@ export default function AssinaturasPage() {
               String(assinatura.plano_programado_id || assinatura.plano_id || "")
             );
             setModalTrocaPlano(true);
+        }
+
+        function podeEditarVencimento(assinatura) {
+          return (
+            !assinatura.data_ultimo_pagamento &&
+            !assinatura.primeiro_ciclo_processado &&
+            String(assinatura.status_pagamento || "").toUpperCase() !== "PAGO"
+          );
+        }
+
+        function abrirEdicaoVencimento(assinatura) {
+          setMensagem("");
+          setErro("");
+          setMenuAbertoId(null);
+          setAssinaturaVencimento(assinatura);
+          setNovoDiaVencimento(String(assinatura.dia_vencimento || ""));
+          setModalVencimento(true);
+        }
+
+        async function confirmarEdicaoVencimento() {
+          const dia = Number(novoDiaVencimento);
+          if (!Number.isInteger(dia) || dia < 1 || dia > 28) {
+            setErro("Escolha um dia de vencimento entre 1 e 28.");
+            return;
+          }
+
+          try {
+            setVencimentoCarregando(true);
+            setErro("");
+            const atualizada = await atualizarAssinatura(
+              assinaturaVencimento.id,
+              { dia_vencimento: dia }
+            );
+            const valor = Number(
+              atualizada.valor_proxima_cobranca || 0
+            ).toLocaleString("pt-BR", {
+              style: "currency",
+              currency: "BRL",
+            });
+            setMensagem(
+              `Vencimento alterado para o dia ${dia}. Primeira cobrança recalculada: ${valor}; usos do primeiro ciclo: ${atualizada.usos_proximo_ciclo ?? 0}.`
+            );
+            setModalVencimento(false);
+            setAssinaturaVencimento(null);
+            setNovoDiaVencimento("");
+            await carregarDados();
+          } catch (error) {
+            console.error("Erro ao editar vencimento:", error);
+            setErro(
+              error?.response?.data?.detail ||
+                "Erro ao alterar o vencimento da assinatura."
+            );
+          } finally {
+            setVencimentoCarregando(false);
+          }
         }
 
   function formatarData(data) {
@@ -549,6 +618,23 @@ export default function AssinaturasPage() {
               ))}
           </select>
 
+          <label>Dia de vencimento</label>
+          <select
+            value={form.dia_vencimento}
+            onChange={(e) => setForm({ ...form, dia_vencimento: e.target.value })}
+            style={campo}
+            required
+          >
+            <option value="">Selecione o dia</option>
+            {Array.from({ length: 28 }, (_, indice) => indice + 1).map((dia) => (
+              <option key={dia} value={dia}>Dia {dia}</option>
+            ))}
+          </select>
+
+          <p style={{ color: "#6b7280", fontSize: "14px", marginTop: "-8px" }}>
+            A primeira cobrança e os usos serão proporcionais até o vencimento escolhido.
+          </p>
+
           <button type="submit" style={botaoPrincipal}>
             Cadastrar Assinatura
           </button>
@@ -611,7 +697,8 @@ export default function AssinaturasPage() {
                     </td>
 
                     <td style={tdCentro}>
-                        {formatarData(assinatura.data_fim)}
+                        {formatarData(assinatura.data_proximo_vencimento || assinatura.data_fim)}
+                        {assinatura.dia_vencimento ? ` (dia ${assinatura.dia_vencimento})` : ""}
                     </td>
 
                     <td style={tdCentro}>
@@ -655,11 +742,21 @@ export default function AssinaturasPage() {
                             )
                             }
                         >
-                            ⋮
+                            {"\u22ee"}
                         </button>
 
                         {menuAbertoId === assinatura.id && (
                             <div style={menuAcoes}>
+                                {podeEditarVencimento(assinatura) && (
+                                  <button
+                                    type="button"
+                                    style={itemMenu}
+                                    onClick={() => abrirEdicaoVencimento(assinatura)}
+                                  >
+                                    Editar vencimento
+                                  </button>
+                                )}
+
                                 <button
                                     type="button"
                                     style={itemMenu}
@@ -690,7 +787,7 @@ export default function AssinaturasPage() {
                                     style={itemMenu}
                                     onClick={() => renovar(assinatura)}
                                 >
-                                    🔄 Renovar
+                                    Renovar
                                 </button>
 
                                 {String(assinatura.status).toUpperCase() === "ATIVO" ? (
@@ -698,14 +795,14 @@ export default function AssinaturasPage() {
                                         style={itemMenu}
                                         onClick={() => suspender(assinatura)}
                                     >
-                                        ⏸ Suspender
+                                        Suspender
                                     </button>
                                     ) : (
                                     <button
                                         style={itemMenu}
                                         onClick={() => reativar(assinatura)}
                                     >
-                                        ▶ Reativar
+                                        Reativar
                                     </button>
                                     )}
 
@@ -713,7 +810,7 @@ export default function AssinaturasPage() {
                                     style={itemMenu}
                                     onClick={() => abrirHistorico(assinatura)}
                                 >
-                                    📜 Histórico
+                                    Histórico
                                 </button>
                                 </div>
                         )}
@@ -747,7 +844,7 @@ historicoAberto && (
                 style={botaoFechar}
             >
 
-                ✖
+                X
 
             </button>
 
@@ -910,6 +1007,87 @@ historicoAberto && (
   </div>
 )}
 
+      {modalVencimento && assinaturaVencimento && (
+        <div style={overlayModal}>
+          <div style={{ ...modalGrande, width: "560px" }}>
+            <div style={cabecalhoModal}>
+              <h2>Editar vencimento</h2>
+              <button
+                type="button"
+                onClick={() => {
+                  setModalVencimento(false);
+                  setAssinaturaVencimento(null);
+                }}
+                style={botaoFechar}
+                disabled={vencimentoCarregando}
+              >
+                X
+              </button>
+            </div>
+
+            <p>
+              <strong>Cliente:</strong>{" "}
+              {buscarNomeCliente(assinaturaVencimento.cliente_id)}
+            </p>
+            <p>
+              <strong>Plano:</strong>{" "}
+              {buscarNomePlano(assinaturaVencimento.plano_id)}
+            </p>
+            <p>
+              <strong>Vencimento atual:</strong>{" "}
+              {formatarData(
+                assinaturaVencimento.data_proximo_vencimento ||
+                  assinaturaVencimento.data_fim
+              )}
+            </p>
+
+            <label htmlFor="novo-dia-vencimento">Novo dia de vencimento</label>
+            <select
+              id="novo-dia-vencimento"
+              value={novoDiaVencimento}
+              onChange={(e) => setNovoDiaVencimento(e.target.value)}
+              style={campo}
+              disabled={vencimentoCarregando}
+            >
+              <option value="">Selecione o dia</option>
+              {Array.from({ length: 28 }, (_, index) => index + 1).map((dia) => (
+                <option key={dia} value={dia}>
+                  Dia {dia}
+                </option>
+              ))}
+            </select>
+
+            <p style={{ marginTop: 12, color: "#555" }}>
+              Ao confirmar, o sistema recalculará o vencimento, o valor da
+              primeira cobrança e os usos proporcionais. A alteração só é
+              permitida antes do primeiro pagamento e sem cobrança online em andamento.
+            </p>
+
+            <div style={{ display: "flex", gap: 10 }}>
+              <button
+                type="button"
+                style={botaoPrincipal}
+                onClick={confirmarEdicaoVencimento}
+                disabled={vencimentoCarregando}
+              >
+                {vencimentoCarregando ? "Salvando..." : "Salvar vencimento"}
+              </button>
+              <button
+                type="button"
+                style={itemMenu}
+                onClick={() => {
+                  setModalVencimento(false);
+                  setAssinaturaVencimento(null);
+                }}
+                disabled={vencimentoCarregando}
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {cartaoAberto && cartaoAssinatura && (
         <div style={overlayModal}>
           <div style={modalGrande}>
@@ -924,7 +1102,7 @@ historicoAberto && (
                 }}
                 style={botaoFechar}
               >
-                ✕
+                X
               </button>
             </div>
 
