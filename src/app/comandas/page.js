@@ -17,9 +17,22 @@ import { listarServicos } from "@/services/servicoService";
 import { listarProdutos } from "@/services/produtoService";
 import { listarClientes } from "@/services/clienteService";
 import { listarBarbeiros } from "@/services/barbeiroService";
+import { useAuth } from "@/contexts/AuthContext";
 
 
 export default function ComandasPage() {
+  const {
+    usuario,
+    carregando: carregandoAutenticacao,
+  } = useAuth();
+
+  const perfilUsuario = String(
+    usuario?.perfil || ""
+  ).toLowerCase();
+
+  const usuarioEhBarbeiro =
+    perfilUsuario === "barbeiro";
+
   const [comandas, setComandas] = useState([]);
   const [servicos, setServicos] = useState([]);
   const [produtos, setProdutos] = useState([]);
@@ -74,8 +87,10 @@ export default function ComandasPage() {
 
 
   useEffect(() => {
-    carregarDadosIniciais();
-  }, []);
+    if (!carregandoAutenticacao && usuario) {
+      carregarDadosIniciais();
+    }
+  }, [carregandoAutenticacao, usuario]);
 
 
   function obterDetalheErro(error, mensagemPadrao) {
@@ -91,6 +106,22 @@ export default function ComandasPage() {
       setErro("");
       setCarregando(true);
 
+      if (
+        usuarioEhBarbeiro &&
+        !usuario?.barbeiro_id
+      ) {
+        setComandas([]);
+        setServicos([]);
+        setProdutos([]);
+        setClientes([]);
+        setBarbeiros([]);
+        setNovoBarbeiroId("");
+        setErro(
+          "Seu usuário barbeiro não possui vínculo com um cadastro de barbeiro. Solicite ao administrador que corrija o vínculo."
+        );
+        return;
+      }
+
       const dadosComandas = await listarComandas();
       setComandas(dadosComandas || []);
 
@@ -104,12 +135,30 @@ export default function ComandasPage() {
           : []
       );
 
-      const dadosBarbeiros = await listarBarbeiros();
-      setBarbeiros(
-        Array.isArray(dadosBarbeiros)
-          ? dadosBarbeiros
-          : []
-      );
+      if (usuarioEhBarbeiro) {
+        const barbeiroVinculado = {
+          id: Number(usuario.barbeiro_id),
+          nome:
+            usuario.barbeiro_nome ||
+            usuario.nome ||
+            "Meu cadastro",
+          ativo: true,
+        };
+
+        setBarbeiros([barbeiroVinculado]);
+        setNovoBarbeiroId(
+          String(usuario.barbeiro_id)
+        );
+      } else {
+        const dadosBarbeiros =
+          await listarBarbeiros();
+
+        setBarbeiros(
+          Array.isArray(dadosBarbeiros)
+            ? dadosBarbeiros
+            : []
+        );
+      }
 
       try {
         const dadosProdutos = await listarProdutos();
@@ -175,7 +224,11 @@ export default function ComandasPage() {
       });
 
       setNovoClienteId("");
-      setNovoBarbeiroId("");
+      setNovoBarbeiroId(
+        usuarioEhBarbeiro
+          ? String(usuario.barbeiro_id)
+          : ""
+      );
 
       await carregarComandas();
       await selecionarComanda(novaComanda.id);
@@ -894,11 +947,14 @@ export default function ComandasPage() {
               onChange={(event) =>
                 setNovoBarbeiroId(event.target.value)
               }
+              disabled={usuarioEhBarbeiro}
               style={inputStyle}
             >
-              <option value="">
-                Sem barbeiro
-              </option>
+              {!usuarioEhBarbeiro && (
+                <option value="">
+                  Sem barbeiro
+                </option>
+              )}
 
               {barbeiros
                 .filter(
@@ -936,6 +992,20 @@ export default function ComandasPage() {
           </div>
         </div>
 
+        {usuarioEhBarbeiro && (
+          <div
+            style={{
+              background: "#eff6ff",
+              color: "#1e40af",
+              borderRadius: "8px",
+              padding: "12px 14px",
+              marginTop: "15px",
+            }}
+          >
+            A comanda será vinculada automaticamente ao seu cadastro de barbeiro.
+          </div>
+        )}
+
         <div
           style={{
             marginTop: "12px",
@@ -946,9 +1016,9 @@ export default function ComandasPage() {
             fontSize: "13px",
           }}
         >
-          Para venda somente de produtos, cliente e
-          barbeiro podem ficar em branco. Para serviços,
-          selecione um barbeiro.
+          {usuarioEhBarbeiro
+            ? "Você pode abrir a comanda para cliente cadastrado ou cliente avulso. Serviços e produtos lançados ficarão vinculados à sua própria comanda."
+            : "Para venda somente de produtos, cliente e barbeiro podem ficar em branco. Para serviços, selecione um barbeiro."}
         </div>
       </section>
 
@@ -1210,7 +1280,7 @@ export default function ComandasPage() {
                     }}
                   >
                     <strong>
-                      💳 CLIENTE ASSINANTE
+                      CLIENTE ASSINANTE
                     </strong>
 
                     <p style={{ margin: "8px 0 0" }}>
@@ -1339,7 +1409,7 @@ export default function ComandasPage() {
                                   fontWeight: "700",
                                 }}
                               >
-                                💳 PLANO
+                                PLANO
                               </span>
                             ) : item.tipo ===
                               "servico" ? (
@@ -1361,7 +1431,7 @@ export default function ComandasPage() {
                                       "6px",
                                   }}
                                 >
-                                  💵 AVULSO
+                                  AVULSO
                                 </span>
 
                                 {comandaSelecionada.status === "aberta" &&
@@ -1416,7 +1486,7 @@ export default function ComandasPage() {
                                   fontWeight: "700",
                                 }}
                               >
-                                📦 PRODUTO
+                                PRODUTO
                               </span>
                             )}
                           </td>
@@ -1593,7 +1663,7 @@ export default function ComandasPage() {
                     >
                       {usandoPlanoItemId === "todos"
                         ? "Utilizando plano..."
-                        : "💳 Usar plano nos serviços elegíveis"}
+                        : "Usar plano nos serviços elegíveis"}
                     </button>
                   )}
 
@@ -1632,7 +1702,7 @@ export default function ComandasPage() {
                       marginBottom: "10px",
                     }}
                   >
-                    💳 Comanda integralmente coberta pelo plano.
+                    Comanda integralmente coberta pelo plano.
                   </div>
                 )}
 
