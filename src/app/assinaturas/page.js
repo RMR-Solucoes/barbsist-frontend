@@ -165,7 +165,10 @@ export default function AssinaturasPage() {
       await carregarDados();
     } catch (error) {
       console.error("Erro ao cadastrar assinatura:", error);
-      setErro("Erro ao cadastrar assinatura.");
+      setErro(
+        error?.response?.data?.detail ||
+          "Erro ao cadastrar assinatura."
+      );
     }
   }
 
@@ -236,6 +239,11 @@ export default function AssinaturasPage() {
         }
 
         function podeEditarVencimento(assinatura) {
+          const status = String(assinatura.status || "").toUpperCase();
+          return !["CANCELADO", "ENCERRADO"].includes(status);
+        }
+
+        function alteraVencimentoImediatamente(assinatura) {
           return (
             !assinatura.data_ultimo_pagamento &&
             !assinatura.primeiro_ciclo_processado &&
@@ -243,12 +251,29 @@ export default function AssinaturasPage() {
           );
         }
 
+        function obterDiaDoVencimento(assinatura) {
+          if (assinatura.dia_vencimento) {
+            return String(assinatura.dia_vencimento);
+          }
+
+          const data =
+            assinatura.data_proximo_vencimento || assinatura.data_fim;
+          if (!data) return "";
+
+          const dataIso = String(data).slice(0, 10);
+          const partes = dataIso.split("-");
+          if (partes.length !== 3) return "";
+
+          const dia = Number(partes[2]);
+          return dia >= 1 && dia <= 28 ? String(dia) : "";
+        }
+
         function abrirEdicaoVencimento(assinatura) {
           setMensagem("");
           setErro("");
           setMenuAbertoId(null);
           setAssinaturaVencimento(assinatura);
-          setNovoDiaVencimento(String(assinatura.dia_vencimento || ""));
+          setNovoDiaVencimento(obterDiaDoVencimento(assinatura));
           setModalVencimento(true);
         }
 
@@ -262,19 +287,27 @@ export default function AssinaturasPage() {
           try {
             setVencimentoCarregando(true);
             setErro("");
+            const alteracaoImediata =
+              alteraVencimentoImediatamente(assinaturaVencimento);
             const atualizada = await atualizarAssinatura(
               assinaturaVencimento.id,
               { dia_vencimento: dia }
             );
-            const valor = Number(
-              atualizada.valor_proxima_cobranca || 0
-            ).toLocaleString("pt-BR", {
-              style: "currency",
-              currency: "BRL",
-            });
-            setMensagem(
-              `Vencimento alterado para o dia ${dia}. Primeira cobrança recalculada: ${valor}; usos do primeiro ciclo: ${atualizada.usos_proximo_ciclo ?? 0}.`
-            );
+            if (alteracaoImediata) {
+              const valor = Number(
+                atualizada.valor_proxima_cobranca || 0
+              ).toLocaleString("pt-BR", {
+                style: "currency",
+                currency: "BRL",
+              });
+              setMensagem(
+                `Vencimento alterado para o dia ${dia}. Primeira cobrança recalculada: ${valor}; usos do primeiro ciclo: ${atualizada.usos_proximo_ciclo ?? 0}.`
+              );
+            } else {
+              setMensagem(
+                `Dia ${dia} programado para os próximos ciclos. O vencimento, o pagamento e os usos do ciclo atual foram preservados.`
+              );
+            }
             setModalVencimento(false);
             setAssinaturaVencimento(null);
             setNovoDiaVencimento("");
@@ -698,7 +731,17 @@ export default function AssinaturasPage() {
 
                     <td style={tdCentro}>
                         {formatarData(assinatura.data_proximo_vencimento || assinatura.data_fim)}
-                        {assinatura.dia_vencimento ? ` (dia ${assinatura.dia_vencimento})` : ""}
+                        {assinatura.dia_vencimento
+                          ? Number(
+                              String(
+                                assinatura.data_proximo_vencimento ||
+                                  assinatura.data_fim ||
+                                  ""
+                              ).slice(8, 10)
+                            ) === Number(assinatura.dia_vencimento)
+                            ? ` (dia ${assinatura.dia_vencimento})`
+                            : ` (novo dia ${assinatura.dia_vencimento} nos próximos ciclos)`
+                          : ""}
                     </td>
 
                     <td style={tdCentro}>
@@ -1058,9 +1101,9 @@ historicoAberto && (
             </select>
 
             <p style={{ marginTop: 12, color: "#555" }}>
-              Ao confirmar, o sistema recalculará o vencimento, o valor da
-              primeira cobrança e os usos proporcionais. A alteração só é
-              permitida antes do primeiro pagamento e sem cobrança online em andamento.
+              {alteraVencimentoImediatamente(assinaturaVencimento)
+                ? "Ao confirmar, o sistema recalculará o vencimento, o valor da primeira cobrança e os usos proporcionais. A alteração exige que não exista cobrança online em andamento."
+                : "Ao confirmar, o novo dia será aplicado nas próximas renovações. O vencimento, o pagamento e os usos do ciclo atual serão preservados."}
             </p>
 
             <div style={{ display: "flex", gap: 10 }}>
