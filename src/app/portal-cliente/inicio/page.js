@@ -115,7 +115,7 @@ export default function Inicio() {
 
   function abrirAgendamento() {
     const slug = perfil?.barbearia_slug || obterBarbeariaPortal();
-    if (!slug || !perfil?.permitir_agendamento_portal) return;
+    if (!slug) return;
 
     router.push(`/agendar?barbearia=${encodeURIComponent(slug)}&origem=portal-cliente`);
   }
@@ -409,3 +409,4 @@ export default function Inicio() {
     </main>
   );
 }
+
