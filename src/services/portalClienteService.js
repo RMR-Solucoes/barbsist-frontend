@@ -27,6 +27,18 @@ export async function reenviarCodigoCliente(barbeariaSlug, email) {
   const { data } = await api.post("/portal-cliente/reenviar-codigo", { barbearia_slug: barbeariaSlug, email }); return data;
 }
 export async function carregarPerfilCliente() { const { data } = await api.get("/portal-cliente/me", configCliente()); return data; }
+export async function carregarMinhaAssinatura() { const { data } = await api.get("/portal-cliente/minha-assinatura", configCliente()); return data; }
+export async function carregarMeusPagamentos() { const { data } = await api.get("/portal-cliente/meus-pagamentos", configCliente()); return data; }
+export async function carregarPlanosDisponiveis() { const { data } = await api.get("/portal-cliente/planos-disponiveis", configCliente()); return data; }
+export async function carregarMinhasComandasAbertas() { const { data } = await api.get("/portal-cliente/minhas-comandas-abertas", configCliente()); return data; }
+export async function assinarPlanoPix(planoId, diaVencimento) {
+  const { data } = await api.post(
+    `/portal-cliente/assinar/${planoId}/pix`,
+    { dia_vencimento: Number(diaVencimento) },
+    configCliente(),
+  );
+  return data;
+}
 export async function alterarSenhaCliente(senhaAtual, novaSenha) {
   const { data } = await api.put("/portal-cliente/minha-senha", { senha_atual: senhaAtual, nova_senha: novaSenha }, configCliente()); return data;
 }

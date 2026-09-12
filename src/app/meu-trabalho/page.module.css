@@ -45,18 +45,40 @@
   box-shadow: 0 12px 30px rgba(15, 23, 42, .06);
 }
 
-.card { display: flex; min-height: 142px; padding: 22px; flex-direction: column; }
-.card span { color: #64748b; font-weight: 600; }
+.card { display: flex; min-height: 142px; padding: 22px; flex-direction: column; transition: transform .18s ease, box-shadow .18s ease; }
+.card:hover { transform: translateY(-2px); box-shadow: 0 16px 32px rgba(15, 23, 42, .10); }
+.card span { color: #475569; font-weight: 700; }
 .card strong { margin: auto 0 8px; font-size: 1.65rem; line-height: 1.15; }
 .card small { color: #64748b; }
-.cardDestaque { border-color: #86efac; background: linear-gradient(145deg, #f0fdf4, #ffffff); }
+.cardAzul { border-color: #93c5fd; background: linear-gradient(145deg, #eff6ff, #ffffff); }
+.cardAzul strong { color: #1d4ed8; }
+.cardCiano { border-color: #67e8f9; background: linear-gradient(145deg, #ecfeff, #ffffff); }
+.cardCiano strong { color: #0e7490; }
+.cardRoxo { border-color: #c4b5fd; background: linear-gradient(145deg, #f5f3ff, #ffffff); }
+.cardRoxo strong { color: #6d28d9; }
+.cardVerde { border-color: #86efac; background: linear-gradient(145deg, #dcfce7, #f0fdf4); }
+.cardDestaque { box-shadow: 0 12px 30px rgba(22, 163, 74, .12); }
 .cardDestaque strong { color: #15803d; }
 
-.atalhos { display: flex; gap: 12px; margin-bottom: 20px; }
-.atalhos a { border-radius: 12px; background: #2563eb; color: white; padding: 11px 16px; font-weight: 700; text-decoration: none; }
-.atalhos a:last-child { background: #312e81; }
+.atalhos { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-bottom: 20px; }
+.atalhoCard { min-height: 118px; border: 2px solid transparent; border-radius: 16px; padding: 18px 20px; display: flex; flex-direction: column; gap: 7px; text-align: left; cursor: pointer; transition: transform .18s ease, box-shadow .18s ease; }
+.atalhoCard:hover { transform: translateY(-2px); box-shadow: 0 12px 24px rgba(15, 23, 42, .1); }
+.atalhoCard span { font-size: .85rem; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; }
+.atalhoCard strong { font-size: 1.2rem; color: #0f172a; }
+.atalhoCard small { color: #475569; }
+.atalhoCard:first-child { background: #eff6ff; color: #1d4ed8; border-color: #bfdbfe; }
+.atalhoCard:last-child { background: #f5f3ff; color: #5b21b6; border-color: #ddd6fe; }
+.atalhoAgendaAtivo { border-color: #2563eb !important; box-shadow: 0 0 0 3px #dbeafe; }
+.atalhoComandasAtivo { border-color: #7c3aed !important; box-shadow: 0 0 0 3px #ede9fe; }
+.linkCompleto { border-radius: 10px; background: #0f172a; color: white; padding: 9px 13px; font-size: .9rem; font-weight: 700; text-decoration: none; white-space: nowrap; }
 
 .painel { padding: 24px; margin-bottom: 20px; }
+.painelComissoes { border-color: #86efac; background: linear-gradient(145deg, #ecfdf5, #ffffff 58%); box-shadow: 0 14px 34px rgba(22, 163, 74, .10); }
+.painelComissoes .tituloLinha h2 { color: #14532d; }
+.painelComissoes .resumoFinanceiro div { border: 1px solid #bbf7d0; background: rgba(255, 255, 255, .82); }
+.painelComissoes .resumoFinanceiro strong { color: #166534; }
+.painelComissoes .tabelaContainer { border: 1px solid #bbf7d0; border-radius: 12px; overflow-x: auto; }
+.painelComissoes .tabelaContainer th { background: #166534; }
 .tituloLinha { display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; margin-bottom: 20px; }
 .tituloLinha h2 { margin: 0 0 6px; font-size: 1.3rem; }
 .tituloLinha label { display: grid; gap: 6px; color: #475569; font-size: .85rem; font-weight: 700; }
@@ -91,6 +113,6 @@
   .cabecalho, .tituloLinha { align-items: stretch; flex-direction: column; }
   .cabecalho button { width: 100%; }
   .cards, .resumoFinanceiro { grid-template-columns: 1fr; }
-  .atalhos { flex-direction: column; }
-  .atalhos a { text-align: center; }
+  .atalhos { grid-template-columns: 1fr; }
+  .linkCompleto { text-align: center; }
 }

@@ -17,12 +17,23 @@ import { obterBarbeariaPublica } from "@/services/barbeariaService";
 
 
 export default function AgendamentoOnlinePage() {
+  const origemPortal =
+    typeof window !== "undefined" &&
+    new URLSearchParams(window.location.search).get("origem") ===
+      "portal-cliente";
+
   const barbeariaSlug =
     (typeof window !== "undefined"
       ? new URLSearchParams(window.location.search).get("barbearia")
       : null) ||
     process.env.NEXT_PUBLIC_BARBEARIA_SLUG ||
     "barbsist-admin";
+
+  function voltarAoPortalCliente() {
+    if (typeof window !== "undefined") {
+      window.location.assign("/portal-cliente/inicio");
+    }
+  }
 
   const [barbearia, setBarbearia] = useState(null);
   const hoje = new Date().toISOString().split("T")[0];
@@ -463,6 +474,23 @@ if (agendamentoConfirmado) {
           boxSizing: "border-box",
         }}
       >
+        {origemPortal && (
+          <div style={{ marginBottom: "18px" }}>
+            <button
+              type="button"
+              onClick={voltarAoPortalCliente}
+              style={{
+                ...buttonStyle,
+                background: "transparent",
+                border: "1px solid #93c5fd",
+                color: "#ffffff",
+              }}
+            >
+              ← Voltar ao Portal do Cliente
+            </button>
+          </div>
+        )}
+
         <div
           style={{
             fontSize: "54px",
@@ -586,6 +614,22 @@ if (agendamentoConfirmado) {
 return (
   <main className={styles.pagina}>
     <section className={styles.container}>
+      {origemPortal && (
+        <div style={{ marginBottom: "18px" }}>
+          <button
+            type="button"
+            onClick={voltarAoPortalCliente}
+            style={{
+              ...buttonStyle,
+              background: "#ffffff",
+              border: "1px solid #cbd5e1",
+              color: "#1e293b",
+            }}
+          >
+            ← Voltar à tela inicial
+          </button>
+        </div>
+      )}
       <header className={styles.cabecalho}>
         {barbearia?.imagem_capa_url && (
           <img

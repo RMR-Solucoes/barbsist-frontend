@@ -11,7 +11,6 @@ import styles from "../login/login.module.css";
 
 export default function EsqueciSenhaPage() {
   const [formulario, setFormulario] = useState({
-    barbearia_slug: "",
     email: "",
   });
 
@@ -46,8 +45,6 @@ export default function EsqueciSenhaPage() {
     try {
       const resposta =
         await solicitarRecuperacaoSenha({
-          barbearia_slug:
-            formulario.barbearia_slug.trim(),
           email: formulario.email
             .trim()
             .toLowerCase(),
@@ -110,8 +107,7 @@ export default function EsqueciSenhaPage() {
             <h2>Esqueci minha senha</h2>
 
             <p>
-              Informe a barbearia e o e-mail
-              da sua conta.
+              Informe o e-mail da sua conta.
             </p>
           </div>
 
@@ -143,23 +139,6 @@ export default function EsqueciSenhaPage() {
           )}
 
           <label className={styles.campo}>
-            <span>
-              Identificador da barbearia
-            </span>
-
-            <input
-              type="text"
-              name="barbearia_slug"
-              value={formulario.barbearia_slug}
-              onChange={alterarCampo}
-              placeholder="ex.: minha-barbearia"
-              autoComplete="organization"
-              autoFocus
-              required
-            />
-          </label>
-
-          <label className={styles.campo}>
             <span>E-mail</span>
 
             <input
@@ -169,6 +148,7 @@ export default function EsqueciSenhaPage() {
               onChange={alterarCampo}
               placeholder="seuemail@exemplo.com"
               autoComplete="email"
+              autoFocus
               required
             />
           </label>

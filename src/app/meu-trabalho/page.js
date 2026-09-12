@@ -85,9 +85,9 @@ function mensagemErro(erro, fallback) {
 }
 
 
-function Cartao({ titulo, valor, detalhe, destaque = false }) {
+function Cartao({ titulo, valor, detalhe, variante = "azul", destaque = false }) {
   return (
-    <article className={`${styles.card} ${destaque ? styles.cardDestaque : ""}`}>
+    <article className={`${styles.card} ${styles[`card${variante}`]} ${destaque ? styles.cardDestaque : ""}`}>
       <span>{titulo}</span>
       <strong>{valor}</strong>
       <small>{detalhe}</small>
@@ -104,6 +104,7 @@ export default function MeuTrabalhoPage() {
   const [comissoes, setComissoes] = useState([]);
   const [carregando, setCarregando] = useState(true);
   const [avisos, setAvisos] = useState([]);
+  const [painelAtivo, setPainelAtivo] = useState("agenda");
 
   async function carregarTudo() {
     setCarregando(true);
@@ -219,40 +220,7 @@ export default function MeuTrabalhoPage() {
         </section>
       )}
 
-      <section className={styles.cards}>
-        <Cartao
-          titulo="Atendimentos hoje"
-          valor={carregando ? "—" : agendamentosHoje.length}
-          detalhe="Somente sua agenda"
-        />
-        <Cartao
-          titulo="Próximo atendimento"
-          valor={carregando ? "—" : (
-            proximoAgendamento
-              ? formatarDataHora(proximoAgendamento.data_hora_inicio)
-              : "Sem próximo horário"
-          )}
-          detalhe={proximoAgendamento ? `Agendamento #${proximoAgendamento.id}` : "Agenda livre"}
-        />
-        <Cartao
-          titulo="Comandas abertas"
-          valor={carregando ? "—" : comandasAbertas.length}
-          detalhe="Somente suas comandas"
-        />
-        <Cartao
-          titulo="Comissão no mês"
-          valor={carregando ? "—" : moeda(totalComissoes)}
-          detalhe={percentual === null ? "Nenhuma comissão no período" : `Percentual: ${percentual}%`}
-          destaque
-        />
-      </section>
-
-      <section className={styles.atalhos}>
-        <Link href="/agenda">Abrir minha agenda</Link>
-        <Link href="/comandas">Abrir minhas comandas</Link>
-      </section>
-
-      <section className={styles.painel}>
+      <section className={`${styles.painel} ${styles.painelComissoes}`}>
         <div className={styles.tituloLinha}>
           <div>
             <h2>Meus ganhos e comissões</h2>
@@ -302,10 +270,66 @@ export default function MeuTrabalhoPage() {
         </div>
       </section>
 
-      <section className={styles.duasColunas}>
-        <article className={styles.painel}>
+      <section className={styles.cards}>
+        <Cartao
+          titulo="Atendimentos hoje"
+          valor={carregando ? "—" : agendamentosHoje.length}
+          detalhe="Somente sua agenda"
+          variante="Azul"
+        />
+        <Cartao
+          titulo="Próximo atendimento"
+          valor={carregando ? "—" : (
+            proximoAgendamento
+              ? formatarDataHora(proximoAgendamento.data_hora_inicio)
+              : "Sem próximo horário"
+          )}
+          detalhe={proximoAgendamento ? `Agendamento #${proximoAgendamento.id}` : "Agenda livre"}
+          variante="Ciano"
+        />
+        <Cartao
+          titulo="Comandas abertas"
+          valor={carregando ? "—" : comandasAbertas.length}
+          detalhe="Somente suas comandas"
+          variante="Roxo"
+        />
+        <Cartao
+          titulo="Comissão no mês"
+          valor={carregando ? "—" : moeda(totalComissoes)}
+          detalhe={percentual === null ? "Nenhuma comissão no período" : `Percentual: ${percentual}%`}
+          variante="Verde"
+          destaque
+        />
+      </section>
+
+      <section className={styles.atalhos} aria-label="Acessos rápidos">
+        <button
+          type="button"
+          className={`${styles.atalhoCard} ${painelAtivo === "agenda" ? styles.atalhoAgendaAtivo : ""}`}
+          onClick={() => setPainelAtivo("agenda")}
+          aria-pressed={painelAtivo === "agenda"}
+        >
+          <span>Minha agenda</span>
+          <strong>{agendamentosHoje.length} atendimento(s) hoje</strong>
+          <small>Consulte seus próximos horários</small>
+        </button>
+        <button
+          type="button"
+          className={`${styles.atalhoCard} ${painelAtivo === "comandas" ? styles.atalhoComandasAtivo : ""}`}
+          onClick={() => setPainelAtivo("comandas")}
+          aria-pressed={painelAtivo === "comandas"}
+        >
+          <span>Minhas comandas</span>
+          <strong>{comandasAbertas.length} comanda(s) aberta(s)</strong>
+          <small>Acompanhe sua movimentação operacional</small>
+        </button>
+      </section>
+
+      <section>
+        {painelAtivo === "agenda" && <article className={styles.painel}>
           <div className={styles.tituloLinha}>
             <div><h2>Próximos agendamentos</h2><p>Seus próximos horários ativos.</p></div>
+            <Link className={styles.linkCompleto} href="/agenda">Abrir agenda completa →</Link>
           </div>
           <div className={styles.lista}>
             {agendaOrdenada.filter((item) => {
@@ -322,11 +346,12 @@ export default function MeuTrabalhoPage() {
               return data && data >= hoje && STATUS_ATIVOS.has(String(item.status || "").toLowerCase());
             }).length === 0 && <p className={styles.vazio}>Nenhum próximo agendamento.</p>}
           </div>
-        </article>
+        </article>}
 
-        <article className={styles.painel}>
+        {painelAtivo === "comandas" && <article className={styles.painel}>
           <div className={styles.tituloLinha}>
             <div><h2>Minhas comandas</h2><p>Movimentação operacional recente.</p></div>
+            <Link className={styles.linkCompleto} href="/comandas">Abrir comandas completas →</Link>
           </div>
           <div className={styles.lista}>
             {comandas.slice(0, 5).map((item) => (
@@ -337,7 +362,7 @@ export default function MeuTrabalhoPage() {
             ))}
             {!carregando && comandas.length === 0 && <p className={styles.vazio}>Nenhuma comanda encontrada.</p>}
           </div>
-        </article>
+        </article>}
       </section>
     </main>
   );

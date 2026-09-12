@@ -18,8 +18,11 @@ import {
 import { listarConfiguracoesFuncionamento } from "@/services/configuracaoFuncionamentoService";
 
 import { listarDisponibilidadeBarbeiro } from "@/services/barbeiroDisponibilidadeService";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function AgendaPage() {
+  const { usuario } = useAuth();
+  const ehBarbeiro = String(usuario?.perfil || "").toLowerCase() === "barbeiro";
   const [abaAtiva, setAbaAtiva] = useState("agendamento");
   const [modoVisualizacao, setModoVisualizacao] = useState("diario");
 
@@ -76,6 +79,12 @@ export default function AgendaPage() {
   useEffect(() => {
     carregarDadosIniciais();
   }, []);
+
+  useEffect(() => {
+    if (ehBarbeiro) {
+      setAbaAtiva("agenda");
+    }
+  }, [ehBarbeiro]);
 
   useEffect(() => {
     carregarAgendamentos();
@@ -496,6 +505,11 @@ export default function AgendaPage() {
     e.preventDefault();
     limparMensagens();
 
+    if (ehBarbeiro) {
+      setErro("O perfil barbeiro possui acesso somente para consulta da agenda.");
+      return;
+    }
+
     if (
       !form.cliente_id ||
       !form.barbeiro_id ||
@@ -574,6 +588,11 @@ export default function AgendaPage() {
   async function cancelar(id) {
     limparMensagens();
 
+    if (ehBarbeiro) {
+      setErro("O perfil barbeiro possui acesso somente para consulta da agenda.");
+      return;
+    }
+
     const confirmar = window.confirm(
       "Deseja realmente cancelar este agendamento?",
     );
@@ -590,6 +609,11 @@ export default function AgendaPage() {
 
   async function iniciarAtendimento(id) {
     limparMensagens();
+
+    if (ehBarbeiro) {
+      setErro("O perfil barbeiro possui acesso somente para consulta da agenda.");
+      return;
+    }
 
     const confirmar = window.confirm(
       "Deseja iniciar este atendimento e gerar uma comanda?",
@@ -1122,7 +1146,23 @@ export default function AgendaPage() {
 
   return (
     <main className={styles.page} style={{ padding: "30px" }}>
-      <h1>Agenda Interna</h1>
+      <h1>{ehBarbeiro ? "Minha Agenda" : "Agenda Interna"}</h1>
+
+      {ehBarbeiro && (
+        <div
+          style={{
+            marginBottom: "20px",
+            padding: "12px 16px",
+            border: "1px solid #bfdbfe",
+            borderRadius: "10px",
+            background: "#eff6ff",
+            color: "#1e3a8a",
+            fontWeight: 600,
+          }}
+        >
+          Consulta da sua agenda. Inclusões e alterações são realizadas pela administração da barbearia.
+        </div>
+      )}
 
       <div
         className={styles.tabs}
@@ -1133,7 +1173,7 @@ export default function AgendaPage() {
           flexWrap: "wrap",
         }}
       >
-        <button
+        {!ehBarbeiro && <button
           className={styles.tabButton}
           type="button"
           onClick={() => setAbaAtiva("agendamento")}
@@ -1143,7 +1183,7 @@ export default function AgendaPage() {
           <div style={ticketIconStyle}>🎫</div>
           <h3 style={{ margin: "0 0 6px 0" }}>Agendamento</h3>
           <p style={{ margin: 0, color: "#4b5563" }}>Criar novo atendimento</p>
-        </button>
+        </button>}
 
         <button
           className={styles.tabButton}
@@ -1186,7 +1226,7 @@ export default function AgendaPage() {
         </div>
       )}
 
-      {abaAtiva === "agendamento" && (
+      {!ehBarbeiro && abaAtiva === "agendamento" && (
         <>
           <section
             className={styles.formCard}
@@ -1348,7 +1388,7 @@ export default function AgendaPage() {
               className={styles.filterGrid}
               style={{
                 display: "grid",
-                gridTemplateColumns: "1fr 1fr",
+                gridTemplateColumns: ehBarbeiro ? "1fr" : "1fr 1fr",
                 gap: "20px",
               }}
             >
@@ -1363,7 +1403,7 @@ export default function AgendaPage() {
                 />
               </div>
 
-              <div>
+              {!ehBarbeiro && <div>
                 <label>Barbeiro</label>
                 <select
                   name="barbeiro_id"
@@ -1378,7 +1418,7 @@ export default function AgendaPage() {
                     </option>
                   ))}
                 </select>
-              </div>
+              </div>}
             </div>
           </section>
 
@@ -1594,7 +1634,7 @@ export default function AgendaPage() {
                       <th>Duração</th>
                       <th>Status</th>
                       <th>Observações</th>
-                      <th>Ações</th>
+                      {!ehBarbeiro && <th>Ações</th>}
                     </tr>
                   </thead>
 
@@ -1667,7 +1707,7 @@ export default function AgendaPage() {
                             {agendamento.observacoes || "-"}
                           </td>
 
-                          <td data-label="Ações">
+                          {!ehBarbeiro && <td data-label="Ações">
                             <div
                               style={{
                                 display: "flex",
@@ -1730,14 +1770,14 @@ export default function AgendaPage() {
                                 </span>
                               )}
                             </div>
-                          </td>
+                          </td>}
                         </tr>
                       );
                     })}
 
                     {agendamentos.length === 0 && (
                       <tr>
-                        <td colSpan="11" align="center">
+                        <td colSpan={ehBarbeiro ? 10 : 11} align="center">
                           Nenhum agendamento encontrado para os filtros
                           selecionados.
                         </td>

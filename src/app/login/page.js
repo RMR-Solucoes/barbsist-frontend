@@ -18,7 +18,6 @@ export default function LoginPage() {
   } = useAuth();
 
   const [formulario, setFormulario] = useState({
-    barbearia_slug: "",
     email: "",
     senha: "",
   });
@@ -60,8 +59,6 @@ export default function LoginPage() {
 
     try {
       await entrar({
-        barbearia_slug:
-          formulario.barbearia_slug.trim(),
         email: formulario.email
           .trim()
           .toLowerCase(),
@@ -147,23 +144,6 @@ export default function LoginPage() {
           )}
 
           <label className={styles.campo}>
-            <span>
-              Identificador da barbearia
-            </span>
-
-            <input
-              type="text"
-              name="barbearia_slug"
-              value={formulario.barbearia_slug}
-              onChange={alterarCampo}
-              placeholder="ex.: minha-barbearia"
-              autoComplete="organization"
-              autoFocus
-              required
-            />
-          </label>
-
-          <label className={styles.campo}>
             <span>E-mail</span>
 
             <input
@@ -173,6 +153,7 @@ export default function LoginPage() {
               onChange={alterarCampo}
               placeholder="seuemail@exemplo.com"
               autoComplete="username"
+              autoFocus
               required
             />
           </label>

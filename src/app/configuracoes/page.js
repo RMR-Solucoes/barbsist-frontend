@@ -56,6 +56,7 @@ export default function ConfiguracoesPage() {
 const [barbeariaExiste, setBarbeariaExiste] = useState(false);
 const [salvandoBarbearia, setSalvandoBarbearia] = useState(false);
 const [linkAgendamento, setLinkAgendamento] = useState("");
+const [linkPortalCliente, setLinkPortalCliente] = useState("");
 
   const diasSemana = [
     "SEGUNDA",
@@ -86,8 +87,12 @@ const [linkAgendamento, setLinkAgendamento] = useState("");
       setLinkAgendamento(
         `${window.location.origin}/agendar?barbearia=${slugSeguro}`
       );
+      setLinkPortalCliente(
+        `${window.location.origin}/portal-cliente?barbearia=${slugSeguro}`
+      );
     } else {
       setLinkAgendamento("");
+      setLinkPortalCliente("");
     }
   }, [barbearia.slug]);
 
@@ -114,6 +119,31 @@ const [linkAgendamento, setLinkAgendamento] = useState("");
         "Não foi possível copiar o link automaticamente. Selecione e copie o endereço manualmente."
       );
     }
+  }
+
+  async function copiarLinkPortalCliente() {
+    limparMensagens();
+    if (!linkPortalCliente) {
+      setErro("O link ainda não está disponível. Salve primeiro os dados da barbearia.");
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(linkPortalCliente);
+      setMensagem("Link do Portal do Cliente copiado com sucesso.");
+    } catch {
+      setErro("Não foi possível copiar o link automaticamente. Selecione e copie o endereço manualmente.");
+    }
+  }
+
+  function compartilharPortalClienteWhatsApp() {
+    limparMensagens();
+    if (!linkPortalCliente) {
+      setErro("O link ainda não está disponível. Salve primeiro os dados da barbearia.");
+      return;
+    }
+    const nomeBarbearia = barbearia.nome || "nossa barbearia";
+    const texto = `Olá! Acesse o Portal do Cliente da ${nomeBarbearia} para consultar seus dados, agendamentos, planos e comandas:\n\n${linkPortalCliente}`;
+    window.open(`https://wa.me/?text=${encodeURIComponent(texto)}`, "_blank", "noopener,noreferrer");
   }
 
   function compartilharLinkWhatsApp() {
@@ -746,6 +776,58 @@ const estadosBrasil = [
             >
               O link será gerado após o cadastro da barbearia possuir um
               identificador público.
+            </div>
+          )}
+        </div>
+
+        <div
+          style={{
+            ...cardStyle,
+            maxWidth: "1000px",
+            background: "#eff6ff",
+            border: "1px solid #93c5fd",
+          }}
+        >
+          <h3 style={{ marginTop: 0, marginBottom: "8px" }}>
+            👤 Portal do Cliente
+          </h3>
+          <p style={{ color: "#475569", marginTop: 0, marginBottom: "16px", lineHeight: 1.5 }}>
+            Compartilhe este link para seus clientes acessarem agendamentos,
+            planos, pagamentos e comandas da {barbearia.nome || "barbearia"}.
+          </p>
+
+          {linkPortalCliente ? (
+            <>
+              <input
+                type="text"
+                value={linkPortalCliente}
+                readOnly
+                onFocus={(e) => e.target.select()}
+                style={{ ...inputPadraoStyle, marginBottom: "12px", background: "#ffffff", cursor: "text" }}
+              />
+              <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
+                <button type="button" onClick={copiarLinkPortalCliente} style={buttonStyle}>
+                  📋 Copiar Portal do Cliente
+                </button>
+                <button
+                  type="button"
+                  onClick={() => window.open(linkPortalCliente, "_blank", "noopener,noreferrer")}
+                  style={{ ...buttonStyle, background: "#2563eb" }}
+                >
+                  🌐 Abrir Portal
+                </button>
+                <button
+                  type="button"
+                  onClick={compartilharPortalClienteWhatsApp}
+                  style={{ ...buttonStyle, background: "#16a34a" }}
+                >
+                  📱 Compartilhar no WhatsApp
+                </button>
+              </div>
+            </>
+          ) : (
+            <div style={{ padding: "14px", borderRadius: "8px", background: "#fef3c7", color: "#92400e" }}>
+              O link será gerado após o cadastro da barbearia possuir um identificador público.
             </div>
           )}
         </div>
