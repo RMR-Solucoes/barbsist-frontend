@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -86,7 +86,18 @@ export default function Inicio() {
       })
       .catch((falha) => {
         const status = falha?.response?.status;
-        if (status === 401 || status === 403) sairPortalCliente();
+
+        if (status === 401 || status === 403) {
+          const slug = obterBarbeariaPortal() || "";
+
+          sairPortalCliente();
+
+          router.replace(
+            `/portal-cliente?barbearia=${encodeURIComponent(slug)}`,
+          );
+          return;
+        }
+
         setErroFatal(
           falha?.response?.data?.detail ||
             "Não foi possível carregar os dados do portal.",
