@@ -165,7 +165,7 @@ export default function Inicio() {
       { id: "plano", titulo: "Meu plano", texto: assinatura?.plano?.nome || "Escolha uma assinatura", detalhe: assinatura ? `Status: ${rotulo(assinatura.status)}` : "Conheça os planos disponíveis", cor: "border-violet-200 bg-violet-50", destaque: "text-violet-700" },
       { id: "planos", titulo: "Assinar plano", texto: "Planos disponíveis", detalhe: `${planos.length} opção(ões) para contratação`, cor: "border-cyan-200 bg-cyan-50", destaque: "text-cyan-700" },
       { id: "pagamentos", titulo: "Pagamentos", texto: `${pagamentos.length} registro(s)`, detalhe: "Consulte seu histórico financeiro", cor: "border-emerald-200 bg-emerald-50", destaque: "text-emerald-700" },
-      ...(perfil.permitir_agendamento_portal ? [{ id: "agendamento", titulo: "Agendamento", texto: "Agendar horário", detalhe: "Escolha serviço, profissional e horário", cor: "border-blue-200 bg-blue-50", destaque: "text-blue-700" }] : []),
+      { id: "agendamento", titulo: "Agendamento", texto: "Agendar horário", detalhe: "Escolha serviço, profissional e horário", cor: "border-blue-200 bg-blue-50", destaque: "text-blue-700" },
       ...(comandas.length ? [{ id: "comandas", titulo: "Minhas comandas", texto: `${comandas.length} comanda(s) aberta(s)`, detalhe: `Total em aberto: ${dinheiro.format(comandas.reduce((s, c) => s + Number(c.total || 0), 0))}`, cor: "border-amber-200 bg-amber-50", destaque: "text-amber-700" }] : []),
     ];
     return (
