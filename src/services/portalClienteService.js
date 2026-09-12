@@ -1,10 +1,10 @@
-import api from "@/services/api";
+﻿import api from "@/services/api";
 
 const TOKEN_KEY = "barbsist_portal_cliente_token";
 const SLUG_KEY = "barbsist_portal_cliente_barbearia";
 
-export function salvarBarbeariaPortal(slug) { if (typeof window !== "undefined" && slug) sessionStorage.setItem(SLUG_KEY, slug); }
-export function obterBarbeariaPortal() { return typeof window === "undefined" ? null : sessionStorage.getItem(SLUG_KEY); }
+export function salvarBarbeariaPortal(slug) { if (typeof window !== "undefined" && slug) localStorage.setItem(SLUG_KEY, slug); }
+export function obterBarbeariaPortal() { return typeof window === "undefined" ? null : localStorage.getItem(SLUG_KEY); }
 export function salvarTokenCliente(token) { if (typeof window !== "undefined") localStorage.setItem(TOKEN_KEY, token); }
 export function obterTokenCliente() { return typeof window === "undefined" ? null : localStorage.getItem(TOKEN_KEY); }
 export function sairPortalCliente() { if (typeof window !== "undefined") localStorage.removeItem(TOKEN_KEY); }
@@ -41,4 +41,25 @@ export async function assinarPlanoPix(planoId, diaVencimento) {
 }
 export async function alterarSenhaCliente(senhaAtual, novaSenha) {
   const { data } = await api.put("/portal-cliente/minha-senha", { senha_atual: senhaAtual, nova_senha: novaSenha }, configCliente()); return data;
+}
+
+
+export async function obterConfiguracaoPortalAdmin() {
+  const { data } = await api.get(
+    "/portal-cliente/admin/configuracao",
+  );
+  return data;
+}
+
+export async function atualizarConfiguracaoPortalAdmin(
+  permitirAgendamentoPortal,
+) {
+  const { data } = await api.put(
+    "/portal-cliente/admin/configuracao",
+    {
+      permitir_agendamento_portal:
+        Boolean(permitirAgendamentoPortal),
+    },
+  );
+  return data;
 }

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import { Suspense, useEffect, useState } from "react";
@@ -7,6 +7,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { obterBarbeariaPublica } from "@/services/barbeariaService";
 import {
   loginCliente,
+  obterTokenCliente,
   obterBarbeariaPortal,
   salvarBarbeariaPortal,
 } from "@/services/portalClienteService";
@@ -27,6 +28,15 @@ function Login() {
     const valor = (params.get("barbearia") || obterBarbeariaPortal() || "")
       .trim()
       .toLowerCase();
+
+    if (valor) {
+      salvarBarbeariaPortal(valor);
+    }
+
+    if (obterTokenCliente()) {
+      router.replace("/portal-cliente/inicio");
+      return () => { ativo = false; };
+    }
 
     setSlug(valor);
     setErro("");

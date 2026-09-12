@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState } from "react";
 
@@ -19,6 +19,11 @@ import {
   listarDisponibilidadeBarbeiro,
   atualizarDisponibilidadeBarbeiro,
 } from "@/services/barbeiroDisponibilidadeService";
+
+import {
+  obterConfiguracaoPortalAdmin,
+  atualizarConfiguracaoPortalAdmin,
+} from "@/services/portalClienteService";
 
 export default function ConfiguracoesPage() {
   const [abaAtiva, setAbaAtiva] = useState("barbearia");
@@ -57,6 +62,10 @@ const [barbeariaExiste, setBarbeariaExiste] = useState(false);
 const [salvandoBarbearia, setSalvandoBarbearia] = useState(false);
 const [linkAgendamento, setLinkAgendamento] = useState("");
 const [linkPortalCliente, setLinkPortalCliente] = useState("");
+const [configuracaoPortal, setConfiguracaoPortal] = useState({
+  permitir_agendamento_portal: false,
+});
+const [salvandoConfiguracaoPortal, setSalvandoConfiguracaoPortal] = useState(false);
 
   const diasSemana = [
     "SEGUNDA",
@@ -72,6 +81,7 @@ const [linkPortalCliente, setLinkPortalCliente] = useState("");
     carregarConfiguracoes();
     carregarBarbeiros();
     carregarBarbearia();
+    carregarConfiguracaoPortal();
   }, []);
 
   useEffect(() => {
@@ -171,6 +181,47 @@ const [linkPortalCliente, setLinkPortalCliente] = useState("");
       "_blank",
       "noopener,noreferrer"
     );
+  }
+
+  async function carregarConfiguracaoPortal() {
+    try {
+      const dados = await obterConfiguracaoPortalAdmin();
+      setConfiguracaoPortal({
+        permitir_agendamento_portal:
+          Boolean(dados?.permitir_agendamento_portal),
+      });
+    } catch {
+      setErro(
+        "Não foi possível carregar a configuração do Portal do Cliente.",
+      );
+    }
+  }
+
+  async function salvarConfiguracaoPortal() {
+    limparMensagens();
+    setSalvandoConfiguracaoPortal(true);
+
+    try {
+      const dados = await atualizarConfiguracaoPortalAdmin(
+        configuracaoPortal.permitir_agendamento_portal,
+      );
+
+      setConfiguracaoPortal({
+        permitir_agendamento_portal:
+          Boolean(dados?.permitir_agendamento_portal),
+      });
+
+      setMensagem(
+        "Configuração do Portal do Cliente salva com sucesso.",
+      );
+    } catch (error) {
+      setErro(
+        error?.response?.data?.detail ||
+          "Não foi possível salvar a configuração do Portal do Cliente.",
+      );
+    } finally {
+      setSalvandoConfiguracaoPortal(false);
+    }
   }
 
   async function carregarConfiguracoes() {
@@ -795,6 +846,58 @@ const estadosBrasil = [
             Compartilhe este link para seus clientes acessarem agendamentos,
             planos, pagamentos e comandas da {barbearia.nome || "barbearia"}.
           </p>
+
+          <div
+            style={{
+              display: "flex",
+              flexWrap: "wrap",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: "12px",
+              padding: "14px",
+              marginBottom: "16px",
+              borderRadius: "10px",
+              border: "1px solid #bae6fd",
+              background: "#f0f9ff",
+            }}
+          >
+            <label
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "10px",
+                fontWeight: 600,
+                cursor: "pointer",
+              }}
+            >
+              <input
+                type="checkbox"
+                checked={configuracaoPortal.permitir_agendamento_portal}
+                onChange={(evento) =>
+                  setConfiguracaoPortal({
+                    permitir_agendamento_portal:
+                      evento.target.checked,
+                  })
+                }
+              />
+              Permitir agendamento pelo Portal do Cliente
+            </label>
+
+            <button
+              type="button"
+              onClick={salvarConfiguracaoPortal}
+              disabled={salvandoConfiguracaoPortal}
+              style={{
+                ...buttonStyle,
+                background: "#0284c7",
+                opacity: salvandoConfiguracaoPortal ? 0.65 : 1,
+              }}
+            >
+              {salvandoConfiguracaoPortal
+                ? "Salvando..."
+                : "Salvar configuração do Portal"}
+            </button>
+          </div>
 
           {linkPortalCliente ? (
             <>
