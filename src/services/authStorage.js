@@ -8,7 +8,7 @@ export function obterToken() {
     return null;
   }
 
-  return window.localStorage.getItem(TOKEN_KEY);
+  return window.sessionStorage.getItem(TOKEN_KEY);
 }
 
 export function salvarToken(token) {
@@ -16,7 +16,10 @@ export function salvarToken(token) {
     return;
   }
 
-  window.localStorage.setItem(TOKEN_KEY, token);
+  window.sessionStorage.setItem(TOKEN_KEY, token);
+
+  // Remove o armazenamento antigo compartilhado entre as abas.
+  window.localStorage.removeItem(TOKEN_KEY);
 }
 
 export function removerToken() {
@@ -24,5 +27,6 @@ export function removerToken() {
     return;
   }
 
+  window.sessionStorage.removeItem(TOKEN_KEY);
   window.localStorage.removeItem(TOKEN_KEY);
 }
