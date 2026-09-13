@@ -31,6 +31,14 @@ export async function carregarMinhaAssinatura() { const { data } = await api.get
 export async function carregarMeusPagamentos() { const { data } = await api.get("/portal-cliente/meus-pagamentos", configCliente()); return data; }
 export async function carregarPlanosDisponiveis() { const { data } = await api.get("/portal-cliente/planos-disponiveis", configCliente()); return data; }
 export async function carregarMinhasComandasAbertas() { const { data } = await api.get("/portal-cliente/minhas-comandas-abertas", configCliente()); return data; }
+export async function pagarComandaPix(comandaId, payerEmail) {
+  const { data } = await api.post(
+    `/portal-cliente/comandas/${comandaId}/pix`,
+    { payer_email: payerEmail || null },
+    configCliente(),
+  );
+  return data;
+}
 export async function assinarPlanoPix(planoId, diaVencimento) {
   const { data } = await api.post(
     `/portal-cliente/assinar/${planoId}/pix`,

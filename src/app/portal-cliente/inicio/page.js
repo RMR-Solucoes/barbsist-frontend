@@ -9,6 +9,7 @@ import {
   carregarMinhaAssinatura,
   carregarPlanosDisponiveis,
   carregarPerfilCliente,
+  pagarComandaPix,
   obterBarbeariaPortal,
   obterTokenCliente,
   sairPortalCliente,
@@ -61,6 +62,7 @@ export default function Inicio() {
   const [erro, setErro] = useState("");
   const [secao, setSecao] = useState(null);
   const [comandas, setComandas] = useState([]);
+  const [processandoComandaId, setProcessandoComandaId] = useState(null);
 
   useEffect(() => {
     if (!obterTokenCliente()) {
@@ -135,6 +137,60 @@ export default function Inicio() {
       );
     } finally {
       setProcessandoPlanoId(null);
+    }
+  }
+
+  async function pagarPixComanda(comanda) {
+    setErro("");
+    setMensagem("");
+    setProcessandoComandaId(comanda.id);
+    try {
+      const cobranca = await pagarComandaPix(comanda.id, perfil?.email);
+      setPix({ ...cobranca, origem: "comanda", comanda_id: comanda.id });
+      setMensagem("Cobrança PIX gerada. A comanda será fechada após a confirmação do pagamento.");
+    } catch (falha) {
+      setErro(
+        falha?.response?.data?.detail ||
+          "Não foi possível gerar o pagamento desta comanda.",
+      );
+    } finally {
+      setProcessandoComandaId(null);
+    }
+  }
+
+  async function pagarMercadoPagoComanda(comanda) {
+    setErro("");
+    setMensagem("");
+    setProcessandoComandaId(comanda.id);
+
+    // A janela precisa ser aberta durante o clique para não ser bloqueada
+    // pelo navegador enquanto a cobrança é criada no backend.
+    const janelaMercadoPago = window.open("", "_blank");
+
+    try {
+      const cobranca = await pagarComandaPix(comanda.id, perfil?.email);
+      setPix({ ...cobranca, origem: "comanda", comanda_id: comanda.id });
+
+      if (cobranca?.ticket_url) {
+        if (janelaMercadoPago) {
+          janelaMercadoPago.opener = null;
+          janelaMercadoPago.location.replace(cobranca.ticket_url);
+        } else {
+          window.location.assign(cobranca.ticket_url);
+        }
+        setMensagem("Pagamento aberto no Mercado Pago. A comanda será fechada após a confirmação.");
+      } else {
+        janelaMercadoPago?.close();
+        setMensagem("Cobrança gerada. Use o QR Code ou o PIX Copia e Cola para pagar.");
+      }
+    } catch (falha) {
+      janelaMercadoPago?.close();
+      setErro(
+        falha?.response?.data?.detail ||
+          "Não foi possível abrir o pagamento no Mercado Pago.",
+      );
+    } finally {
+      setProcessandoComandaId(null);
     }
   }
 
@@ -377,6 +433,34 @@ export default function Inicio() {
                       </table>
                     </div>
                   )}
+                  {Number(comanda.total || 0) > 0 ? (
+                    <div className="mt-4 border-t border-slate-200 pt-4">
+                      <p className="text-sm font-semibold text-slate-800">Formas de pagamento</p>
+                      <p className="mt-1 text-sm text-slate-600">Escolha como deseja pagar esta comanda pelo Mercado Pago.</p>
+                      <div className="mt-3 flex flex-wrap justify-end gap-3">
+                        <button
+                          type="button"
+                          onClick={() => pagarPixComanda(comanda)}
+                          disabled={processandoComandaId !== null}
+                          className="rounded-lg bg-emerald-600 px-4 py-2 font-semibold text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          {processandoComandaId === comanda.id ? "Processando..." : "Pagar com PIX"}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => pagarMercadoPagoComanda(comanda)}
+                          disabled={processandoComandaId !== null}
+                          className="rounded-lg bg-blue-600 px-4 py-2 font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          {processandoComandaId === comanda.id ? "Abrindo..." : "Pagar pelo Mercado Pago"}
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="mt-4 rounded-lg bg-slate-50 p-3 text-sm text-slate-600">
+                      Aguardando a inclusão de serviços ou produtos para liberar o pagamento.
+                    </p>
+                  )}
                 </article>
               ))}
             </div>
@@ -388,7 +472,7 @@ export default function Inicio() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 p-4">
           <section className="max-h-[92vh] w-full max-w-lg overflow-y-auto rounded-2xl bg-white p-6 shadow-2xl">
             <div className="flex items-start justify-between gap-4">
-              <div><p className="text-sm font-medium text-blue-700">Pagamento</p><h2 className="text-xl font-bold">PIX da assinatura</h2></div>
+              <div><p className="text-sm font-medium text-blue-700">Pagamento</p><h2 className="text-xl font-bold">{pix.origem === "comanda" ? `PIX da comanda #${pix.comanda_id}` : "PIX da assinatura"}</h2></div>
               <button type="button" onClick={() => { setPix(null); window.location.reload(); }} className="rounded-lg border px-3 py-2">Fechar</button>
             </div>
             <p className="mt-4 text-sm text-slate-600">Valor: <strong>{dinheiro.format(pix.valor)}</strong></p>
