@@ -14,6 +14,7 @@ import {
 } from "@/services/agendamentoOnlineService";
 
 import { obterBarbeariaPublica } from "@/services/barbeariaService";
+import { carregarPerfilCliente } from "@/services/portalClienteService";
 
 
 export default function AgendamentoOnlinePage() {
@@ -79,6 +80,32 @@ export default function AgendamentoOnlinePage() {
     carregarDadosIniciais();
     carregarBarbearia();
   }, []);
+
+  useEffect(() => {
+    if (!origemPortal) {
+      return;
+    }
+
+    carregarPerfilCliente()
+      .then((perfilCliente) => {
+        const telefone = perfilCliente?.telefone || "";
+
+        setCliente((dadosAtuais) => ({
+          ...dadosAtuais,
+          nome: perfilCliente?.nome || dadosAtuais.nome,
+          telefone: telefone || dadosAtuais.telefone,
+          email: perfilCliente?.email || dadosAtuais.email,
+        }));
+
+        if (telefone) {
+          setTelefoneConsulta(telefone);
+          setTelefoneCancelamento(telefone);
+        }
+      })
+      .catch((error) => {
+        console.error("Erro ao carregar cliente do portal:", error);
+      });
+  }, [origemPortal]);
 
   useEffect(() => {
   if (abaPublica !== "agendar") {
