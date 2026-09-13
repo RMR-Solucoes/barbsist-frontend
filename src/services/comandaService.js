@@ -42,6 +42,14 @@ export async function adicionarProdutoComanda(id, dados) {
   return response.data;
 }
 
+export async function adicionarMensalidadePlanoComanda(id, assinaturaId) {
+  const response = await api.post(
+    `/comandas/${id}/mensalidade-plano`,
+    { assinatura_id: Number(assinaturaId) }
+  );
+  return response.data;
+}
+
 export async function consultarAssinaturaComanda(id) {
   const response = await api.get(
     `/comandas/${id}/assinatura`

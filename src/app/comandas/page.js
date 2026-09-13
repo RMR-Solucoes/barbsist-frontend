@@ -8,6 +8,7 @@ import {
   buscarComanda,
   adicionarServicoComanda,
   adicionarProdutoComanda,
+  adicionarMensalidadePlanoComanda,
   consultarAssinaturaComanda,
   usarPlanoNoItem,
   fecharComanda,
@@ -65,6 +66,7 @@ export default function ComandasPage() {
 
   const [servicoId, setServicoId] = useState("");
   const [produtoId, setProdutoId] = useState("");
+  const [adicionandoMensalidade, setAdicionandoMensalidade] = useState(false);
 
   const [
     quantidadeServico,
@@ -456,6 +458,37 @@ export default function ComandasPage() {
           "Erro ao adicionar produto. Verifique o estoque."
         )
       );
+    }
+  }
+
+
+  async function adicionarMensalidadePlano() {
+    const assinatura = assinaturaComanda?.assinatura;
+    if (!comandaSelecionada || !assinatura?.id) {
+      setErro("A comanda não possui uma assinatura disponível.");
+      return;
+    }
+
+    try {
+      setErro("");
+      setMensagem("");
+      setAdicionandoMensalidade(true);
+      await adicionarMensalidadePlanoComanda(
+        comandaSelecionada.id,
+        assinatura.id
+      );
+      setMensagem("Mensalidade adicionada à comanda.");
+      await atualizarFluxoComanda(comandaSelecionada.id);
+    } catch (error) {
+      console.error(error);
+      setErro(
+        obterDetalheErro(
+          error,
+          "Erro ao adicionar a mensalidade à comanda."
+        )
+      );
+    } finally {
+      setAdicionandoMensalidade(false);
     }
   }
 
@@ -1474,6 +1507,20 @@ export default function ComandasPage() {
                                     </div>
                                   )}
                               </div>
+                            ) : item.tipo === "mensalidade_plano" ? (
+                              <span
+                                style={{
+                                  display: "inline-block",
+                                  padding: "5px 8px",
+                                  borderRadius: "999px",
+                                  background: "#ede9fe",
+                                  color: "#6d28d9",
+                                  fontSize: "11px",
+                                  fontWeight: "700",
+                                }}
+                              >
+                                MENSALIDADE
+                              </span>
                             ) : (
                               <span
                                 style={{
@@ -1633,6 +1680,57 @@ export default function ComandasPage() {
                   >
                     Adicionar Produto
                   </button>
+
+                  <hr
+                    style={{ margin: "15px 0" }}
+                  />
+
+                  <h3>Adicionar Pagamento do Plano</h3>
+
+                  {!assinaturaComanda?.possui_assinatura ? (
+                    <div style={{ background: "#f3f4f6", padding: "10px", borderRadius: "8px", marginBottom: "10px" }}>
+                      Cliente sem assinatura cadastrada. A contratação deve ser feita em Assinaturas.
+                    </div>
+                  ) : assinaturaComanda?.pode_pagar_mensalidade ? (
+                    <div style={{ marginBottom: "10px" }}>
+                      <p style={{ margin: "0 0 6px" }}>
+                        <strong>Plano:</strong>{" "}
+                        {assinaturaComanda.assinatura?.plano_nome || "Plano do cliente"}
+                      </p>
+                      <p style={{ margin: "0 0 6px" }}>
+                        <strong>Situação:</strong>{" "}
+                        {assinaturaComanda.assinatura?.status} /{" "}
+                        {assinaturaComanda.assinatura?.status_pagamento}
+                      </p>
+                      <p style={{ margin: "0 0 10px" }}>
+                        <strong>Mensalidade:</strong>{" "}
+                        {formatarMoeda(assinaturaComanda.valor_mensalidade)}{" "}
+                        ({assinaturaComanda.referencia_mensalidade})
+                      </p>
+                      <button
+                        onClick={adicionarMensalidadePlano}
+                        disabled={
+                          adicionandoMensalidade ||
+                          comandaSelecionada.itens?.some(
+                            (item) => item.tipo === "mensalidade_plano"
+                          )
+                        }
+                        style={{
+                          ...buttonStyle,
+                          background: "#7c3aed",
+                          opacity: adicionandoMensalidade ? 0.6 : 1,
+                        }}
+                      >
+                        {adicionandoMensalidade
+                          ? "Adicionando..."
+                          : "Adicionar Mensalidade"}
+                      </button>
+                    </div>
+                  ) : (
+                    <div style={{ background: "#dcfce7", color: "#166534", padding: "10px", borderRadius: "8px", marginBottom: "10px" }}>
+                      A assinatura não possui mensalidade pendente.
+                    </div>
+                  )}
 
                   <hr
                     style={{ margin: "15px 0" }}
