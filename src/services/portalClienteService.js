@@ -39,6 +39,18 @@ export async function pagarComandaPix(comandaId, payerEmail) {
   );
   return data;
 }
+export async function obterStatusMercadoPagoCliente() {
+  const { data } = await api.get("/portal-cliente/mercado-pago/status", configCliente());
+  return data;
+}
+export async function obterCobrancaComandaCliente(comandaId) {
+  const { data } = await api.get(`/portal-cliente/comandas/${comandaId}/cobranca`, configCliente());
+  return data;
+}
+export async function pagarComandaCartao(comandaId, dados) {
+  const { data } = await api.post(`/portal-cliente/comandas/${comandaId}/cartao`, dados, configCliente());
+  return data;
+}
 export async function assinarPlanoPix(planoId, diaVencimento) {
   const { data } = await api.post(
     `/portal-cliente/assinar/${planoId}/pix`,

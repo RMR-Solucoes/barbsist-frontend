@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { CardPayment, initMercadoPago } from "@mercadopago/sdk-react";
 import {
   assinarPlanoPix,
   carregarMeusPagamentos,
@@ -9,6 +10,8 @@ import {
   carregarMinhaAssinatura,
   carregarPlanosDisponiveis,
   carregarPerfilCliente,
+  obterStatusMercadoPagoCliente,
+  pagarComandaCartao,
   pagarComandaPix,
   obterBarbeariaPortal,
   obterTokenCliente,
@@ -63,6 +66,9 @@ export default function Inicio() {
   const [secao, setSecao] = useState(null);
   const [comandas, setComandas] = useState([]);
   const [processandoComandaId, setProcessandoComandaId] = useState(null);
+  const [comandaPagamento, setComandaPagamento] = useState(null);
+  const [formaPagamento, setFormaPagamento] = useState("pix");
+  const [mercadoPago, setMercadoPago] = useState({ disponivel: false, public_key: null });
 
   useEffect(() => {
     if (!obterTokenCliente()) {
@@ -78,13 +84,18 @@ export default function Inicio() {
       carregarMeusPagamentos(),
       carregarPlanosDisponiveis(),
       carregarMinhasComandasAbertas(),
+      obterStatusMercadoPagoCliente(),
     ])
-      .then(([perfilRecebido, assinaturaRecebida, pagamentosRecebidos, planosRecebidos, comandasRecebidas]) => {
+      .then(([perfilRecebido, assinaturaRecebida, pagamentosRecebidos, planosRecebidos, comandasRecebidas, mercadoPagoRecebido]) => {
         setPerfil(perfilRecebido);
         setAssinatura(assinaturaRecebida);
         setPagamentos(pagamentosRecebidos);
         setPlanos(planosRecebidos);
         setComandas(comandasRecebidas);
+        setMercadoPago(mercadoPagoRecebido || { disponivel: false, public_key: null });
+        if (mercadoPagoRecebido?.public_key) {
+          initMercadoPago(mercadoPagoRecebido.public_key, { locale: "pt-BR" });
+        }
       })
       .catch((falha) => {
         const status = falha?.response?.status;
@@ -153,6 +164,60 @@ export default function Inicio() {
         falha?.response?.data?.detail ||
           "Não foi possível gerar o pagamento desta comanda.",
       );
+    } finally {
+      setProcessandoComandaId(null);
+    }
+  }
+
+  function abrirPagamentoComanda(comanda) {
+    setErro("");
+    setMensagem("");
+    setFormaPagamento("pix");
+    setComandaPagamento(comanda);
+  }
+
+  async function confirmarPagamentoComanda() {
+    if (!comandaPagamento) return;
+    if (formaPagamento === "pix") {
+      setComandaPagamento(null);
+      await pagarPixComanda(comandaPagamento);
+      return;
+    }
+    if (formaPagamento === "dinheiro" || formaPagamento === "debito") {
+      setMensagem(
+        formaPagamento === "dinheiro"
+          ? "Pagamento em dinheiro será confirmado pela barbearia no atendimento."
+          : "Pagamento no débito será realizado e confirmado na barbearia.",
+      );
+      setComandaPagamento(null);
+    }
+  }
+
+  async function enviarCartaoComanda(formData) {
+    if (!comandaPagamento) return;
+    setErro("");
+    setProcessandoComandaId(comandaPagamento.id);
+    try {
+      const cobranca = await pagarComandaCartao(comandaPagamento.id, {
+        token: formData.token,
+        payment_method_id: formData.payment_method_id,
+        installments: Number(formData.installments || 1),
+        issuer_id: formData.issuer_id ? Number(formData.issuer_id) : null,
+        payer_email: formData.payer?.email || perfil?.email,
+        identification_type: formData.payer?.identification?.type || null,
+        identification_number: formData.payer?.identification?.number || null,
+      });
+      setMensagem(
+        cobranca?.status === "processed"
+          ? "Pagamento aprovado. A comanda será atualizada automaticamente."
+          : "Pagamento enviado ao Mercado Pago e aguardando confirmação.",
+      );
+      setComandaPagamento(null);
+      window.location.reload();
+      return cobranca;
+    } catch (falha) {
+      setErro(falha?.response?.data?.detail || "Pagamento recusado ou não processado.");
+      throw falha;
     } finally {
       setProcessandoComandaId(null);
     }
@@ -434,27 +499,11 @@ export default function Inicio() {
                     </div>
                   )}
                   {Number(comanda.total || 0) > 0 ? (
-                    <div className="mt-4 border-t border-slate-200 pt-4">
-                      <p className="text-sm font-semibold text-slate-800">Formas de pagamento</p>
-                      <p className="mt-1 text-sm text-slate-600">Escolha como deseja pagar esta comanda pelo Mercado Pago.</p>
-                      <div className="mt-3 flex flex-wrap justify-end gap-3">
-                        <button
-                          type="button"
-                          onClick={() => pagarPixComanda(comanda)}
-                          disabled={processandoComandaId !== null}
-                          className="rounded-lg bg-emerald-600 px-4 py-2 font-semibold text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
-                        >
-                          {processandoComandaId === comanda.id ? "Processando..." : "Pagar com PIX"}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => pagarMercadoPagoComanda(comanda)}
-                          disabled={processandoComandaId !== null}
-                          className="rounded-lg bg-blue-600 px-4 py-2 font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
-                        >
-                          {processandoComandaId === comanda.id ? "Abrindo..." : "Pagar pelo Mercado Pago"}
-                        </button>
-                      </div>
+                    <div className="mt-4 flex justify-end border-t border-slate-200 pt-4">
+                      <button type="button" onClick={() => abrirPagamentoComanda(comanda)}
+                        className="rounded-lg bg-blue-700 px-5 py-2 font-semibold text-white hover:bg-blue-800">
+                        Pagar Comanda
+                      </button>
                     </div>
                   ) : (
                     <p className="mt-4 rounded-lg bg-slate-50 p-3 text-sm text-slate-600">
@@ -467,6 +516,49 @@ export default function Inicio() {
           )}
         </section>}
       </div>
+
+      {comandaPagamento && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 p-4">
+          <section className="max-h-[92vh] w-full max-w-xl overflow-y-auto rounded-2xl bg-white p-6 shadow-2xl">
+            <div className="flex items-start justify-between gap-4">
+              <div><p className="text-sm font-medium text-blue-700">Comanda #{comandaPagamento.id}</p><h2 className="text-2xl font-bold">Pagar Comanda</h2></div>
+              <button type="button" onClick={() => setComandaPagamento(null)} className="rounded-lg border px-3 py-2">Fechar</button>
+            </div>
+            <p className="mt-4 text-lg">Total: <strong>{dinheiro.format(comandaPagamento.total)}</strong></p>
+            <label className="mt-5 block text-sm font-semibold">Forma de pagamento</label>
+            <select value={formaPagamento} onChange={(e) => setFormaPagamento(e.target.value)}
+              className="mt-2 w-full rounded-lg border border-slate-300 bg-white p-3">
+              <option value="pix">Pix</option>
+              <option value="dinheiro">Dinheiro</option>
+              <option value="debito">Débito</option>
+              <option value="credito">Crédito</option>
+            </select>
+            {(formaPagamento === "dinheiro" || formaPagamento === "debito") && (
+              <p className="mt-4 rounded-lg bg-amber-50 p-3 text-sm text-amber-800">
+                Esta modalidade será paga no estabelecimento e confirmada pela equipe da barbearia.
+              </p>
+            )}
+            {formaPagamento === "credito" && (
+              mercadoPago?.public_key ? (
+                <div className="mt-4 rounded-lg border p-3">
+                  <CardPayment
+                    initialization={{ amount: Number(comandaPagamento.total || 0), payer: { email: perfil?.email || "" } }}
+                    customization={{ paymentMethods: { minInstallments: 1, maxInstallments: 12 } }}
+                    onSubmit={enviarCartaoComanda}
+                    onError={(error) => setErro(error?.message || "Erro ao carregar pagamento com cartão.")}
+                  />
+                </div>
+              ) : <p className="mt-4 text-sm text-red-700">Pagamento online indisponível para esta barbearia.</p>
+            )}
+            {formaPagamento !== "credito" && (
+              <button type="button" onClick={confirmarPagamentoComanda} disabled={processandoComandaId !== null}
+                className="mt-5 w-full rounded-lg bg-blue-700 px-4 py-3 font-semibold text-white disabled:opacity-60">
+                {processandoComandaId === comandaPagamento.id ? "Processando..." : "Pagar Comanda"}
+              </button>
+            )}
+          </section>
+        </div>
+      )}
 
       {pix && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 p-4">
