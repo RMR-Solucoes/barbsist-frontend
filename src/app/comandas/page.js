@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { CardPayment, initMercadoPago } from "@mercadopago/sdk-react";
 
 import {
   listarComandas,
@@ -19,6 +20,11 @@ import { listarProdutos } from "@/services/produtoService";
 import { listarClientes } from "@/services/clienteService";
 import { listarBarbeiros } from "@/services/barbeiroService";
 import { useAuth } from "@/contexts/AuthContext";
+import {
+  criarCobrancaPix,
+  criarCobrancaCartao,
+  obterConfiguracaoMercadoPago,
+} from "@/services/mercadoPagoService";
 
 
 export default function ComandasPage() {
@@ -81,7 +87,13 @@ export default function ComandasPage() {
   const [
     formaPagamento,
     setFormaPagamento,
-  ] = useState("pix");
+  ] = useState("mp_pix");
+
+  const [processandoPagamento, setProcessandoPagamento] = useState(false);
+  const [mercadoPagoPublicKey, setMercadoPagoPublicKey] = useState("");
+  const [cartaoAberto, setCartaoAberto] = useState(false);
+  const [pixCobranca, setPixCobranca] = useState(null);
+  const [payerEmail, setPayerEmail] = useState("");
 
   const [mensagem, setMensagem] = useState("");
   const [erro, setErro] = useState("");
@@ -93,6 +105,18 @@ export default function ComandasPage() {
       carregarDadosIniciais();
     }
   }, [carregandoAutenticacao, usuario]);
+
+  useEffect(() => {
+    obterConfiguracaoMercadoPago()
+      .then((configuracao) => {
+        const publicKey = configuracao?.public_key || "";
+        if (publicKey) {
+          initMercadoPago(publicKey, { locale: "pt-BR" });
+          setMercadoPagoPublicKey(publicKey);
+        }
+      })
+      .catch((error) => console.warn("Mercado Pago indisponível:", error));
+  }, []);
 
 
   function obterDetalheErro(error, mensagemPadrao) {
@@ -302,7 +326,11 @@ export default function ComandasPage() {
       setProdutoId("");
       setQuantidadeServico(1);
       setQuantidadeProduto(1);
-      setFormaPagamento("pix");
+      setFormaPagamento("mp_pix");
+      const cliente = clientes.find(
+        (item) => Number(item.id) === Number(dados.cliente_id)
+      );
+      setPayerEmail(cliente?.email || "");
 
       await carregarAssinaturaComanda(
         id,
@@ -696,11 +724,68 @@ export default function ComandasPage() {
       return;
     }
 
+    const totalComanda = Number(comandaSelecionada.total || 0);
+
+    if (totalComanda <= 0) {
+      try {
+        setErro("");
+        setProcessandoPagamento(true);
+        const resultado = await fecharComanda(comandaSelecionada.id, {
+          forma_pagamento: null,
+        });
+        setMensagem(resultado?.mensagem || "Comanda fechada com sucesso.");
+        await atualizarFluxoComanda(comandaSelecionada.id);
+      } catch (error) {
+        setErro(obterDetalheErro(error, "Erro ao fechar comanda."));
+      } finally {
+        setProcessandoPagamento(false);
+      }
+      return;
+    }
+
+    if (formaPagamento === "mp_cartao") {
+      if (!mercadoPagoPublicKey) {
+        setErro("O Mercado Pago não está configurado para pagamento com cartão.");
+        return;
+      }
+      if (!payerEmail || !payerEmail.includes("@")) {
+        setErro("Informe um e-mail válido do pagador.");
+        return;
+      }
+      setCartaoAberto(true);
+      return;
+    }
+
+    if (formaPagamento === "mp_pix") {
+      if (!payerEmail || !payerEmail.includes("@")) {
+        setErro("Informe um e-mail válido do pagador.");
+        return;
+      }
+      try {
+        setErro("");
+        setMensagem("");
+        setProcessandoPagamento(true);
+        const cobranca = await criarCobrancaPix({
+          origem_negocio: "COMANDA",
+          origem_id: comandaSelecionada.id,
+          payer_email: payerEmail,
+        });
+        setPixCobranca(cobranca);
+        setMensagem("Cobrança PIX criada. A comanda continuará aberta até a confirmação do Mercado Pago.");
+        await atualizarFluxoComanda(comandaSelecionada.id);
+      } catch (error) {
+        setErro(obterDetalheErro(error, "Erro ao gerar cobrança PIX."));
+      } finally {
+        setProcessandoPagamento(false);
+      }
+      return;
+    }
+
     const confirmar = window.confirm(
       `Deseja fechar a comanda #${comandaSelecionada.id} ` +
       `no valor de ${formatarMoeda(
         comandaSelecionada.total
-      )}?`
+      )} como pagamento já recebido?`
     );
 
     if (!confirmar) return;
@@ -742,6 +827,37 @@ export default function ComandasPage() {
           "Erro ao fechar comanda."
         )
       );
+    }
+  }
+
+  async function processarCartao(formData) {
+    try {
+      setErro("");
+      setProcessandoPagamento(true);
+      const cobranca = await criarCobrancaCartao({
+        origem_negocio: "COMANDA",
+        origem_id: comandaSelecionada.id,
+        token: formData.token,
+        payment_method_id: formData.payment_method_id,
+        installments: Number(formData.installments || 1),
+        issuer_id: formData.issuer_id ? Number(formData.issuer_id) : null,
+        payer_email: formData.payer?.email || payerEmail,
+        identification_type: formData.payer?.identification?.type || null,
+        identification_number: formData.payer?.identification?.number || null,
+      });
+      setCartaoAberto(false);
+      setMensagem(
+        cobranca?.processado
+          ? "Pagamento aprovado e comanda fechada."
+          : "Pagamento enviado. A comanda será fechada somente após a confirmação do Mercado Pago."
+      );
+      await atualizarFluxoComanda(comandaSelecionada.id);
+      return cobranca;
+    } catch (error) {
+      setErro(obterDetalheErro(error, "Pagamento recusado ou não processado."));
+      throw error;
+    } finally {
+      setProcessandoPagamento(false);
     }
   }
 
@@ -1766,6 +1882,7 @@ export default function ComandasPage() {
                   )}
 
                 {Number(comandaSelecionada.total || 0) > 0 ? (
+                  <>
                   <select
                     value={formaPagamento}
                     onChange={(event) =>
@@ -1776,20 +1893,34 @@ export default function ComandasPage() {
                       marginBottom: "10px",
                     }}
                   >
-                    <option value="pix">Pix</option>
+                    <option value="mp_pix">PIX pelo Mercado Pago</option>
+
+                    <option value="mp_cartao">Cartão pelo Mercado Pago</option>
+
+                    <option value="pix_manual">PIX já recebido fora do sistema</option>
 
                     <option value="dinheiro">
                       Dinheiro
                     </option>
 
                     <option value="debito">
-                      Débito
+                      Débito já recebido na maquininha
                     </option>
 
                     <option value="credito">
-                      Crédito
+                      Crédito já recebido na maquininha
                     </option>
                   </select>
+                  {(formaPagamento === "mp_pix" || formaPagamento === "mp_cartao") && (
+                    <input
+                      type="email"
+                      value={payerEmail}
+                      onChange={(event) => setPayerEmail(event.target.value)}
+                      placeholder="E-mail do pagador"
+                      style={{ ...inputStyle, marginBottom: "10px" }}
+                    />
+                  )}
+                  </>
                 ) : (
                   <div
                     style={{
@@ -1806,9 +1937,19 @@ export default function ComandasPage() {
 
                 <button
                   onClick={fecharComandaSelecionada}
-                  style={dangerButtonStyle}
+                  disabled={processandoPagamento}
+                  style={{
+                    ...dangerButtonStyle,
+                    opacity: processandoPagamento ? 0.6 : 1,
+                  }}
                 >
-                  Fechar Comanda
+                  {processandoPagamento
+                    ? "Processando..."
+                    : formaPagamento === "mp_pix"
+                      ? "Gerar PIX Mercado Pago"
+                      : formaPagamento === "mp_cartao"
+                        ? "Pagar com cartão"
+                        : "Confirmar recebimento e fechar"}
                 </button>
                 </>
               )}
@@ -1844,6 +1985,75 @@ export default function ComandasPage() {
           )}
         </aside>
       </section>
+
+      {cartaoAberto && comandaSelecionada && (
+        <div style={{
+          position: "fixed", inset: 0, zIndex: 1000,
+          background: "rgba(0,0,0,0.55)", display: "flex",
+          alignItems: "center", justifyContent: "center", padding: "20px",
+        }}>
+          <div style={{ ...cardStyle, width: "100%", maxWidth: "720px", maxHeight: "90vh", overflow: "auto" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <h2>Pagamento da comanda #{comandaSelecionada.id}</h2>
+              <button type="button" onClick={() => setCartaoAberto(false)} style={buttonStyle}>X</button>
+            </div>
+            <p>Total: <strong>{formatarMoeda(comandaSelecionada.total)}</strong></p>
+            <CardPayment
+              initialization={{ amount: Number(comandaSelecionada.total || 0) }}
+              customization={{ paymentMethods: { minInstallments: 1, maxInstallments: 12 } }}
+              onSubmit={processarCartao}
+              onReady={() => {}}
+              onError={(error) => {
+                console.error("Erro CardPayment:", error);
+                setErro("Erro ao carregar o pagamento com cartão.");
+              }}
+            />
+          </div>
+        </div>
+      )}
+
+      {pixCobranca && (
+        <div style={{
+          position: "fixed", inset: 0, zIndex: 1000,
+          background: "rgba(0,0,0,0.55)", display: "flex",
+          alignItems: "center", justifyContent: "center", padding: "20px",
+        }}>
+          <div style={{ ...cardStyle, width: "100%", maxWidth: "560px", textAlign: "center" }}>
+            <h2>PIX Mercado Pago</h2>
+            <p>Valor: <strong>{formatarMoeda(pixCobranca.valor)}</strong></p>
+            {pixCobranca.qr_code_base64 && (
+              <img
+                src={`data:image/png;base64,${pixCobranca.qr_code_base64}`}
+                alt="QR Code PIX"
+                style={{ width: "260px", maxWidth: "100%" }}
+              />
+            )}
+            {pixCobranca.qr_code && (
+              <>
+                <textarea readOnly value={pixCobranca.qr_code} style={{ ...inputStyle, minHeight: "90px", marginTop: "12px" }} />
+                <button
+                  type="button"
+                  onClick={() => navigator.clipboard.writeText(pixCobranca.qr_code)}
+                  style={{ ...buttonStyle, marginTop: "10px", marginRight: "10px" }}
+                >
+                  Copiar PIX
+                </button>
+              </>
+            )}
+            {pixCobranca.ticket_url && (
+              <a href={pixCobranca.ticket_url} target="_blank" rel="noreferrer" style={{ display: "block", margin: "12px 0" }}>
+                Abrir pagamento no Mercado Pago
+              </a>
+            )}
+            <button type="button" onClick={() => setPixCobranca(null)} style={{ ...buttonStyle, marginTop: "10px" }}>
+              Fechar janela
+            </button>
+            <p style={{ color: "#92400e", marginTop: "14px" }}>
+              A comanda permanecerá aberta até o pagamento ser confirmado.
+            </p>
+          </div>
+        </div>
+      )}
     </main>
   );
 }
