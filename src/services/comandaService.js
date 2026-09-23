@@ -96,6 +96,18 @@ export async function cancelarComanda(id) {
   return response.data;
 }
 
+export async function cancelarCobrancaOnlineComanda(id) {
+  const response = await api.post(
+    `/comandas/${id}/cancelar-cobranca-online`
+  );
+  return response.data;
+}
+
+export async function excluirComandaTeste(id) {
+  const response = await api.delete(`/comandas/${id}`);
+  return response.data;
+}
+
 export async function listarMinhasComandas(params = {}) {
   const resposta = await api.get("/comandas/minhas", { params });
   return resposta.data;

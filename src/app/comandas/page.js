@@ -13,6 +13,9 @@ import {
   consultarAssinaturaComanda,
   usarPlanoNoItem,
   fecharComanda,
+  cancelarComanda,
+  cancelarCobrancaOnlineComanda,
+  excluirComandaTeste,
 } from "@/services/comandaService";
 
 import { listarServicos } from "@/services/servicoService";
@@ -856,6 +859,76 @@ export default function ComandasPage() {
     } catch (error) {
       setErro(obterDetalheErro(error, "Pagamento recusado ou não processado."));
       throw error;
+    } finally {
+      setProcessandoPagamento(false);
+    }
+  }
+
+  async function cancelarPagamentoOnline() {
+    if (!comandaSelecionada) return;
+    if (!window.confirm(
+      `Cancelar a cobrança online pendente da comanda #${comandaSelecionada.id}?`
+    )) return;
+
+    try {
+      setErro("");
+      setMensagem("");
+      setProcessandoPagamento(true);
+      const resultado = await cancelarCobrancaOnlineComanda(comandaSelecionada.id);
+      setPixCobranca(null);
+      setMensagem(resultado?.mensagem || "Cobrança online cancelada.");
+      await atualizarFluxoComanda(comandaSelecionada.id);
+    } catch (error) {
+      setErro(obterDetalheErro(error, "Erro ao cancelar a cobrança online."));
+    } finally {
+      setProcessandoPagamento(false);
+    }
+  }
+
+  async function cancelarComandaSelecionada() {
+    if (!comandaSelecionada) return;
+    if (!window.confirm(
+      `Cancelar a comanda #${comandaSelecionada.id}? Os itens serão desfeitos e o histórico será mantido.`
+    )) return;
+
+    try {
+      setErro("");
+      setMensagem("");
+      setProcessandoPagamento(true);
+      await cancelarCobrancaOnlineComanda(comandaSelecionada.id);
+      const resultado = await cancelarComanda(comandaSelecionada.id);
+      setPixCobranca(null);
+      setMensagem(resultado?.mensagem || "Comanda cancelada.");
+      await atualizarFluxoComanda(comandaSelecionada.id);
+    } catch (error) {
+      setErro(obterDetalheErro(error, "Erro ao cancelar a comanda."));
+    } finally {
+      setProcessandoPagamento(false);
+    }
+  }
+
+  async function excluirComandaSelecionada() {
+    if (!comandaSelecionada) return;
+    const confirmacao = window.prompt(
+      `Exclusão definitiva da comanda #${comandaSelecionada.id}. Digite EXCLUIR para confirmar.`
+    );
+    if (confirmacao !== "EXCLUIR") return;
+
+    try {
+      setErro("");
+      setMensagem("");
+      setProcessandoPagamento(true);
+      if (comandaSelecionada.status === "aberta") {
+        await cancelarCobrancaOnlineComanda(comandaSelecionada.id);
+      }
+      const resultado = await excluirComandaTeste(comandaSelecionada.id);
+      setPixCobranca(null);
+      setComandaSelecionada(null);
+      setAssinaturaComanda(null);
+      setMensagem(resultado?.mensagem || "Comanda de teste excluída.");
+      await carregarComandas();
+    } catch (error) {
+      setErro(obterDetalheErro(error, "Erro ao excluir a comanda de teste."));
     } finally {
       setProcessandoPagamento(false);
     }
@@ -1951,6 +2024,36 @@ export default function ComandasPage() {
                         ? "Pagar com cartão"
                         : "Confirmar recebimento e fechar"}
                 </button>
+
+                <div style={{ display: "grid", gap: "8px", marginTop: "12px" }}>
+                  {!usuarioEhBarbeiro && (
+                    <button
+                      onClick={cancelarPagamentoOnline}
+                      disabled={processandoPagamento}
+                      style={{ ...buttonStyle, opacity: processandoPagamento ? 0.6 : 1 }}
+                    >
+                      Cancelar pagamento online pendente
+                    </button>
+                  )}
+
+                  <button
+                    onClick={cancelarComandaSelecionada}
+                    disabled={processandoPagamento}
+                    style={{ ...buttonStyle, opacity: processandoPagamento ? 0.6 : 1 }}
+                  >
+                    Cancelar comanda
+                  </button>
+
+                  {["admin", "gerente", "superadmin"].includes(perfilUsuario) && (
+                    <button
+                      onClick={excluirComandaSelecionada}
+                      disabled={processandoPagamento}
+                      style={{ ...dangerButtonStyle, opacity: processandoPagamento ? 0.6 : 1 }}
+                    >
+                      Excluir comanda de teste
+                    </button>
+                  )}
+                </div>
                 </>
               )}
 
@@ -1979,6 +2082,24 @@ export default function ComandasPage() {
                       comandaSelecionada.data_fechamento
                     )}
                   </p>
+                </div>
+              )}
+
+              {comandaSelecionada.status === "cancelada" && (
+                <div style={{ marginTop: "15px" }}>
+                  <div style={{ background: "#f3f4f6", borderRadius: "8px", padding: "14px" }}>
+                    <strong>Comanda cancelada.</strong>
+                    <p style={{ margin: "8px 0 0" }}>O histórico foi preservado.</p>
+                  </div>
+                  {["admin", "gerente", "superadmin"].includes(perfilUsuario) && (
+                    <button
+                      onClick={excluirComandaSelecionada}
+                      disabled={processandoPagamento}
+                      style={{ ...dangerButtonStyle, marginTop: "10px", opacity: processandoPagamento ? 0.6 : 1 }}
+                    >
+                      Excluir comanda de teste
+                    </button>
+                  )}
                 </div>
               )}
             </div>
