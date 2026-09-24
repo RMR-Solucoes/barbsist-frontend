@@ -16,8 +16,18 @@ const api = axios.create({
 
 api.interceptors.request.use((config) => {
   const token = obterToken();
+  const chamadaPortalCliente =
+    config.barbSistEscopoAutenticacao ===
+    "portal-cliente";
+  const possuiAuthorization = Boolean(
+    config.headers?.Authorization
+  );
 
-  if (token) {
+  if (
+    token &&
+    !chamadaPortalCliente &&
+    !possuiAuthorization
+  ) {
     config.headers.Authorization =
       `Bearer ${token}`;
   }
@@ -35,10 +45,15 @@ api.interceptors.response.use(
     const chamadaDeLogin =
       url.includes("/auth/login");
 
+    const chamadaPortalCliente =
+      error.config?.barbSistEscopoAutenticacao ===
+      "portal-cliente";
+
     if (
       status === 401 &&
       token &&
-      !chamadaDeLogin
+      !chamadaDeLogin &&
+      !chamadaPortalCliente
     ) {
       removerToken();
 

@@ -2,29 +2,31 @@
 
 const TOKEN_KEY = "barbsist_portal_cliente_token";
 const SLUG_KEY = "barbsist_portal_cliente_barbearia";
+const ESCOPO_PORTAL_CLIENTE = "portal-cliente";
 
 export function salvarBarbeariaPortal(slug) { if (typeof window !== "undefined" && slug) localStorage.setItem(SLUG_KEY, slug); }
 export function obterBarbeariaPortal() { return typeof window === "undefined" ? null : localStorage.getItem(SLUG_KEY); }
 export function salvarTokenCliente(token) { if (typeof window !== "undefined") localStorage.setItem(TOKEN_KEY, token); }
 export function obterTokenCliente() { return typeof window === "undefined" ? null : localStorage.getItem(TOKEN_KEY); }
 export function sairPortalCliente() { if (typeof window !== "undefined") localStorage.removeItem(TOKEN_KEY); }
-function configCliente() { return { headers: { Authorization: `Bearer ${obterTokenCliente()}` } }; }
+function configPortalPublico() { return { barbSistEscopoAutenticacao: ESCOPO_PORTAL_CLIENTE }; }
+function configCliente() { return { ...configPortalPublico(), headers: { Authorization: `Bearer ${obterTokenCliente()}` } }; }
 
 export async function loginCliente(barbeariaSlug, email, senha) {
-  const { data } = await api.post("/portal-cliente/login", { barbearia_slug: barbeariaSlug, email, senha });
+  const { data } = await api.post("/portal-cliente/login", { barbearia_slug: barbeariaSlug, email, senha }, configPortalPublico());
   salvarBarbeariaPortal(barbeariaSlug); salvarTokenCliente(data.access_token); return data;
 }
 export async function criarContaCliente(dados) {
   const { data } = await api.post("/portal-cliente/primeiro-acesso", {
     barbearia_slug: dados.barbeariaSlug, nome: dados.nome, telefone: dados.telefone, email: dados.email, senha: dados.senha,
-  });
+  }, configPortalPublico());
   salvarBarbeariaPortal(dados.barbeariaSlug); return data;
 }
 export async function confirmarEmailCliente(barbeariaSlug, email, codigo) {
-  const { data } = await api.post("/portal-cliente/confirmar-email", { barbearia_slug: barbeariaSlug, email, codigo }); return data;
+  const { data } = await api.post("/portal-cliente/confirmar-email", { barbearia_slug: barbeariaSlug, email, codigo }, configPortalPublico()); return data;
 }
 export async function reenviarCodigoCliente(barbeariaSlug, email) {
-  const { data } = await api.post("/portal-cliente/reenviar-codigo", { barbearia_slug: barbeariaSlug, email }); return data;
+  const { data } = await api.post("/portal-cliente/reenviar-codigo", { barbearia_slug: barbeariaSlug, email }, configPortalPublico()); return data;
 }
 export async function carregarPerfilCliente() { const { data } = await api.get("/portal-cliente/me", configCliente()); return data; }
 export async function carregarMinhaAssinatura() { const { data } = await api.get("/portal-cliente/minha-assinatura", configCliente()); return data; }
