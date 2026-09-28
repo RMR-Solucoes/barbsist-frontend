@@ -1,4 +1,4 @@
-﻿
+
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
@@ -8,10 +8,23 @@ import { useAuth } from "@/contexts/AuthContext";
 import {
   listarPlanosBarbSist,
   obterMinhaAssinaturaBarbSist,
+  obterAdequacaoPendenteBarbSist,
   checkoutBarbSistPix,
 } from "@/services/barbsistAssinaturaService";
 
 import { Painel, moeda } from "@/components/DataView";
+import { listarBarbeiros } from "@/services/barbeiroService";
+
+function mensagemErroApi(e, fallback) {
+  const detail = e?.response?.data?.detail;
+
+  if (typeof detail === "string") return detail;
+  if (detail && typeof detail === "object" && detail.mensagem) {
+    return detail.mensagem;
+  }
+
+  return e?.message || fallback;
+}
 
 function dataBr(valor) {
   if (!valor) return "-";
@@ -23,6 +36,21 @@ function dataBr(valor) {
   }
 
   return data.toLocaleDateString("pt-BR");
+}
+
+function dataHoraBr(valor) {
+  if (!valor) return "-";
+
+  const data = new Date(valor);
+  if (Number.isNaN(data.getTime())) return String(valor);
+
+  return data.toLocaleString("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }
 
 function statusVisual(status) {
@@ -87,11 +115,26 @@ function Badge({ valor }) {
   );
 }
 
+const faixasPlanos = [
+  { limite: 1, nome: "Solo", detalhe: "1 barbeiro" },
+  { limite: 2, nome: "Dupla", detalhe: "2 barbeiros" },
+  { limite: 5, nome: "Equipe", detalhe: "até 5 barbeiros" },
+  { limite: 10, nome: "Profissional", detalhe: "até 10 barbeiros" },
+];
+
+const periodosPlanos = [
+  { meses: 1, nome: "Mensal" },
+  { meses: 6, nome: "Semestral" },
+  { meses: 12, nome: "Anual" },
+];
+
 export default function MinhaAssinaturaPage() {
   const { usuario } = useAuth();
 
   const [planos, setPlanos] = useState([]);
   const [assinatura, setAssinatura] = useState(null);
+  const [barbeirosAtivos, setBarbeirosAtivos] = useState([]);
+  const [adequacao, setAdequacao] = useState(null);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState("");
   const [mensagem, setMensagem] = useState("");
@@ -106,6 +149,8 @@ export default function MinhaAssinaturaPage() {
       const resultados = await Promise.allSettled([
         listarPlanosBarbSist(),
         obterMinhaAssinaturaBarbSist(),
+        listarBarbeiros(),
+        obterAdequacaoPendenteBarbSist(),
       ]);
 
       if (resultados[0].status === "fulfilled") {
@@ -122,6 +167,23 @@ export default function MinhaAssinaturaPage() {
         setAssinatura(resultados[1].value || null);
       }
 
+      if (resultados[2]?.status === "fulfilled") {
+        const dadosBarbeiros = resultados[2].value;
+        setBarbeirosAtivos(
+          Array.isArray(dadosBarbeiros)
+            ? dadosBarbeiros.filter((barbeiro) => barbeiro?.ativo !== false)
+            : []
+        );
+      } else {
+        setBarbeirosAtivos([]);
+      }
+
+      if (resultados[3]?.status === "fulfilled") {
+        setAdequacao(resultados[3].value || null);
+      } else {
+        setAdequacao(null);
+      }
+
       if (
         resultados.every(
           (resultado) => resultado.status === "rejected"
@@ -135,9 +197,10 @@ export default function MinhaAssinaturaPage() {
       console.error(e);
 
       setErro(
-        e?.response?.data?.detail ||
-          e?.message ||
+        mensagemErroApi(
+          e,
           "Não foi possível carregar a assinatura BarbSist."
+        )
       );
     } finally {
       setCarregando(false);
@@ -161,10 +224,54 @@ export default function MinhaAssinaturaPage() {
       ? mapaPlanos[assinatura.plano_id]
       : null;
 
+  const catalogoAgrupado = useMemo(() => {
+    const indice = new Map(
+      planos.map((plano) => [
+        `${Number(plano.limite_barbeiros)}:${Number(plano.periodo_meses)}`,
+        plano,
+      ])
+    );
+
+    return faixasPlanos.map((faixa) => ({
+      ...faixa,
+      periodos: periodosPlanos.map((periodo) => ({
+        ...periodo,
+        plano: indice.get(`${faixa.limite}:${periodo.meses}`) || null,
+      })),
+    }));
+  }, [planos]);
+
+  const quantidadeBarbeirosAtivos = barbeirosAtivos.length;
+
+  function planoCompativel(plano) {
+    if (!plano) return false;
+    return Number(plano.limite_barbeiros || 0) >= quantidadeBarbeirosAtivos;
+  }
+
+  const menorLimiteCompativel = useMemo(() => {
+    const limites = planos
+      .filter((plano) =>
+        Number(plano.limite_barbeiros || 0) >= quantidadeBarbeirosAtivos
+      )
+      .map((plano) => Number(plano.limite_barbeiros || 0))
+      .filter((limite) => limite > 0);
+
+    return limites.length ? Math.min(...limites) : null;
+  }, [planos, quantidadeBarbeirosAtivos]);
+
   async function pagarPix(plano) {
     setErro("");
     setMensagem("");
     setPagamentoPix(null);
+
+    if (!planoCompativel(plano)) {
+      setErro(
+        `Sua barbearia possui ${quantidadeBarbeirosAtivos} barbeiro(s) ativo(s). ` +
+          `O plano ${plano.nome} permite até ${plano.limite_barbeiros}. ` +
+          "Escolha um plano compatível com sua equipe."
+      );
+      return;
+    }
 
     const email = String(usuario?.email || "").trim();
 
@@ -197,8 +304,10 @@ export default function MinhaAssinaturaPage() {
       console.error(e);
 
       setErro(
-        e?.response?.data?.detail ||
+        mensagemErroApi(
+          e,
           "Não foi possível gerar a cobrança PIX."
+        )
       );
     } finally {
       setProcessandoPlanoId(null);
@@ -223,7 +332,7 @@ export default function MinhaAssinaturaPage() {
   return (
     <main
       style={{
-        padding: 30,
+        padding: "20px 30px 30px",
         background: "#f8fafc",
         minHeight: "100vh",
       }}
@@ -238,7 +347,7 @@ export default function MinhaAssinaturaPage() {
         }}
       >
         <div>
-          <h1 style={{ marginBottom: 6 }}>
+          <h1 style={{ margin: "0 0 4px", fontSize: 22 }}>
             Minha Assinatura BarbSist
           </h1>
 
@@ -291,7 +400,7 @@ export default function MinhaAssinaturaPage() {
         </div>
       ) : null}
 
-      <section style={{ marginTop: 24 }}>
+      <section style={{ marginTop: 14 }}>
         <Painel titulo="Assinatura atual">
           {carregando ? (
             <p>Carregando assinatura...</p>
@@ -312,8 +421,9 @@ export default function MinhaAssinaturaPage() {
                 style={{
                   display: "grid",
                   gridTemplateColumns:
-                    "repeat(auto-fit,minmax(210px,1fr))",
-                  gap: 16,
+                    "repeat(4,minmax(0,1fr))",
+                  columnGap: 14,
+                  rowGap: 2,
                 }}
               >
                 <Info
@@ -424,7 +534,54 @@ export default function MinhaAssinaturaPage() {
         </Painel>
       </section>
 
-      <section style={{ marginTop: 24 }}>
+      {adequacao ? (
+        <section
+          style={{
+            marginTop: 16,
+            padding: 16,
+            borderRadius: 12,
+            border: "1px solid #f59e0b",
+            background: "#fffbeb",
+            color: "#78350f",
+          }}
+        >
+          <div style={{ fontWeight: 900, fontSize: 16 }}>
+            Adequação de plano necessária
+          </div>
+          <div style={{ marginTop: 7, lineHeight: 1.5 }}>
+            Sua equipe possui <strong>{adequacao.quantidade_barbeiros} barbeiro(s) ativo(s)</strong>,
+            acima do limite de <strong>{adequacao.limite_origem}</strong> do plano{" "}
+            <strong>{adequacao.plano_origem_nome || "atual"}</strong>.
+            {adequacao.plano_destino_nome ? (
+              <>
+                {" "}O plano compatível é <strong>{adequacao.plano_destino_nome}</strong>.
+              </>
+            ) : (
+              <> No momento não há um plano automático compatível com o tamanho da equipe.</>
+            )}
+          </div>
+          <div style={{ marginTop: 7, lineHeight: 1.5 }}>
+            Regularize até <strong>{dataHoraBr(adequacao.prazo_regularizacao)}</strong>.
+            {(
+              (
+                adequacao.prazo_regularizacao &&
+                !Number.isNaN(new Date(adequacao.prazo_regularizacao).getTime()) &&
+                new Date(adequacao.prazo_regularizacao).getTime() <= Date.now()
+              ) ||
+              (
+                Array.isArray(adequacao.barbeiros_bloqueados) &&
+                adequacao.barbeiros_bloqueados.length > 0
+              )
+            ) ? (
+              <> O prazo de regularização expirou. Os profissionais excedentes estão temporariamente indisponíveis para novas operações até a regularização do plano.</>
+            ) : (
+              <> Até essa data, o profissional excedente continuará funcionando normalmente.</>
+            )}
+          </div>
+        </section>
+      ) : null}
+
+      <section style={{ marginTop: 16 }}>
         <h2 style={{ marginBottom: 6 }}>
           Planos disponíveis
         </h2>
@@ -438,172 +595,167 @@ export default function MinhaAssinaturaPage() {
           Escolha o plano mais adequado ao tamanho da sua equipe.
         </p>
 
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 10,
+            flexWrap: "wrap",
+            marginTop: 12,
+            padding: "12px 14px",
+            borderRadius: 10,
+            border: "1px solid #bfdbfe",
+            background: "#eff6ff",
+            color: "#1e3a8a",
+          }}
+        >
+          <strong>Equipe atual: {quantidadeBarbeirosAtivos} barbeiro(s) ativo(s)</strong>
+          <span style={{ color: "#475569", fontSize: 13 }}>
+            Planos com limite inferior à sua equipe ficam bloqueados para contratação.
+          </span>
+        </div>
+
         {carregando ? (
           <p>Carregando planos...</p>
         ) : (
           <div
             style={{
-              display: "grid",
-              gridTemplateColumns:
-                "repeat(auto-fit,minmax(270px,1fr))",
-              gap: 18,
+              overflowX: "auto",
               marginTop: 18,
+              border: "1px solid #e2e8f0",
+              borderRadius: 14,
+              background: "#fff",
             }}
           >
-            {planos.map((plano) => {
-              const atual =
-                assinatura?.plano_id === plano.id;
+            <table
+              style={{
+                width: "100%",
+                minWidth: 920,
+                borderCollapse: "collapse",
+                tableLayout: "fixed",
+              }}
+            >
+              <colgroup>
+                <col style={{ width: "10%" }} />
+                <col style={{ width: "30%" }} />
+                <col style={{ width: "30%" }} />
+                <col style={{ width: "30%" }} />
+              </colgroup>
+              <thead>
+                <tr style={{ background: "#f8fafc" }}>
+                  <th style={cabecalhoPlano}>Plano</th>
+                  {periodosPlanos.map((periodo) => (
+                    <th key={periodo.meses} style={cabecalhoPlano}>
+                      {periodo.nome}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {catalogoAgrupado.map((faixa) => (
+                  <tr key={faixa.limite}>
+                    <td style={celulaPlanoNome}>
+                      <strong>{faixa.nome}</strong>
+                      <span
+                        style={{
+                          display: "block",
+                          marginTop: 5,
+                          color: "#64748b",
+                          fontSize: 13,
+                        }}
+                      >
+                        {faixa.detalhe}
+                      </span>
+                    </td>
+                    {faixa.periodos.map(({ meses, plano }) => {
+                      const atual = assinatura?.plano_id === plano?.id;
+                      const processando = processandoPlanoId === plano?.id;
+                      const compativel = plano ? planoCompativel(plano) : false;
+                      const recomendado =
+                        plano &&
+                        compativel &&
+                        Number(plano.limite_barbeiros) === menorLimiteCompativel;
 
-              return (
-                <div
-                  key={plano.id}
-                  style={{
-                    background: "#fff",
-                    border: atual
-                      ? "2px solid #2563eb"
-                      : "1px solid #e2e8f0",
-                    borderRadius: 14,
-                    padding: 22,
-                    position: "relative",
-                  }}
-                >
-                  {atual ? (
-                    <div
-                      style={{
-                        position: "absolute",
-                        top: 12,
-                        right: 12,
-                        background: "#dbeafe",
-                        color: "#1d4ed8",
-                        padding: "5px 9px",
-                        borderRadius: 999,
-                        fontSize: 11,
-                        fontWeight: 800,
-                      }}
-                    >
-                      PLANO ATUAL
-                    </div>
-                  ) : null}
+                      return (
+                        <td
+                          key={meses}
+                          style={{
+                            ...celulaPlanoPreco,
+                            background: atual
+                              ? "#eff6ff"
+                              : plano && !compativel
+                              ? "#f8fafc"
+                              : recomendado
+                              ? "#f0fdf4"
+                              : "#fff",
+                          }}
+                        >
+                          {plano ? (
+                            <>
+                              {atual ? (
+                                <span style={seloPlanoAtual}>PLANO ATUAL</span>
+                              ) : recomendado ? (
+                                <span style={seloPlanoCompativel}></span>
+                              ) : null}
+                              {!compativel ? (
+                                <div style={avisoPlanoBloqueado}>
+                                  <strong>Plano incompatível com sua equipe atual</strong>
+                                  <span>
+                                    Permite até {plano.limite_barbeiros} barbeiro(s); sua barbearia possui {quantidadeBarbeirosAtivos} ativo(s).
+                                  </span>
+                                </div>
+                              ) : null}
+                              <div style={formaPagamentoPlano}>
+                                <strong style={{ fontSize: 24, color: "#0f172a" }}>
+                                  {moeda(plano.valor_pix)}
+                                </strong>
+                                <span style={{ color: "#64748b", fontSize: 12, fontWeight: 700 }}>
+                                  no PIX
+                                </span>
+                              </div>
 
-                  <h3
-                    style={{
-                      marginTop: 0,
-                      marginBottom: 8,
-                      paddingRight: atual ? 90 : 0,
-                    }}
-                  >
-                    {plano.nome}
-                  </h3>
-
-                  <p
-                    style={{
-                      color: "#64748b",
-                      minHeight: 42,
-                    }}
-                  >
-                    {plano.descricao || "Plano BarbSist."}
-                  </p>
-
-                  <div style={{ marginTop: 18 }}>
-                    <div
-                      style={{
-                        fontSize: 13,
-                        color: "#64748b",
-                      }}
-                    >
-                      PIX
-                    </div>
-
-                    <div
-                      style={{
-                        fontSize: 28,
-                        fontWeight: 800,
-                        color: "#0f172a",
-                      }}
-                    >
-                      {moeda(plano.valor_pix)}
-                    </div>
-                  </div>
-
-                  <div
-                    style={{
-                      marginTop: 14,
-                      color: "#334155",
-                    }}
-                  >
-                    Cartão:{" "}
-                    <strong>
-                      {moeda(plano.valor_cartao)}
-                    </strong>
-                  </div>
-
-                  <div
-                    style={{
-                      marginTop: 7,
-                      color: "#334155",
-                    }}
-                  >
-                    Parcelamento: até{" "}
-                    <strong>{plano.max_parcelas_cartao}x</strong>
-                  </div>
-
-                  <div
-                    style={{
-                      marginTop: 7,
-                      color: "#334155",
-                    }}
-                  >
-                    Barbeiros: até{" "}
-                    <strong>{plano.limite_barbeiros}</strong>
-                  </div>
-
-                  <div
-                    style={{
-                      marginTop: 7,
-                      color: "#334155",
-                    }}
-                  >
-                    Período:{" "}
-                    <strong>{plano.periodo_meses} mês(es)</strong>
-                  </div>
-
-                  <button
-                    type="button"
-                    disabled={processandoPlanoId === plano.id}
-                    onClick={() => pagarPix(plano)}
-                    style={{
-                      ...botaoPrincipal,
-                      width: "100%",
-                      marginTop: 20,
-                      opacity:
-                        processandoPlanoId === plano.id
-                          ? 0.65
-                          : 1,
-                    }}
-                  >
-                    {processandoPlanoId === plano.id
-                      ? "Gerando PIX..."
-                      : atual
-                      ? "Pagar/Renovar com PIX"
-                      : "Contratar com PIX"}
-                  </button>
-
-                  <button
-                    type="button"
-                    disabled
-                    style={{
-                      ...botaoSecundario,
-                      width: "100%",
-                      marginTop: 9,
-                      opacity: 0.55,
-                      cursor: "not-allowed",
-                    }}
-                  >
-                    Cartão — em homologação
-                  </button>
-                </div>
-              );
-            })}
+                              <div style={formasDisponiveisPlano}>
+                                <span>PIX • Cartão de crédito • Mercado Pago</span>
+                                <strong style={textoParcelamento}>
+                                  Parcelamento disponível no cartão e Mercado Pago
+                                </strong>
+                                <span style={textoCondicoes}>
+                                  Consulte condições e taxas no pagamento.
+                                </span>
+                              </div>
+                              <button
+                                type="button"
+                                disabled={processando || !compativel}
+                                onClick={() => pagarPix(plano)}
+                                style={{
+                                  ...botaoPrincipal,
+                                  width: "100%",
+                                  marginTop: 16,
+                                  padding: "14px 12px",
+                                  opacity: processando || !compativel ? 0.55 : 1,
+                                  cursor: !compativel ? "not-allowed" : "pointer",
+                                  background: !compativel ? "#94a3b8" : "#2563eb",
+                                }}
+                              >
+                                {!compativel
+                                  ? "Indisponível para sua equipe"
+                                  : processando
+                                  ? "Gerando PIX..."
+                                  : atual
+                                  ? "Pagar/Renovar com PIX"
+                                  : "Contratar com PIX"}
+                              </button>
+                            </>
+                          ) : (
+                            <span style={{ color: "#94a3b8" }}>Indisponível</span>
+                          )}
+                        </td>
+                      );
+                    })}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
       </section>
@@ -730,15 +882,15 @@ function Info({ titulo, valor }) {
   return (
     <div
       style={{
-        padding: "12px 0",
+        padding: "7px 0",
         borderBottom: "1px solid #e2e8f0",
       }}
     >
       <div
         style={{
           color: "#64748b",
-          fontSize: 13,
-          marginBottom: 5,
+          fontSize: 12,
+          marginBottom: 3,
         }}
       >
         {titulo}
@@ -774,4 +926,97 @@ const botaoSecundario = {
   color: "#334155",
   fontWeight: 700,
   cursor: "pointer",
+};
+
+const cabecalhoPlano = {
+  padding: "14px 16px",
+  borderBottom: "1px solid #cbd5e1",
+  color: "#334155",
+  fontSize: 14,
+  fontWeight: 800,
+  textAlign: "left",
+};
+
+const celulaPlanoNome = {
+  minWidth: 0,
+  overflowWrap: "break-word",
+  padding: "24px 10px",
+  borderBottom: "1px solid #e2e8f0",
+  verticalAlign: "top",
+};
+
+const celulaPlanoPreco = {
+  minWidth: 200,
+  padding: "24px 18px",
+  borderBottom: "1px solid #e2e8f0",
+  verticalAlign: "top",
+};
+
+const seloPlanoAtual = {
+  display: "block",
+  width: "fit-content",
+  marginBottom: 8,
+  padding: "4px 8px",
+  borderRadius: 999,
+  background: "#dbeafe",
+  color: "#1d4ed8",
+  fontSize: 10,
+  fontWeight: 800,
+};
+
+const formaPagamentoPlano = {
+  display: "flex",
+  alignItems: "baseline",
+  gap: 6,
+  flexWrap: "wrap",
+};
+
+const formasDisponiveisPlano = {
+  display: "grid",
+  gap: 3,
+  marginTop: 14,
+  color: "#475569",
+  fontSize: 11,
+  lineHeight: 1.35,
+};
+
+const tituloFormasPagamento = {
+  color: "#334155",
+  fontWeight: 800,
+};
+
+const textoParcelamento = {
+  color: "#334155",
+  fontSize: 11,
+};
+
+const textoCondicoes = {
+  color: "#64748b",
+  fontSize: 10,
+};
+
+
+const seloPlanoCompativel = {
+  display: "block",
+  width: "fit-content",
+  marginBottom: 8,
+  padding: "4px 8px",
+  borderRadius: 999,
+  background: "#dcfce7",
+  color: "#166534",
+  fontSize: 10,
+  fontWeight: 800,
+};
+
+const avisoPlanoBloqueado = {
+  display: "grid",
+  gap: 4,
+  marginBottom: 10,
+  padding: "9px 10px",
+  borderRadius: 8,
+  border: "1px solid #fecaca",
+  background: "#fef2f2",
+  color: "#991b1b",
+  fontSize: 11,
+  lineHeight: 1.35,
 };

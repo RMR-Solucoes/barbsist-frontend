@@ -10,6 +10,7 @@ import {
   listarAssinaturasSaas,
   bloquearAssinaturaSaas,
   liberarAssinaturaSaas,
+  concederTesteSaas,
   listarBarbearias,
   listarPlanosSaas,
 } from "@/services/adminPlataformaService";
@@ -263,6 +264,63 @@ export default function Page() {
   const [sucesso, setSucesso] =
     useState("");
 
+  const [barbeariaTeste, setBarbeariaTeste] = useState("");
+  const [planoTeste, setPlanoTeste] = useState("");
+  const [diasTeste, setDiasTeste] = useState(40);
+  const [observacaoTeste, setObservacaoTeste] = useState("");
+  const [confirmacaoTeste, setConfirmacaoTeste] = useState("");
+  const [excecaoTeste, setExcecaoTeste] = useState(null);
+
+  async function concederTeste(evento) {
+    evento.preventDefault();
+    setErro("");
+    setSucesso("");
+
+    if (!barbeariaTeste || !planoTeste) {
+      setErro("Selecione a barbearia e o plano do teste.");
+      return;
+    }
+
+    setProcessandoId("teste");
+    try {
+      await concederTesteSaas(Number(barbeariaTeste), {
+        plano_id: Number(planoTeste),
+        dias: Number(diasTeste),
+        observacao: observacaoTeste,
+        autorizar_excecao: Boolean(excecaoTeste),
+        confirmacao: excecaoTeste ? confirmacaoTeste : null,
+      });
+      setSucesso(`Teste de ${diasTeste} dias concedido com sucesso.`);
+      setObservacaoTeste("");
+      setConfirmacaoTeste("");
+      setExcecaoTeste(null);
+      await carregar();
+    } catch (e) {
+      const detalhe = e?.response?.data?.detail;
+      if (
+        e?.response?.status === 409 &&
+        detalhe &&
+        typeof detalhe === "object" &&
+        detalhe.confirmacao_exigida
+      ) {
+        setExcecaoTeste(detalhe);
+        setConfirmacaoTeste("");
+        // A mensagem estruturada ja e apresentada dentro do painel de
+        // confirmacao excepcional. Manter o erro global vazio evita que o
+        // mesmo aviso apareca duas vezes na tela.
+        setErro("");
+      } else {
+        setErro(
+          typeof detalhe === "string"
+            ? detalhe
+            : "Não foi possível conceder o teste."
+        );
+      }
+    } finally {
+      setProcessandoId(null);
+    }
+  }
+
   async function carregar() {
     setCarregando(true);
     setErro("");
@@ -468,6 +526,58 @@ export default function Page() {
   return (
     <main style={estilos.pagina}>
       <h1>Assinaturas SaaS</h1>
+      <section style={estilos.painel}>
+        <h2>Conceder período de teste</h2>
+        <p style={estilos.subtitulo}>
+          O prazo sugerido é 40 dias e pode ser ajustado para cada cliente.
+        </p>
+        <form onSubmit={concederTeste} style={estilos.filtros}>
+          <select style={estilos.input} value={barbeariaTeste} onChange={(e) => { setBarbeariaTeste(e.target.value); setExcecaoTeste(null); setConfirmacaoTeste(""); setErro(""); setSucesso(""); }} required>
+            <option value="">Selecione a barbearia</option>
+            {barbearias.map((item) => <option key={item.id} value={item.id}>{item.nome}</option>)}
+          </select>
+          <select style={estilos.input} value={planoTeste} onChange={(e) => { setPlanoTeste(e.target.value); setExcecaoTeste(null); setConfirmacaoTeste(""); setErro(""); setSucesso(""); }} required>
+            <option value="">Selecione o plano</option>
+            {planos.filter((item) => item.ativo !== false).map((item) => <option key={item.id} value={item.id}>{item.nome} — limite de {item.limite_barbeiros} barbeiro(s)</option>)}
+          </select>
+          <input style={estilos.input} type="number" min="1" max="365" value={diasTeste} onChange={(e) => setDiasTeste(e.target.value)} required />
+          <input style={estilos.input} type="text" minLength="3" maxLength="500" placeholder="Justificativa da concessão" value={observacaoTeste} onChange={(e) => setObservacaoTeste(e.target.value)} required />
+          {excecaoTeste ? (
+            <div style={{ ...estilos.erro, gridColumn: "1 / -1" }}>
+              <strong>Atenção: autorização excepcional</strong>
+              <p>{excecaoTeste.mensagem}</p>
+              {excecaoTeste.assinatura_atual ? (
+                <p>
+                  Plano atual #{excecaoTeste.assinatura_atual.plano_id} —
+                  assinatura {excecaoTeste.assinatura_atual.status} —
+                  pagamento {excecaoTeste.assinatura_atual.status_pagamento} —
+                  vencimento {excecaoTeste.assinatura_atual.data_fim || "não informado"}.
+                </p>
+              ) : null}
+              <p>
+                Para confirmar, digite exatamente:
+                {" "}<strong>{excecaoTeste.confirmacao_exigida}</strong>
+              </p>
+              <input
+                style={estilos.input}
+                type="text"
+                value={confirmacaoTeste}
+                onChange={(e) => setConfirmacaoTeste(e.target.value)}
+                placeholder={excecaoTeste.confirmacao_exigida}
+                autoComplete="off"
+                required
+              />
+            </div>
+          ) : null}
+          <button type="submit" style={estilos.botaoLiberar} disabled={processandoId === "teste"}>
+            {processandoId === "teste"
+              ? "Concedendo..."
+              : excecaoTeste
+                ? "Confirmar concessão excepcional"
+                : "Conceder teste"}
+          </button>
+        </form>
+      </section>
 
       <p style={estilos.subtitulo}>
         Gest&atilde;o das assinaturas

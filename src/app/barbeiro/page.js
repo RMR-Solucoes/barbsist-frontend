@@ -10,17 +10,23 @@ import {
   excluirBarbeiroDefinitivamente,
   reativarBarbeiro,
 } from "../../services/barbeiroService";
+import { obterAdequacaoPendenteBarbSist } from "../../services/barbsistAssinaturaService";
 
 export default function BarbeirosPage() {
   const [barbeiros, setBarbeiros] = useState([]);
   const [erro, setErro] = useState("");
   const [mensagem, setMensagem] = useState("");
+  const [adequacaoAviso, setAdequacaoAviso] = useState(null);
 
   const [nome, setNome] = useState("");
   const [telefone, setTelefone] = useState("");
   const [email, setEmail] = useState("");
   const [tipo, setTipo] = useState("ASSOCIADO");
   const [percentualComissao, setPercentualComissao] = useState("50");
+  const [valorAluguelCadeira, setValorAluguelCadeira] = useState("");
+  const [periodicidadeAluguel, setPeriodicidadeAluguel] = useState("MENSAL");
+  const [diaVencimentoAluguel, setDiaVencimentoAluguel] = useState("");
+  const [valorDiaria, setValorDiaria] = useState("");
   const [especialidades, setEspecialidades] = useState("");
   const [observacoes, setObservacoes] = useState("");
 
@@ -105,6 +111,30 @@ export default function BarbeirosPage() {
   function limparMensagens() {
     setErro("");
     setMensagem("");
+    setAdequacaoAviso(null);
+  }
+
+  function dataHoraBr(valor) {
+    if (!valor) return "-";
+    const data = new Date(valor);
+    if (Number.isNaN(data.getTime())) return String(valor);
+    return data.toLocaleString("pt-BR", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  }
+
+  async function carregarAvisoAdequacao() {
+    try {
+      const adequacao = await obterAdequacaoPendenteBarbSist();
+      setAdequacaoAviso(adequacao || null);
+    } catch (error) {
+      console.error("ERRO AO CONSULTAR ADEQUACAO:", error);
+      setAdequacaoAviso(null);
+    }
   }
 
   async function salvarBarbeiro() {
@@ -191,6 +221,10 @@ export default function BarbeirosPage() {
       email: email.trim().toLowerCase(),
       tipo: normalizarTexto(tipo),
       percentual_comissao: comissaoNumero,
+      valor_aluguel_cadeira: tipo === "ALUGUEL DE CADEIRA" ? Number(valorAluguelCadeira) : null,
+      periodicidade_aluguel: tipo === "ALUGUEL DE CADEIRA" ? periodicidadeAluguel : null,
+      dia_vencimento_aluguel: tipo === "ALUGUEL DE CADEIRA" && periodicidadeAluguel === "MENSAL" ? Number(diaVencimentoAluguel) : null,
+      valor_diaria: tipo === "DIARISTA" ? Number(valorDiaria) : null,
       especialidades: normalizarTexto(especialidades),
       observacoes: normalizarTexto(observacoes),
     };
@@ -202,6 +236,7 @@ export default function BarbeirosPage() {
       } else {
         await criarBarbeiro(dadosBarbeiro);
         setMensagem("Barbeiro cadastrado com sucesso.");
+        await carregarAvisoAdequacao();
       }
 
       limparFormulario();
@@ -211,7 +246,11 @@ export default function BarbeirosPage() {
 
       const detalhe = error?.response?.data?.detail;
 
-      setErro(detalhe || "Erro ao salvar barbeiro.");
+      setErro(
+        (typeof detalhe === "string" ? detalhe : detalhe?.mensagem) ||
+          error?.message ||
+          "Erro ao salvar barbeiro."
+      );
     }
   }
 
@@ -264,15 +303,18 @@ async function reativarBarbeiroSelecionado(id) {
     await reativarBarbeiro(id);
 
     setMensagem("Barbeiro reativado com sucesso.");
+    await carregarAvisoAdequacao();
     await carregarBarbeiros();
   } catch (error) {
     console.error(error);
 
-    const detalhe =
-      error?.response?.data?.detail ||
-      "Erro ao reativar barbeiro.";
+    const detalhe = error?.response?.data?.detail;
 
-    setErro(detalhe);
+    setErro(
+      (typeof detalhe === "string" ? detalhe : detalhe?.mensagem) ||
+        error?.message ||
+        "Erro ao reativar barbeiro."
+    );
   }
 }
 
@@ -307,12 +349,13 @@ async function reativarBarbeiroSelecionado(id) {
     );
 
     const detalhe =
-      error?.response?.data?.detail;
+      error?.response?.data?.detail ||
+      error?.message;
 
     setErro(
       detalhe || "Erro ao excluir barbeiro."
     );
-  }
+      }
 }
 
   function prepararEdicao(barbeiro) {
@@ -330,6 +373,10 @@ async function reativarBarbeiroSelecionado(id) {
     setEmail(barbeiro.email || "");
     setTipo(barbeiro.tipo || "ASSOCIADO");
     setPercentualComissao(String(barbeiro.percentual_comissao ?? 50));
+    setValorAluguelCadeira(String(barbeiro.valor_aluguel_cadeira ?? ""));
+    setPeriodicidadeAluguel(barbeiro.periodicidade_aluguel || "MENSAL");
+    setDiaVencimentoAluguel(String(barbeiro.dia_vencimento_aluguel ?? ""));
+    setValorDiaria(String(barbeiro.valor_diaria ?? ""));
     setEspecialidades(barbeiro.especialidades || "");
     setObservacoes(barbeiro.observacoes || "");
   }
@@ -342,6 +389,10 @@ async function reativarBarbeiroSelecionado(id) {
     setEmail("");
     setTipo("ASSOCIADO");
     setPercentualComissao("50");
+    setValorAluguelCadeira("");
+    setPeriodicidadeAluguel("MENSAL");
+    setDiaVencimentoAluguel("");
+    setValorDiaria("");
     setEspecialidades("");
     setObservacoes("");
   }
@@ -378,6 +429,57 @@ async function reativarBarbeiroSelecionado(id) {
       <h1>Barbeiros</h1>
 
       {mensagem && <div style={mensagemSucesso}>{mensagem}</div>}
+      {adequacaoAviso && (
+        <div style={avisoAdequacao} role="alert">
+          <div style={{ fontSize: 18, fontWeight: 900 }}>
+            Adequação de plano necessária
+          </div>
+
+          <div style={{ marginTop: 8, lineHeight: 1.55 }}>
+            Sua equipe agora possui{" "}
+            <strong>{adequacaoAviso.quantidade_barbeiros} barbeiro(s) ativo(s)</strong>.
+            O plano <strong>{adequacaoAviso.plano_origem_nome || "atual"}</strong>{" "}
+            permite até <strong>{adequacaoAviso.limite_origem}</strong>.
+          </div>
+
+          <div style={{ marginTop: 6, lineHeight: 1.55 }}>
+            {adequacaoAviso.plano_destino_nome ? (
+              <>
+                Para manter toda a equipe ativa, será necessário regularizar para o plano{" "}
+                <strong>{adequacaoAviso.plano_destino_nome}</strong>.
+              </>
+            ) : (
+              <>
+                O tamanho atual da equipe exige regularização do plano. Não foi encontrado
+                automaticamente um plano compatível no mesmo período.
+              </>
+            )}
+          </div>
+
+          <div style={{ marginTop: 6, lineHeight: 1.55 }}>
+            Regularize até{" "}
+            <strong>{dataHoraBr(adequacaoAviso.prazo_regularizacao)}</strong>.
+            Até essa data, o profissional excedente continuará funcionando normalmente.
+          </div>
+
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 14 }}>
+            <button
+              type="button"
+              onClick={() => router.push("/minha-assinatura")}
+              style={botaoRegularizarPlano}
+            >
+              Regularizar plano
+            </button>
+            <button
+              type="button"
+              onClick={() => setAdequacaoAviso(null)}
+              style={botaoEntendiAdequacao}
+            >
+              Entendi
+            </button>
+          </div>
+        </div>
+      )}
       {erro && <div style={mensagemErro}>{erro}</div>}
 
       <div style={card}>
@@ -436,9 +538,16 @@ async function reativarBarbeiroSelecionado(id) {
             onChange={(e) => setTipo(e.target.value.toUpperCase())}
             style={campo}
           >
+            <option value="PROPRIETARIO">PROPRIETÁRIO</option>
             <option value="ASSOCIADO">ASSOCIADO</option>
             <option value="FUNCIONARIO">FUNCIONÁRIO</option>
+            <option value="AUTONOMO">AUTÔNOMO</option>
             <option value="PARCEIRO">PARCEIRO</option>
+            <option value="COMISSIONADO">COMISSIONADO</option>
+            <option value="ALUGUEL DE CADEIRA">ALUGUEL DE CADEIRA</option>
+            <option value="DIARISTA">DIARISTA</option>
+            <option value="ALUNO">ALUNO</option>
+            <option value="TESTE">TESTE</option>
           </select>
 
           <input
@@ -450,6 +559,22 @@ async function reativarBarbeiroSelecionado(id) {
             onChange={(e) => setPercentualComissao(e.target.value)}
             style={campo}
           />
+          {tipo === "ALUGUEL DE CADEIRA" && (
+            <>
+              <input type="number" min="0" step="0.01" placeholder="Valor do aluguel da cadeira (R$)" value={valorAluguelCadeira} onChange={(e) => setValorAluguelCadeira(e.target.value)} style={campo} />
+              <select value={periodicidadeAluguel} onChange={(e) => setPeriodicidadeAluguel(e.target.value)} style={campo}>
+                <option value="SEMANAL">SEMANAL</option>
+                <option value="QUINZENAL">QUINZENAL</option>
+                <option value="MENSAL">MENSAL</option>
+              </select>
+              {periodicidadeAluguel === "MENSAL" && (
+                <input type="number" min="1" max="31" placeholder="Dia do vencimento (1 a 31)" value={diaVencimentoAluguel} onChange={(e) => setDiaVencimentoAluguel(e.target.value)} style={campo} />
+              )}
+            </>
+          )}
+          {tipo === "DIARISTA" && (
+            <input type="number" min="0" step="0.01" placeholder="Valor da diária (R$)" value={valorDiaria} onChange={(e) => setValorDiaria(e.target.value)} style={campo} />
+          )}
 
           <input
             type="text"
@@ -715,4 +840,35 @@ const botaoVerde = {
   borderRadius: "5px",
   cursor: "pointer",
   marginLeft: "5px",
+};
+
+
+const avisoAdequacao = {
+  background: "#fffbeb",
+  color: "#78350f",
+  border: "2px solid #f59e0b",
+  borderRadius: 12,
+  padding: 18,
+  marginBottom: 20,
+  boxShadow: "0 4px 14px rgba(245, 158, 11, 0.12)",
+};
+
+const botaoRegularizarPlano = {
+  border: 0,
+  borderRadius: 8,
+  padding: "11px 16px",
+  background: "#d97706",
+  color: "#ffffff",
+  fontWeight: 900,
+  cursor: "pointer",
+};
+
+const botaoEntendiAdequacao = {
+  border: "1px solid #f59e0b",
+  borderRadius: 8,
+  padding: "10px 16px",
+  background: "#ffffff",
+  color: "#92400e",
+  fontWeight: 800,
+  cursor: "pointer",
 };

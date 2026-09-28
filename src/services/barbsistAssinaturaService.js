@@ -10,6 +10,11 @@ export async function obterMinhaAssinaturaBarbSist() {
   return resposta.data;
 }
 
+export async function obterAdequacaoPendenteBarbSist() {
+  const resposta = await api.get("/barbsist-assinaturas/adequacao-pendente");
+  return resposta.data;
+}
+
 export async function obterPublicKeyBarbSist() {
   const resposta = await api.get(
     "/barbsist-assinaturas/mercado-pago/public-key"

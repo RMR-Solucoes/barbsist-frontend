@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useMemo, useState } from "react";
 
@@ -316,7 +316,8 @@ export default function Page() {
 
     return (
       valor.includes("liber") ||
-      valor.includes("reativ")
+      valor.includes("reativ") ||
+      valor.includes("concess")
     );
   }).length;
 
@@ -447,8 +448,8 @@ export default function Page() {
                   <th style={estilos.th}>Data / hora</th>
                   <th style={estilos.th}>Barbearia</th>
                   <th style={estilos.th}>Assinatura</th>
-                  <th style={estilos.th}>Usu?rio</th>
-                  <th style={estilos.th}>A??o</th>
+                  <th style={estilos.th}>Usuário</th>
+                  <th style={estilos.th}>Ação</th>
                   <th style={estilos.th}>Altera&ccedil;&atilde;o</th>
                   <th style={estilos.th}>Observa&ccedil;&atilde;o</th>
                 </tr>
@@ -504,7 +505,7 @@ export default function Page() {
                             color: "#64748b",
                           }}
                         >
-                          ?
+                          →
                         </span>
 
                         <span style={estilos.badgeStatus}>

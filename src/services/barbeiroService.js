@@ -1,4 +1,4 @@
-import api from "./api";
+﻿import api from "./api";
 
 async function executar(
   requisicao,
@@ -12,17 +12,21 @@ async function executar(
     const detalhe =
       erro.response?.data?.detail;
 
-    throw new Error(
+    const mensagem =
       typeof detalhe === "string"
         ? detalhe
-        : mensagemPadrao
-    );
+        : detalhe?.mensagem || mensagemPadrao;
+
+    const falha = new Error(mensagem);
+    falha.codigo = detalhe?.codigo || null;
+    falha.detalhe = detalhe || null;
+    throw falha;
   }
 }
 
 export async function listarBarbeiros() {
   return executar(
-    () => api.get("/barbeiros"),
+    () => api.get("/barbeiros", { params: { apenas_ativos: false } }),
     "Erro ao listar barbeiros."
   );
 }
@@ -72,3 +76,4 @@ export async function excluirBarbeiroDefinitivamente(
     "Erro ao excluir barbeiro definitivamente."
   );
 }
+

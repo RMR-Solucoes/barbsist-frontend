@@ -19,6 +19,13 @@ const vazio = {
   ativo: true,
 };
 
+const catalogoOficial = [
+  { faixa: "1 barbeiro", mensal: 19.9, semestral: 99.9, anual: 169.9 },
+  { faixa: "2 barbeiros", mensal: 29.9, semestral: 149.9, anual: 249.9 },
+  { faixa: "3 a 5 barbeiros", mensal: 49.9, semestral: 249.9, anual: 419.9 },
+  { faixa: "6 a 10 barbeiros", mensal: 79.9, semestral: 399.9, anual: 669.9 },
+];
+
 const estilos = {
   pagina: {
     padding: 30,
@@ -325,6 +332,8 @@ export default function Page() {
       setErro(
         typeof detalhe === "string"
           ? detalhe
+          : detalhe?.mensagem
+          ? detalhe.mensagem
           : "Nao foi possivel salvar o plano."
       );
     } finally {
@@ -352,6 +361,38 @@ export default function Page() {
           {sucesso}
         </div>
       ) : null}
+
+      <section style={estilos.painel}>
+        <h2 style={{ marginTop: 0, fontSize: 20 }}>
+          Catálogo oficial de referência
+        </h2>
+        <p style={estilos.subtitulo}>
+          Acima de 10 barbeiros: plano personalizado com adicional por
+          profissional excedente.
+        </p>
+        <div style={estilos.tabelaWrapper}>
+          <table style={{ ...estilos.tabela, minWidth: 620 }}>
+            <thead>
+              <tr>
+                <th style={estilos.th}>Faixa</th>
+                <th style={estilos.th}>Mensal</th>
+                <th style={estilos.th}>Semestral</th>
+                <th style={estilos.th}>Anual</th>
+              </tr>
+            </thead>
+            <tbody>
+              {catalogoOficial.map((item) => (
+                <tr key={item.faixa}>
+                  <td style={estilos.td}>{item.faixa}</td>
+                  <td style={estilos.td}>{dinheiro(item.mensal)}</td>
+                  <td style={estilos.td}>{dinheiro(item.semestral)}</td>
+                  <td style={estilos.td}>{dinheiro(item.anual)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
 
       <section style={estilos.cards}>
         <div style={estilos.card}>

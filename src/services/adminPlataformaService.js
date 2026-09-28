@@ -38,9 +38,18 @@ export async function bloquearAssinaturaSaas(assinaturaId) {
   return resposta.data;
 }
 
-export async function liberarAssinaturaSaas(assinaturaId) {
+export async function liberarAssinaturaSaas(assinaturaId, dados = { dias: 40 }) {
   const resposta = await api.put(
-    `/admin/barbsist-assinaturas/assinaturas/${assinaturaId}/liberar`
+    `/admin/barbsist-assinaturas/assinaturas/${assinaturaId}/liberar`,
+    dados
+  );
+  return resposta.data;
+}
+
+export async function concederTesteSaas(barbeariaId, dados) {
+  const resposta = await api.post(
+    `/admin/barbsist-assinaturas/barbearias/${barbeariaId}/teste`,
+    dados
   );
   return resposta.data;
 }
