@@ -275,7 +275,6 @@ export default function Page() {
           item.status_anterior,
           item.status_novo,
           nomeBarbearia,
-          ass?.promocao_codigo,
         ].join(" ")
       );
 

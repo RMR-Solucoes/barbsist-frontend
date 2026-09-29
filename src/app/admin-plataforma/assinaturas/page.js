@@ -461,8 +461,6 @@ export default function Page() {
           item.status,
           item.status_pagamento,
           item.forma_pagamento,
-          item.promocao_codigo,
-          item.fundador_posicao,
         ]
           .filter(
             (valor) =>
@@ -658,7 +656,7 @@ export default function Page() {
                 e.target.value
               )
             }
-            placeholder="Buscar por barbearia, plano, status ou promocao..."
+            placeholder="Buscar por barbearia, plano ou status..."
             style={estilos.input}
           />
 
@@ -723,10 +721,6 @@ export default function Page() {
 
                 <th style={estilos.th}>
                   Vencimento
-                </th>
-
-                <th style={estilos.th}>
-                  Promo&ccedil;&atilde;o
                 </th>
 
                 <th style={estilos.th}>
@@ -851,34 +845,7 @@ export default function Page() {
                           )}
                         </td>
 
-                        <td style={estilos.td}>
-                          {item.promocao_codigo ? (
-                            <>
-                              <strong>
-                                {
-                                  item.promocao_codigo
-                                }
-                              </strong>
 
-                              <div
-                                style={{
-                                  color:
-                                    "#64748b",
-                                  fontSize: 13,
-                                  marginTop: 3,
-                                }}
-                              >
-                                {item.fundador_posicao
-                                  ? `Fundador #${item.fundador_posicao}`
-                                  : ""}
-                              </div>
-                            </>
-                          ) : item.fundador_posicao ? (
-                            `Fundador #${item.fundador_posicao}`
-                          ) : (
-                            "-"
-                          )}
-                        </td>
 
                         <td style={estilos.td}>
                           <button

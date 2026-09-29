@@ -473,43 +473,6 @@ export default function MinhaAssinaturaPage() {
                   valor={planoAtual?.limite_barbeiros ?? "-"}
                 />
               </div>
-              {assinatura.promocao_codigo ? (
-                <div
-                  style={{
-                    marginTop: 18,
-                    padding: 16,
-                    borderRadius: 10,
-                    background: "#eff6ff",
-                    border: "1px solid #bfdbfe",
-                  }}
-                >
-                  <strong>
-                    Promoção ativa: {assinatura.promocao_codigo}
-                  </strong>
-
-                  <div
-                    style={{
-                      color: "#475569",
-                      marginTop: 6,
-                    }}
-                  >
-                    Período:{" "}
-                    {dataBr(assinatura.promocao_inicio)} até{" "}
-                    {dataBr(assinatura.promocao_fim)}
-                  </div>
-
-                  {assinatura.fundador_posicao ? (
-                    <div
-                      style={{
-                        color: "#475569",
-                        marginTop: 4,
-                      }}
-                    >
-                      Fundador nº {assinatura.fundador_posicao}
-                    </div>
-                  ) : null}
-                </div>
-              ) : null}
 
               {assinatura.motivo_bloqueio ? (
                 <div
