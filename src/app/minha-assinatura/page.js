@@ -2,6 +2,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { CardPayment, initMercadoPago } from "@mercadopago/sdk-react";
 
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -9,7 +10,9 @@ import {
   listarPlanosBarbSist,
   obterMinhaAssinaturaBarbSist,
   obterAdequacaoPendenteBarbSist,
+  obterPublicKeyBarbSist,
   checkoutBarbSistPix,
+  checkoutBarbSistCartao,
 } from "@/services/barbsistAssinaturaService";
 
 import { Painel, moeda } from "@/components/DataView";
@@ -140,6 +143,12 @@ export default function MinhaAssinaturaPage() {
   const [mensagem, setMensagem] = useState("");
   const [processandoPlanoId, setProcessandoPlanoId] = useState(null);
   const [pagamentoPix, setPagamentoPix] = useState(null);
+  const [pagamentoCartao, setPagamentoCartao] = useState(null);
+  const [modalPagamentoAberto, setModalPagamentoAberto] = useState(false);
+  const [planoPagamento, setPlanoPagamento] = useState(null);
+  const [formaPagamento, setFormaPagamento] = useState("pix");
+  const [mercadoPagoPublicKey, setMercadoPagoPublicKey] = useState("");
+  const [carregandoMercadoPago, setCarregandoMercadoPago] = useState(true);
 
   async function carregar() {
     setErro("");
@@ -211,6 +220,44 @@ export default function MinhaAssinaturaPage() {
     carregar();
   }, []);
 
+  useEffect(() => {
+    let ativo = true;
+
+    async function carregarMercadoPago() {
+      setCarregandoMercadoPago(true);
+
+      try {
+        const configuracao = await obterPublicKeyBarbSist();
+        const publicKey = String(configuracao?.public_key || "").trim();
+
+        if (!publicKey) {
+          throw new Error("Public Key do Mercado Pago não disponível.");
+        }
+
+        initMercadoPago(publicKey, { locale: "pt-BR" });
+
+        if (ativo) {
+          setMercadoPagoPublicKey(publicKey);
+        }
+      } catch (e) {
+        console.warn("Mercado Pago indisponível para cartão:", e);
+        if (ativo) {
+          setMercadoPagoPublicKey("");
+        }
+      } finally {
+        if (ativo) {
+          setCarregandoMercadoPago(false);
+        }
+      }
+    }
+
+    carregarMercadoPago();
+
+    return () => {
+      ativo = false;
+    };
+  }, []);
+
   const mapaPlanos = useMemo(
     () =>
       Object.fromEntries(
@@ -259,10 +306,9 @@ export default function MinhaAssinaturaPage() {
     return limites.length ? Math.min(...limites) : null;
   }, [planos, quantidadeBarbeirosAtivos]);
 
-  async function pagarPix(plano) {
+  function abrirPagamento(plano) {
     setErro("");
     setMensagem("");
-    setPagamentoPix(null);
 
     if (!planoCompativel(plano)) {
       setErro(
@@ -273,6 +319,25 @@ export default function MinhaAssinaturaPage() {
       return;
     }
 
+    setPlanoPagamento(plano);
+    setFormaPagamento("pix");
+    setPagamentoPix(null);
+    setPagamentoCartao(null);
+    setModalPagamentoAberto(true);
+  }
+
+  function fecharPagamento() {
+    if (processandoPlanoId !== null) return;
+    setModalPagamentoAberto(false);
+  }
+
+  async function pagarPix(plano = planoPagamento) {
+    if (!plano) return;
+
+    setErro("");
+    setMensagem("");
+    setPagamentoPix(null);
+
     const email = String(usuario?.email || "").trim();
 
     if (!email) {
@@ -281,12 +346,6 @@ export default function MinhaAssinaturaPage() {
       );
       return;
     }
-
-    const confirmou = window.confirm(
-      `Gerar cobrança PIX para o plano "${plano.nome}" no valor de ${moeda(plano.valor_pix)}?`
-    );
-
-    if (!confirmou) return;
 
     setProcessandoPlanoId(plano.id);
 
@@ -309,6 +368,69 @@ export default function MinhaAssinaturaPage() {
           "Não foi possível gerar a cobrança PIX."
         )
       );
+    } finally {
+      setProcessandoPlanoId(null);
+    }
+  }
+
+  async function pagarCartao(formData) {
+    const plano = planoPagamento;
+    if (!plano) return;
+
+    setErro("");
+    setMensagem("");
+    setPagamentoCartao(null);
+    setProcessandoPlanoId(plano.id);
+
+    try {
+      const payerEmail = String(
+        formData?.payer?.email || usuario?.email || ""
+      ).trim();
+
+      const resultado = await checkoutBarbSistCartao({
+        plano_id: plano.id,
+        token: formData?.token,
+        installments: Number(formData?.installments || 1),
+        payment_method_id: formData?.payment_method_id,
+        issuer_id: formData?.issuer_id
+          ? Number(formData.issuer_id)
+          : null,
+        payer_email: payerEmail,
+        identification_type:
+          formData?.payer?.identification?.type || null,
+        identification_number:
+          formData?.payer?.identification?.number || null,
+      });
+
+      setPagamentoCartao(resultado);
+
+      const statusPagamento = String(resultado?.status || "").toLowerCase();
+
+      if (statusPagamento === "approved") {
+        setMensagem("Pagamento aprovado pelo Mercado Pago.");
+      } else if (statusPagamento === "rejected") {
+        setErro(
+          "O Mercado Pago recusou o pagamento. Confira os dados ou tente outro cartão."
+        );
+      } else {
+        setMensagem(
+          "Pagamento enviado ao Mercado Pago e aguardando confirmação."
+        );
+      }
+
+      await carregar();
+      return resultado;
+    } catch (e) {
+      console.error(e);
+
+      setErro(
+        mensagemErroApi(
+          e,
+          "Não foi possível processar o pagamento com cartão."
+        )
+      );
+
+      throw e;
     } finally {
       setProcessandoPlanoId(null);
     }
@@ -678,18 +800,18 @@ export default function MinhaAssinaturaPage() {
                               </div>
 
                               <div style={formasDisponiveisPlano}>
-                                <span>PIX • Cartão de crédito • Mercado Pago</span>
+                                <span>PIX • Cartão de crédito ou débito</span>
                                 <strong style={textoParcelamento}>
-                                  Parcelamento disponível no cartão e Mercado Pago
+                                  Cartão com parcelamento conforme disponibilidade do Mercado Pago
                                 </strong>
                                 <span style={textoCondicoes}>
-                                  Consulte condições e taxas no pagamento.
+                                  A forma de pagamento é escolhida antes de gerar a cobrança.
                                 </span>
                               </div>
                               <button
                                 type="button"
                                 disabled={processando || !compativel}
-                                onClick={() => pagarPix(plano)}
+                                onClick={() => abrirPagamento(plano)}
                                 style={{
                                   ...botaoPrincipal,
                                   width: "100%",
@@ -703,10 +825,10 @@ export default function MinhaAssinaturaPage() {
                                 {!compativel
                                   ? "Indisponível para sua equipe"
                                   : processando
-                                  ? "Gerando PIX..."
+                                  ? "Processando..."
                                   : atual
-                                  ? "Pagar/Renovar com PIX"
-                                  : "Contratar com PIX"}
+                                  ? "Pagar / Renovar"
+                                  : "Escolher pagamento"}
                               </button>
                             </>
                           ) : (
@@ -723,119 +845,296 @@ export default function MinhaAssinaturaPage() {
         )}
       </section>
 
-      {pagamentoPix ? (
-        <section style={{ marginTop: 28 }}>
-          <Painel titulo="Pagamento PIX">
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns:
-                  "repeat(auto-fit,minmax(260px,1fr))",
-                gap: 24,
-              }}
-            >
+      {(pagamentoPix || pagamentoCartao) && !modalPagamentoAberto ? (
+        <div
+          style={{
+            marginTop: 18,
+            padding: 14,
+            borderRadius: 10,
+            border: "1px solid #bfdbfe",
+            background: "#eff6ff",
+            color: "#1e3a8a",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: 12,
+            flexWrap: "wrap",
+          }}
+        >
+          <strong>
+            {pagamentoPix
+              ? "Você possui uma cobrança PIX gerada."
+              : "Confira o resultado do pagamento com cartão."}
+          </strong>
+          <button
+            type="button"
+            onClick={() => setModalPagamentoAberto(true)}
+            style={botaoSecundario}
+          >
+            Reabrir pagamento
+          </button>
+        </div>
+      ) : null}
+
+      {modalPagamentoAberto && planoPagamento ? (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="Pagamento da assinatura BarbSist"
+          style={modalOverlay}
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) {
+              fecharPagamento();
+            }
+          }}
+        >
+          <div style={modalConteudo}>
+            <div style={modalCabecalho}>
               <div>
-                <Info
-                  titulo="Valor"
-                  valor={moeda(pagamentoPix.valor)}
-                />
-
-                <Info
-                  titulo="Status"
-                  valor={<Badge valor={pagamentoPix.status} />}
-                />
-
-                <Info
-                  titulo="Forma"
-                  valor={pagamentoPix.tipo_pagamento || "PIX"}
-                />
-
-                <Info
-                  titulo="E-mail"
-                  valor={
-                    pagamentoPix.payer_email ||
-                    usuario?.email ||
-                    "-"
-                  }
-                />
+                <div style={{ color: "#64748b", fontSize: 12, fontWeight: 800 }}>
+                  PAGAMENTO DA ASSINATURA
+                </div>
+                <h2 style={{ margin: "3px 0 0", fontSize: 21 }}>
+                  {planoPagamento.nome}
+                </h2>
               </div>
 
+              <button
+                type="button"
+                onClick={fecharPagamento}
+                disabled={processandoPlanoId !== null}
+                aria-label="Fechar pagamento"
+                style={botaoFecharModal}
+              >
+                ×
+              </button>
+            </div>
+
+            <div style={resumoPagamento}>
               <div>
-                {pagamentoPix.qr_code_base64 ? (
-                  <img
-                    src={`data:image/png;base64,${pagamentoPix.qr_code_base64}`}
-                    alt="QR Code PIX"
-                    style={{
-                      width: 220,
-                      height: 220,
-                      objectFit: "contain",
-                      border: "1px solid #e2e8f0",
-                      borderRadius: 12,
-                      background: "#fff",
-                      padding: 10,
-                    }}
-                  />
-                ) : null}
-
-                {pagamentoPix.qr_code ? (
-                  <div style={{ marginTop: 16 }}>
-                    <label
-                      style={{
-                        display: "block",
-                        fontSize: 13,
-                        color: "#64748b",
-                        marginBottom: 6,
-                      }}
-                    >
-                      PIX Copia e Cola
-                    </label>
-
-                    <textarea
-                      readOnly
-                      value={pagamentoPix.qr_code}
-                      rows={5}
-                      style={{
-                        width: "100%",
-                        boxSizing: "border-box",
-                        padding: 10,
-                        border: "1px solid #cbd5e1",
-                        borderRadius: 8,
-                        resize: "vertical",
-                      }}
-                    />
-
-                    <button
-                      type="button"
-                      onClick={copiarPix}
-                      style={{
-                        ...botaoPrincipal,
-                        marginTop: 10,
-                      }}
-                    >
-                      Copiar código PIX
-                    </button>
-                  </div>
-                ) : null}
-
-                {pagamentoPix.ticket_url ? (
-                  <a
-                    href={pagamentoPix.ticket_url}
-                    target="_blank"
-                    rel="noreferrer"
-                    style={{
-                      display: "inline-block",
-                      marginTop: 14,
-                      color: "#2563eb",
-                      fontWeight: 700,
-                    }}
-                  >
-                    Abrir cobrança
-                  </a>
-                ) : null}
+                <span style={rotuloResumo}>PIX</span>
+                <strong style={valorResumo}>
+                  {moeda(planoPagamento.valor_pix)}
+                </strong>
+              </div>
+              <div>
+                <span style={rotuloResumo}>Cartão</span>
+                <strong style={valorResumo}>
+                  {moeda(planoPagamento.valor_cartao ?? planoPagamento.valor_pix)}
+                </strong>
               </div>
             </div>
-          </Painel>
-        </section>
+
+            {!pagamentoPix && !pagamentoCartao ? (
+              <div style={abasPagamento}>
+                <button
+                  type="button"
+                  onClick={() => setFormaPagamento("pix")}
+                  style={
+                    formaPagamento === "pix"
+                      ? abaPagamentoAtiva
+                      : abaPagamento
+                  }
+                >
+                  PIX
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFormaPagamento("cartao")}
+                  style={
+                    formaPagamento === "cartao"
+                      ? abaPagamentoAtiva
+                      : abaPagamento
+                  }
+                >
+                  Cartão
+                </button>
+              </div>
+            ) : null}
+
+            {formaPagamento === "pix" && !pagamentoCartao ? (
+              <div style={{ marginTop: 18 }}>
+                {!pagamentoPix ? (
+                  <div style={painelFormaPagamento}>
+                    <h3 style={{ margin: 0 }}>Pagamento por PIX</h3>
+                    <p style={{ color: "#64748b", lineHeight: 1.5 }}>
+                      O QR Code e o PIX Copia e Cola aparecerão aqui imediatamente após a geração.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => pagarPix(planoPagamento)}
+                      disabled={processandoPlanoId !== null}
+                      style={{
+                        ...botaoPrincipal,
+                        width: "100%",
+                        padding: "13px 16px",
+                        opacity: processandoPlanoId !== null ? 0.6 : 1,
+                      }}
+                    >
+                      {processandoPlanoId !== null
+                        ? "Gerando PIX..."
+                        : `Gerar PIX de ${moeda(planoPagamento.valor_pix)}`}
+                    </button>
+                  </div>
+                ) : (
+                  <div style={painelFormaPagamento}>
+                    <div style={linhaStatusPagamento}>
+                      <div>
+                        <div style={rotuloResumo}>PIX GERADO</div>
+                        <strong style={{ fontSize: 19 }}>
+                          {moeda(pagamentoPix.valor)}
+                        </strong>
+                      </div>
+                      <Badge valor={pagamentoPix.status} />
+                    </div>
+
+                    <div style={pixGrid}>
+                      {pagamentoPix.qr_code_base64 ? (
+                        <img
+                          src={`data:image/png;base64,${pagamentoPix.qr_code_base64}`}
+                          alt="QR Code PIX"
+                          style={qrCodePix}
+                        />
+                      ) : null}
+
+                      <div style={{ minWidth: 0, flex: 1 }}>
+                        {pagamentoPix.qr_code ? (
+                          <>
+                            <label style={labelCampo}>PIX Copia e Cola</label>
+                            <textarea
+                              readOnly
+                              value={pagamentoPix.qr_code}
+                              rows={5}
+                              style={textareaPix}
+                            />
+                            <button
+                              type="button"
+                              onClick={copiarPix}
+                              style={{ ...botaoPrincipal, marginTop: 10 }}
+                            >
+                              Copiar código PIX
+                            </button>
+                          </>
+                        ) : null}
+
+                        {pagamentoPix.ticket_url ? (
+                          <a
+                            href={pagamentoPix.ticket_url}
+                            target="_blank"
+                            rel="noreferrer"
+                            style={linkPagamento}
+                          >
+                            Abrir cobrança no Mercado Pago
+                          </a>
+                        ) : null}
+                      </div>
+                    </div>
+
+                    <p style={avisoAguardando}>
+                      Após o pagamento, a confirmação será processada automaticamente pelo Mercado Pago.
+                    </p>
+                  </div>
+                )}
+              </div>
+            ) : null}
+
+            {formaPagamento === "cartao" && !pagamentoPix ? (
+              <div style={{ marginTop: 18 }}>
+                {pagamentoCartao ? (
+                  <div style={painelFormaPagamento}>
+                    <div style={linhaStatusPagamento}>
+                      <div>
+                        <div style={rotuloResumo}>PAGAMENTO COM CARTÃO</div>
+                        <strong style={{ fontSize: 19 }}>
+                          {moeda(pagamentoCartao.valor)}
+                        </strong>
+                      </div>
+                      <Badge valor={pagamentoCartao.status} />
+                    </div>
+
+                    <Info
+                      titulo="Parcelas"
+                      valor={`${pagamentoCartao.installments || 1}x`}
+                    />
+                    <Info
+                      titulo="Meio"
+                      valor={pagamentoCartao.payment_method_id || "Cartão"}
+                    />
+
+                    {String(pagamentoCartao.status || "").toLowerCase() === "rejected" ? (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setPagamentoCartao(null);
+                          setErro("");
+                          setMensagem("");
+                        }}
+                        style={{ ...botaoPrincipal, marginTop: 14 }}
+                      >
+                        Tentar outro cartão
+                      </button>
+                    ) : null}
+                  </div>
+                ) : carregandoMercadoPago ? (
+                  <div style={painelFormaPagamento}>
+                    Carregando pagamento seguro do Mercado Pago...
+                  </div>
+                ) : !mercadoPagoPublicKey ? (
+                  <div style={avisoPagamentoIndisponivel}>
+                    O pagamento com cartão está temporariamente indisponível. O PIX continua disponível.
+                  </div>
+                ) : (
+                  <div style={painelFormaPagamento}>
+                    <h3 style={{ margin: "0 0 4px" }}>
+                      Cartão de crédito ou débito
+                    </h3>
+                    <p style={{ margin: "0 0 14px", color: "#64748b", lineHeight: 1.5 }}>
+                      Preencha os dados no formulário seguro do Mercado Pago. As opções de crédito, débito e parcelamento dependem do cartão e dos meios habilitados na conta.
+                    </p>
+
+                    <CardPayment
+                      initialization={{
+                        amount: Number(
+                          planoPagamento.valor_cartao ?? planoPagamento.valor_pix ?? 0
+                        ),
+                        payer: {
+                          email: String(usuario?.email || ""),
+                        },
+                      }}
+                      customization={{
+                        paymentMethods: {
+                          minInstallments: 1,
+                          maxInstallments: Math.max(
+                            1,
+                            Math.min(
+                              Number(planoPagamento.max_parcelas_cartao || 1),
+                              12
+                            )
+                          ),
+                        },
+                      }}
+                      onSubmit={pagarCartao}
+                      onReady={() => {}}
+                      onError={(error) => {
+                        console.error("Erro CardPayment SaaS:", error);
+                        setErro(
+                          error?.message ||
+                            "Erro ao carregar o pagamento seguro com cartão."
+                        );
+                      }}
+                    />
+                  </div>
+                )}
+              </div>
+            ) : null}
+
+            <div style={rodapeModal}>
+              <span>
+                Ambiente protegido pelo Mercado Pago. O BarbSist não armazena número do cartão nem CVV.
+              </span>
+            </div>
+          </div>
+        </div>
       ) : null}
     </main>
   );
@@ -983,3 +1282,178 @@ const avisoPlanoBloqueado = {
   fontSize: 11,
   lineHeight: 1.35,
 };
+
+const modalOverlay = {
+  position: "fixed",
+  inset: 0,
+  zIndex: 1000,
+  background: "rgba(15, 23, 42, 0.62)",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  padding: 18,
+};
+
+const modalConteudo = {
+  width: "min(760px, 100%)",
+  maxHeight: "92vh",
+  overflowY: "auto",
+  background: "#ffffff",
+  borderRadius: 16,
+  boxShadow: "0 24px 70px rgba(15, 23, 42, 0.28)",
+  padding: 22,
+};
+
+const modalCabecalho = {
+  display: "flex",
+  alignItems: "flex-start",
+  justifyContent: "space-between",
+  gap: 16,
+};
+
+const botaoFecharModal = {
+  width: 38,
+  height: 38,
+  borderRadius: 10,
+  border: "1px solid #cbd5e1",
+  background: "#ffffff",
+  color: "#334155",
+  fontSize: 25,
+  lineHeight: 1,
+  cursor: "pointer",
+};
+
+const resumoPagamento = {
+  display: "grid",
+  gridTemplateColumns: "repeat(2,minmax(0,1fr))",
+  gap: 10,
+  marginTop: 18,
+  padding: 14,
+  borderRadius: 12,
+  background: "#f8fafc",
+  border: "1px solid #e2e8f0",
+};
+
+const rotuloResumo = {
+  display: "block",
+  color: "#64748b",
+  fontSize: 11,
+  fontWeight: 800,
+  marginBottom: 3,
+};
+
+const valorResumo = {
+  display: "block",
+  color: "#0f172a",
+  fontSize: 18,
+};
+
+const abasPagamento = {
+  display: "grid",
+  gridTemplateColumns: "repeat(2,minmax(0,1fr))",
+  gap: 8,
+  marginTop: 18,
+};
+
+const abaPagamento = {
+  border: "1px solid #cbd5e1",
+  borderRadius: 10,
+  padding: "12px 14px",
+  background: "#ffffff",
+  color: "#334155",
+  fontWeight: 800,
+  cursor: "pointer",
+};
+
+const abaPagamentoAtiva = {
+  ...abaPagamento,
+  border: "1px solid #2563eb",
+  background: "#eff6ff",
+  color: "#1d4ed8",
+};
+
+const painelFormaPagamento = {
+  border: "1px solid #e2e8f0",
+  borderRadius: 12,
+  padding: 16,
+  background: "#ffffff",
+};
+
+const linhaStatusPagamento = {
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "space-between",
+  gap: 12,
+  flexWrap: "wrap",
+  marginBottom: 14,
+};
+
+const pixGrid = {
+  display: "flex",
+  gap: 18,
+  alignItems: "flex-start",
+  flexWrap: "wrap",
+};
+
+const qrCodePix = {
+  width: 220,
+  height: 220,
+  objectFit: "contain",
+  border: "1px solid #e2e8f0",
+  borderRadius: 12,
+  background: "#ffffff",
+  padding: 10,
+};
+
+const labelCampo = {
+  display: "block",
+  fontSize: 13,
+  color: "#64748b",
+  marginBottom: 6,
+};
+
+const textareaPix = {
+  width: "100%",
+  boxSizing: "border-box",
+  padding: 10,
+  border: "1px solid #cbd5e1",
+  borderRadius: 8,
+  resize: "vertical",
+  fontFamily: "monospace",
+  fontSize: 12,
+};
+
+const linkPagamento = {
+  display: "inline-block",
+  marginTop: 14,
+  color: "#2563eb",
+  fontWeight: 700,
+};
+
+const avisoAguardando = {
+  margin: "16px 0 0",
+  padding: 10,
+  borderRadius: 8,
+  background: "#fffbeb",
+  color: "#92400e",
+  fontSize: 13,
+  lineHeight: 1.45,
+};
+
+const avisoPagamentoIndisponivel = {
+  padding: 14,
+  borderRadius: 10,
+  border: "1px solid #fecaca",
+  background: "#fef2f2",
+  color: "#991b1b",
+};
+
+const rodapeModal = {
+  marginTop: 16,
+  paddingTop: 12,
+  borderTop: "1px solid #e2e8f0",
+  color: "#64748b",
+  fontSize: 12,
+  lineHeight: 1.45,
+};
+
