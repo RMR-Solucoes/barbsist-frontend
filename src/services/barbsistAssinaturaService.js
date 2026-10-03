@@ -37,3 +37,12 @@ export async function checkoutBarbSistCartao(dados) {
   );
   return resposta.data;
 }
+
+
+export async function checkoutBarbSistMercadoPago(dados) {
+  const resposta = await api.post(
+    "/barbsist-assinaturas/checkout/mercado-pago",
+    dados
+  );
+  return resposta.data;
+}

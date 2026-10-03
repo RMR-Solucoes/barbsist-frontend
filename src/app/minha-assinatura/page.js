@@ -13,6 +13,7 @@ import {
   obterPublicKeyBarbSist,
   checkoutBarbSistPix,
   checkoutBarbSistCartao,
+  checkoutBarbSistMercadoPago,
 } from "@/services/barbsistAssinaturaService";
 
 import { Painel, moeda } from "@/components/DataView";
@@ -144,6 +145,7 @@ export default function MinhaAssinaturaPage() {
   const [processandoPlanoId, setProcessandoPlanoId] = useState(null);
   const [pagamentoPix, setPagamentoPix] = useState(null);
   const [pagamentoCartao, setPagamentoCartao] = useState(null);
+  const [pagamentoMercadoPago, setPagamentoMercadoPago] = useState(null);
   const [modalPagamentoAberto, setModalPagamentoAberto] = useState(false);
   const [planoPagamento, setPlanoPagamento] = useState(null);
   const [formaPagamento, setFormaPagamento] = useState("pix");
@@ -323,6 +325,7 @@ export default function MinhaAssinaturaPage() {
     setFormaPagamento("pix");
     setPagamentoPix(null);
     setPagamentoCartao(null);
+    setPagamentoMercadoPago(null);
     setModalPagamentoAberto(true);
   }
 
@@ -431,6 +434,62 @@ export default function MinhaAssinaturaPage() {
       );
 
       throw e;
+    } finally {
+      setProcessandoPlanoId(null);
+    }
+  }
+
+  async function pagarDiretoMercadoPago(plano = planoPagamento) {
+    if (!plano) return;
+
+    setErro("");
+    setMensagem("");
+    setPagamentoMercadoPago(null);
+
+    const email = String(usuario?.email || "").trim();
+    if (!email) {
+      setErro(
+        "O usuário autenticado não possui e-mail disponível para abrir o Mercado Pago."
+      );
+      return;
+    }
+
+    const janelaMercadoPago = window.open("", "_blank");
+    setProcessandoPlanoId(plano.id);
+
+    try {
+      const resultado = await checkoutBarbSistMercadoPago({
+        plano_id: plano.id,
+        payer_email: email,
+      });
+
+      const url = String(resultado?.ticket_url || "").trim();
+      if (!url) {
+        throw new Error("Mercado Pago não retornou a URL do checkout.");
+      }
+
+      setPagamentoMercadoPago(resultado);
+      setMensagem(
+        "Checkout Mercado Pago criado. Finalize o pagamento na aba aberta."
+      );
+
+      if (janelaMercadoPago) {
+        janelaMercadoPago.opener = null;
+        janelaMercadoPago.location.replace(url);
+      } else {
+        window.location.assign(url);
+      }
+
+      await carregar();
+    } catch (e) {
+      janelaMercadoPago?.close();
+      console.error(e);
+      setErro(
+        mensagemErroApi(
+          e,
+          "Não foi possível abrir o pagamento direto no Mercado Pago."
+        )
+      );
     } finally {
       setProcessandoPlanoId(null);
     }
@@ -800,9 +859,9 @@ export default function MinhaAssinaturaPage() {
                               </div>
 
                               <div style={formasDisponiveisPlano}>
-                                <span>PIX • Cartão de crédito ou débito</span>
+                                <span>PIX • Cartão • Mercado Pago</span>
                                 <strong style={textoParcelamento}>
-                                  Cartão com parcelamento conforme disponibilidade do Mercado Pago
+                                  Cartão e Mercado Pago: até {Math.max(1, Math.min(Number(plano.max_parcelas_cartao || 1), 12))}x
                                 </strong>
                                 <span style={textoCondicoes}>
                                   A forma de pagamento é escolhida antes de gerar a cobrança.
@@ -845,7 +904,7 @@ export default function MinhaAssinaturaPage() {
         )}
       </section>
 
-      {(pagamentoPix || pagamentoCartao) && !modalPagamentoAberto ? (
+      {(pagamentoPix || pagamentoCartao || pagamentoMercadoPago) && !modalPagamentoAberto ? (
         <div
           style={{
             marginTop: 18,
@@ -864,6 +923,8 @@ export default function MinhaAssinaturaPage() {
           <strong>
             {pagamentoPix
               ? "Você possui uma cobrança PIX gerada."
+              : pagamentoMercadoPago
+              ? "Você possui um Checkout Mercado Pago aberto."
               : "Confira o resultado do pagamento com cartão."}
           </strong>
           <button
@@ -923,9 +984,15 @@ export default function MinhaAssinaturaPage() {
                   {moeda(planoPagamento.valor_cartao ?? planoPagamento.valor_pix)}
                 </strong>
               </div>
+              <div>
+                <span style={rotuloResumo}>Mercado Pago</span>
+                <strong style={valorResumo}>
+                  {moeda(planoPagamento.valor_cartao ?? planoPagamento.valor_pix)}
+                </strong>
+              </div>
             </div>
 
-            {!pagamentoPix && !pagamentoCartao ? (
+            {!pagamentoPix && !pagamentoCartao && !pagamentoMercadoPago ? (
               <div style={abasPagamento}>
                 <button
                   type="button"
@@ -949,10 +1016,21 @@ export default function MinhaAssinaturaPage() {
                 >
                   Cartão
                 </button>
+                <button
+                  type="button"
+                  onClick={() => setFormaPagamento("mercado_pago")}
+                  style={
+                    formaPagamento === "mercado_pago"
+                      ? abaPagamentoAtiva
+                      : abaPagamento
+                  }
+                >
+                  Mercado Pago
+                </button>
               </div>
             ) : null}
 
-            {formaPagamento === "pix" && !pagamentoCartao ? (
+            {formaPagamento === "pix" && !pagamentoCartao && !pagamentoMercadoPago ? (
               <div style={{ marginTop: 18 }}>
                 {!pagamentoPix ? (
                   <div style={painelFormaPagamento}>
@@ -1038,7 +1116,7 @@ export default function MinhaAssinaturaPage() {
               </div>
             ) : null}
 
-            {formaPagamento === "cartao" && !pagamentoPix ? (
+            {formaPagamento === "cartao" && !pagamentoPix && !pagamentoMercadoPago ? (
               <div style={{ marginTop: 18 }}>
                 {pagamentoCartao ? (
                   <div style={painelFormaPagamento}>
@@ -1092,6 +1170,11 @@ export default function MinhaAssinaturaPage() {
                       Preencha os dados no formulário seguro do Mercado Pago. As opções de crédito, débito e parcelamento dependem do cartão e dos meios habilitados na conta.
                     </p>
 
+                    <div style={avisoParcelamento}>
+                      <strong>Parcelamento deste plano: até {Math.max(1, Math.min(Number(planoPagamento.max_parcelas_cartao || 1), 12))}x.</strong>{" "}
+                      O Mercado Pago mostra as parcelas disponíveis depois de identificar o cartão informado.
+                    </div>
+
                     <CardPayment
                       initialization={{
                         amount: Number(
@@ -1125,6 +1208,64 @@ export default function MinhaAssinaturaPage() {
                     />
                   </div>
                 )}
+              </div>
+            ) : null}
+
+            {formaPagamento === "mercado_pago" && !pagamentoPix && !pagamentoCartao ? (
+              <div style={{ marginTop: 18 }}>
+                <div style={painelFormaPagamento}>
+                  <h3 style={{ margin: "0 0 4px" }}>
+                    Pagar diretamente no Mercado Pago
+                  </h3>
+                  <p style={{ margin: "0 0 10px", color: "#64748b", lineHeight: 1.5 }}>
+                    Você será direcionado ao ambiente do Mercado Pago para escolher os meios disponíveis na sua conta.
+                  </p>
+                  <div style={avisoParcelamento}>
+                    <strong>Parcelamento máximo configurado: até {Math.max(1, Math.min(Number(planoPagamento.max_parcelas_cartao || 1), 12))}x.</strong>{" "}
+                    A quantidade efetiva de parcelas depende do meio de pagamento disponibilizado pelo Mercado Pago.
+                  </div>
+
+                  {!pagamentoMercadoPago ? (
+                    <button
+                      type="button"
+                      onClick={() => pagarDiretoMercadoPago(planoPagamento)}
+                      disabled={processandoPlanoId !== null}
+                      style={{
+                        ...botaoPrincipal,
+                        width: "100%",
+                        marginTop: 14,
+                        padding: "13px 16px",
+                        opacity: processandoPlanoId !== null ? 0.6 : 1,
+                      }}
+                    >
+                      {processandoPlanoId !== null
+                        ? "Abrindo Mercado Pago..."
+                        : `Continuar no Mercado Pago — ${moeda(planoPagamento.valor_cartao ?? planoPagamento.valor_pix)}`}
+                    </button>
+                  ) : (
+                    <div style={{ marginTop: 14 }}>
+                      <div style={linhaStatusPagamento}>
+                        <div>
+                          <div style={rotuloResumo}>CHECKOUT MERCADO PAGO</div>
+                          <strong style={{ fontSize: 19 }}>
+                            {moeda(pagamentoMercadoPago.valor)}
+                          </strong>
+                        </div>
+                        <Badge valor={pagamentoMercadoPago.status} />
+                      </div>
+                      {pagamentoMercadoPago.ticket_url ? (
+                        <a
+                          href={pagamentoMercadoPago.ticket_url}
+                          target="_blank"
+                          rel="noreferrer"
+                          style={linkPagamento}
+                        >
+                          Abrir novamente o Mercado Pago
+                        </a>
+                      ) : null}
+                    </div>
+                  )}
+                </div>
               </div>
             ) : null}
 
@@ -1325,7 +1466,7 @@ const botaoFecharModal = {
 
 const resumoPagamento = {
   display: "grid",
-  gridTemplateColumns: "repeat(2,minmax(0,1fr))",
+  gridTemplateColumns: "repeat(3,minmax(0,1fr))",
   gap: 10,
   marginTop: 18,
   padding: 14,
@@ -1350,7 +1491,7 @@ const valorResumo = {
 
 const abasPagamento = {
   display: "grid",
-  gridTemplateColumns: "repeat(2,minmax(0,1fr))",
+  gridTemplateColumns: "repeat(3,minmax(0,1fr))",
   gap: 8,
   marginTop: 18,
 };
@@ -1446,6 +1587,18 @@ const avisoPagamentoIndisponivel = {
   border: "1px solid #fecaca",
   background: "#fef2f2",
   color: "#991b1b",
+};
+
+
+const avisoParcelamento = {
+  margin: "0 0 14px",
+  padding: 10,
+  borderRadius: 8,
+  border: "1px solid #bfdbfe",
+  background: "#eff6ff",
+  color: "#1e3a8a",
+  fontSize: 13,
+  lineHeight: 1.45,
 };
 
 const rodapeModal = {
