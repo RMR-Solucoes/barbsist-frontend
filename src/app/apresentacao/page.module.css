@@ -2332,3 +2332,78 @@
     font-size: 15px !important;
   }
 }
+
+
+/* V30 - CRIAR CONTA UMA LINHA */
+
+/*
+  Correcao cirurgica:
+  - nao altera hero;
+  - nao altera cards;
+  - nao altera menu;
+  - nao altera planos;
+  - nao altera largura geral;
+  - apenas impede "Criar conta" de quebrar linha.
+*/
+
+/* Seletor pela rota para vencer qualquer regra antiga/classe diferente */
+.header a[href="/cadastro"],
+.header a[href^="/cadastro"],
+a[href="/cadastro"].navPrimary,
+a[href^="/cadastro"].navPrimary {
+  width: auto !important;
+  min-width: 190px !important;
+  max-width: none !important;
+  min-height: 62px !important;
+  padding-left: 30px !important;
+  padding-right: 30px !important;
+
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+
+  flex: 0 0 auto !important;
+  flex-shrink: 0 !important;
+
+  white-space: nowrap !important;
+  word-break: keep-all !important;
+  overflow-wrap: normal !important;
+
+  font-size: 21px !important;
+  line-height: 1 !important;
+  font-weight: 950 !important;
+
+  border-radius: 12px !important;
+}
+
+/* Garante que span/texto interno tambem nao quebre */
+.header a[href="/cadastro"] *,
+.header a[href^="/cadastro"] * {
+  white-space: nowrap !important;
+  word-break: keep-all !important;
+  overflow-wrap: normal !important;
+}
+
+/* Mantem proporcional em notebooks */
+@media (max-width: 1280px) {
+  .header a[href="/cadastro"],
+  .header a[href^="/cadastro"] {
+    min-width: 155px !important;
+    min-height: 52px !important;
+    padding-left: 22px !important;
+    padding-right: 22px !important;
+    font-size: 17px !important;
+  }
+}
+
+/* Celular: ainda em uma linha, mas sem estourar */
+@media (max-width: 780px) {
+  .header a[href="/cadastro"],
+  .header a[href^="/cadastro"] {
+    min-width: 128px !important;
+    min-height: 46px !important;
+    padding-left: 16px !important;
+    padding-right: 16px !important;
+    font-size: 15px !important;
+  }
+}
