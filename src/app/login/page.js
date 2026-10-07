@@ -83,7 +83,7 @@ export default function LoginPage() {
   if (carregando || autenticado) {
     return (
       <main className={styles.carregando}>
-        Verificando acesso...
+Verificando acesso...
       </main>
     );
   }
@@ -117,6 +117,14 @@ export default function LoginPage() {
       </section>
 
       <section className={styles.areaFormulario}>
+        <Link
+          href="/apresentacao"
+          className={styles.botaoInicioPublico}
+          data-barbsist-home-v19
+          aria-label="Voltar para a página pública inicial"
+        >
+          ← Início
+        </Link>
         <form
           className={styles.formulario}
           onSubmit={enviarFormulario}

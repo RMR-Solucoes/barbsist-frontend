@@ -266,3 +266,89 @@
     align-items: start;
   }
 }
+
+/* =========================================================
+   V19 - BOTAO INICIO + IMAGEM INSTITUCIONAL AUTH
+   ========================================================= */
+
+.apresentacao {
+  position: relative;
+  isolation: isolate;
+  background-image:
+    linear-gradient(
+      90deg,
+      rgba(7, 22, 52, 0.98) 0%,
+      rgba(12, 38, 92, 0.94) 34%,
+      rgba(20, 62, 142, 0.74) 62%,
+      rgba(20, 62, 142, 0.38) 100%
+    ),
+    url("/images/barbsist-auth-diversidade.jpg");
+  background-size: cover;
+  background-position: 62% center;
+  background-repeat: no-repeat;
+}
+
+.apresentacao::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    linear-gradient(
+      180deg,
+      rgba(2, 12, 31, 0.06),
+      rgba(2, 12, 31, 0.26)
+    );
+}
+
+.apresentacao > * {
+  position: relative;
+  z-index: 1;
+}
+
+.botaoInicioPublico {
+  position: fixed;
+  top: 24px;
+  right: 28px;
+  z-index: 9999;
+  min-height: 42px;
+  padding: 0 17px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #9ec8ff;
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.96);
+  color: #145cc4;
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 800;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.11);
+  backdrop-filter: blur(7px);
+  transition:
+    transform 0.16s ease,
+    border-color 0.16s ease,
+    box-shadow 0.16s ease;
+}
+
+.botaoInicioPublico:hover {
+  transform: translateY(-1px);
+  border-color: #2563eb;
+  box-shadow: 0 10px 27px rgba(15, 23, 42, 0.16);
+}
+
+.botaoInicioPublico:focus-visible {
+  outline: 3px solid rgba(37, 99, 235, 0.2);
+  outline-offset: 2px;
+}
+
+@media (max-width: 850px) {
+  .botaoInicioPublico {
+    top: 14px;
+    right: 14px;
+    min-height: 38px;
+    padding: 0 14px;
+    font-size: 12px;
+  }
+}

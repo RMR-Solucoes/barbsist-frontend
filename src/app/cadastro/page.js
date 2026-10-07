@@ -204,7 +204,7 @@ export default function CadastroPage() {
   if (resultado) {
     return (
       <main className={styles.pagina}>
-        <section className={styles.apresentacao}>
+<section className={styles.apresentacao}>
           <div className={styles.marca}>
             <span className={styles.icone}>
               💈
@@ -230,6 +230,14 @@ export default function CadastroPage() {
         </section>
 
         <section className={styles.areaFormulario}>
+        <Link
+          href="/apresentacao"
+          className={styles.botaoInicioPublico}
+          data-barbsist-home-v19
+          aria-label="Voltar para a página pública inicial"
+        >
+          ← Início
+        </Link>
           <div className={styles.formulario}>
             <div className={styles.cabecalho}>
               <span
@@ -322,6 +330,14 @@ export default function CadastroPage() {
       </section>
 
       <section className={styles.areaFormulario}>
+        <Link
+          href="/apresentacao"
+          className={styles.botaoInicioPublico}
+          data-barbsist-home-v19
+          aria-label="Voltar para a página pública inicial"
+        >
+          ← Início
+        </Link>
         <form
           className={styles.formulario}
           onSubmit={enviarFormulario}
