@@ -1760,3 +1760,130 @@
   .resourceCard p,
   .step p { font-size: 15px !important; }
 }
+
+
+/* V27 - BOTOES E MENU MAIS VISIVEIS */
+
+/* Mantem tela cheia, hero, cards e textos da V26. Ajusta apenas acoes. */
+
+.header {
+  min-height: 82px !important;
+}
+
+.nav {
+  gap: 38px !important;
+  align-items: center !important;
+}
+
+.navLink {
+  min-height: 46px !important;
+  padding: 0 10px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: 19px !important;
+  line-height: 1 !important;
+  font-weight: 900 !important;
+  white-space: nowrap !important;
+}
+
+.navGhost {
+  min-width: 108px !important;
+  min-height: 52px !important;
+  padding: 0 24px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border: 2px solid rgba(255,255,255,.72) !important;
+  border-radius: 11px !important;
+  font-size: 18px !important;
+  line-height: 1 !important;
+  font-weight: 950 !important;
+}
+
+.navPrimary {
+  min-width: 146px !important;
+  min-height: 54px !important;
+  padding: 0 26px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-radius: 11px !important;
+  font-size: 18px !important;
+  line-height: 1 !important;
+  font-weight: 950 !important;
+  box-shadow: 0 10px 22px rgba(0,127,255,.28) !important;
+}
+
+.trialPill {
+  min-width: 145px !important;
+  min-height: 40px !important;
+  padding: 0 17px !important;
+  font-size: 13px !important;
+  font-weight: 950 !important;
+}
+
+.resourcesAside a {
+  min-width: 220px !important;
+  min-height: 56px !important;
+  padding: 0 26px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-width: 2px !important;
+  border-radius: 11px !important;
+  font-size: 18px !important;
+  line-height: 1 !important;
+  font-weight: 950 !important;
+}
+
+.planButton {
+  width: 100% !important;
+  min-height: 62px !important;
+  padding: 0 24px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-width: 2px !important;
+  border-radius: 11px !important;
+  font-size: 18.5px !important;
+  line-height: 1 !important;
+  font-weight: 950 !important;
+}
+
+.cta a,
+.cta button {
+  min-width: 195px !important;
+  min-height: 58px !important;
+  padding: 0 28px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-radius: 11px !important;
+  font-size: 18px !important;
+  line-height: 1 !important;
+  font-weight: 950 !important;
+}
+
+@media (max-width:1180px){
+  .nav{gap:22px !important}
+  .navLink{font-size:16px !important}
+  .navGhost,.navPrimary{font-size:16px !important;min-height:48px !important}
+}
+
+@media (max-width:780px){
+  .navLink{font-size:15px !important}
+  .navGhost,.navPrimary{
+    min-width:auto !important;
+    min-height:46px !important;
+    padding:0 16px !important;
+    font-size:15px !important;
+  }
+  .resourcesAside a{
+    width:100% !important;
+    min-width:0 !important;
+    min-height:52px !important;
+    font-size:16px !important;
+  }
+  .planButton{min-height:56px !important;font-size:16.5px !important}
+}
