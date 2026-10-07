@@ -2167,3 +2167,168 @@
     font-size: 17px !important;
   }
 }
+
+
+/* V29 - HEADER E BOTOES GRANDES */
+
+/*
+  Ajuste dedicado ao cabecalho.
+  Usa seletores mais amplos para garantir que o tamanho apareca no Vercel,
+  mesmo que alguma regra antiga esteja vencendo os seletores por classe.
+*/
+
+.header {
+  min-height: 96px !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+}
+
+.header a,
+.header button {
+  font-size: 22px !important;
+  line-height: 1 !important;
+  font-weight: 900 !important;
+  text-decoration: none !important;
+}
+
+.brand {
+  font-size: 38px !important;
+  line-height: 1 !important;
+  font-weight: 950 !important;
+}
+
+.nav {
+  gap: 42px !important;
+  align-items: center !important;
+}
+
+.navLink {
+  min-height: 58px !important;
+  padding: 0 14px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: 22px !important;
+  font-weight: 950 !important;
+  white-space: nowrap !important;
+}
+
+.navLink:hover {
+  color: #37a8ff !important;
+}
+
+.navGhost {
+  min-width: 132px !important;
+  min-height: 62px !important;
+  padding: 0 28px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: 21px !important;
+  font-weight: 950 !important;
+  border: 2px solid rgba(255,255,255,.78) !important;
+  border-radius: 12px !important;
+  white-space: nowrap !important;
+}
+
+.navPrimary {
+  min-width: 176px !important;
+  min-height: 62px !important;
+  padding: 0 30px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: 21px !important;
+  font-weight: 950 !important;
+  border-radius: 12px !important;
+  white-space: nowrap !important;
+  box-shadow: 0 12px 26px rgba(0,127,255,.30) !important;
+}
+
+/* reforco contra regras antigas */
+.header .nav a {
+  font-size: 22px !important;
+}
+
+.header .navGhost,
+.header .navPrimary {
+  font-size: 21px !important;
+}
+
+/* telas grandes: ainda mais presença */
+@media (min-width: 1500px) {
+  .header {
+    min-height: 102px !important;
+  }
+
+  .brand {
+    font-size: 40px !important;
+  }
+
+  .navLink,
+  .header .nav a {
+    font-size: 23px !important;
+  }
+
+  .navGhost,
+  .navPrimary,
+  .header .navGhost,
+  .header .navPrimary {
+    font-size: 22px !important;
+    min-height: 64px !important;
+  }
+}
+
+/* notebook */
+@media (max-width: 1280px) {
+  .header {
+    min-height: 84px !important;
+  }
+
+  .brand {
+    font-size: 32px !important;
+  }
+
+  .nav {
+    gap: 22px !important;
+  }
+
+  .navLink,
+  .header .nav a {
+    font-size: 18px !important;
+  }
+
+  .navGhost,
+  .navPrimary,
+  .header .navGhost,
+  .header .navPrimary {
+    min-height: 52px !important;
+    font-size: 17px !important;
+  }
+}
+
+/* celular */
+@media (max-width: 780px) {
+  .header {
+    min-height: 72px !important;
+  }
+
+  .brand {
+    font-size: 28px !important;
+  }
+
+  .navLink,
+  .header .nav a {
+    font-size: 15px !important;
+  }
+
+  .navGhost,
+  .navPrimary,
+  .header .navGhost,
+  .header .navPrimary {
+    min-width: auto !important;
+    min-height: 46px !important;
+    padding: 0 15px !important;
+    font-size: 15px !important;
+  }
+}
