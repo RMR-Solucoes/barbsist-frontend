@@ -1,274 +1,409 @@
-"use client";
-
 import Image from "next/image";
 import Link from "next/link";
-import { useState } from "react";
 import styles from "./page.module.css";
 
 const recursos = [
-  ["📅", "Agenda inteligente", "Organize seus horários, serviços e profissionais."],
-  ["👥", "Clientes e fidelização", "Histórico de atendimentos e relacionamento com seus clientes."],
-  ["🧾", "Comandas e pagamentos", "Controle comandas e aceite múltiplas formas de pagamento."],
-  ["📦", "Produtos e estoque", "Gerencie seu estoque de forma simples e prática."],
-  ["📊", "Financeiro e relatórios", "Acompanhe receitas, despesas e resultados da sua barbearia."],
-  ["👑", "Assinaturas e planos", "Gerencie planos e mensalidades dos seus clientes."],
+  {
+    icon: "📅",
+    title: "Agenda inteligente",
+    text: "Organize horários, profissionais e serviços e mantenha a rotina de atendimento em um só fluxo.",
+  },
+  {
+    icon: "👥",
+    title: "Clientes e relacionamento",
+    text: "Centralize cadastro, histórico e informações importantes para acompanhar cada cliente.",
+  },
+  {
+    icon: "🧾",
+    title: "Comandas e pagamentos",
+    text: "Acompanhe serviços, produtos e pagamentos do atendimento até o fechamento.",
+  },
+  {
+    icon: "📦",
+    title: "Produtos e estoque",
+    text: "Controle produtos, quantidades e movimentações para reduzir faltas e perdas.",
+  },
+  {
+    icon: "💰",
+    title: "Financeiro e caixa",
+    text: "Reúna entradas, saídas, contas e movimentações financeiras da operação.",
+  },
+  {
+    icon: "💳",
+    title: "Planos e assinaturas",
+    text: "Gerencie planos de clientes, cobranças recorrentes e acompanhamento de assinaturas.",
+  },
 ];
 
-const passos = [
-  ["1", "🏪", "Cadastre sua barbearia", "Crie sua conta, preencha as informações e personalize seu espaço."],
-  ["2", "⚙️", "Organize sua operação", "Configure serviços, profissionais, agenda, produtos e formas de pagamento."],
-  ["3", "📊", "Acompanhe resultados", "Veja relatórios, evolua seu negócio e tome decisões com mais segurança."],
+const solucoes = [
+  {
+    eyebrow: "ATENDIMENTO",
+    title: "Do agendamento ao fechamento sem perder o histórico.",
+    text: "Agenda, clientes, comandas e Portal do Cliente trabalham conectados para reduzir retrabalho e facilitar o acompanhamento da rotina.",
+    items: [
+      "Agenda e profissionais organizados",
+      "Cadastro e histórico do cliente",
+      "Comanda conectada ao atendimento",
+      "Portal do Cliente para acompanhamento",
+    ],
+    accent: "blue",
+  },
+  {
+    eyebrow: "OPERAÇÃO",
+    title: "Produtos, equipe e assinaturas no mesmo ambiente.",
+    text: "A operação fica centralizada para que o gestor saiba o que está acontecendo sem depender de várias planilhas ou controles paralelos.",
+    items: [
+      "Produtos e movimentações de estoque",
+      "Usuários e profissionais com perfis separados",
+      "Planos e assinaturas de clientes",
+      "Dados isolados por barbearia",
+    ],
+    accent: "cyan",
+  },
+  {
+    eyebrow: "GESTÃO",
+    title: "Informações financeiras para decidir com mais segurança.",
+    text: "Caixa, contas e informações consolidadas ajudam a acompanhar o movimento da barbearia e identificar o que precisa de atenção.",
+    items: [
+      "Caixa e movimentações financeiras",
+      "Contas a pagar e a receber",
+      "Relatórios operacionais",
+      "Visão integrada do negócio",
+    ],
+    accent: "violet",
+  },
+];
+
+const perfis = [
+  {
+    icon: "✂️",
+    title: "Barbeiro independente",
+    text: "Para quem precisa profissionalizar agenda, clientes, comandas e financeiro sem complicação.",
+  },
+  {
+    icon: "👥",
+    title: "Pequenas equipes",
+    text: "Para organizar profissionais, responsabilidades, estoque e atendimento conforme a equipe cresce.",
+  },
+  {
+    icon: "📈",
+    title: "Barbearias em crescimento",
+    text: "Para quem quer ganhar controle da operação antes que o volume de clientes e movimentações aumente.",
+  },
 ];
 
 const planos = [
   {
-    nome: "Solo",
-    slug: "solo",
-    descricao: "Ideal para barbeiros independentes.",
-    mensal: "R$ 19,90",
-    semestral: "R$ 99,90",
-    anual: "R$ 169,90",
-    itens: ["Agenda e clientes", "Comandas e pagamentos", "Produtos e estoque", "Relatórios essenciais"],
+    name: "Solo",
+    capacity: "1 barbeiro",
+    price: "19,90",
+    features: ["Agenda e clientes", "Comandas e pagamentos", "Produtos e estoque", "Financeiro integrado"],
   },
   {
-    nome: "Dupla",
-    slug: "dupla",
-    descricao: "Para pequenas barbearias.",
-    mensal: "R$ 29,90",
-    semestral: "R$ 149,90",
-    anual: "R$ 249,90",
-    itens: ["Tudo do plano Solo", "Até 2 profissionais", "Controle de equipe", "Portal do Cliente"],
+    name: "Dupla",
+    capacity: "Até 2 barbeiros",
+    price: "29,90",
+    features: ["Tudo do Solo", "Até 2 profissionais", "Controle de equipe", "Portal do Cliente"],
   },
   {
-    nome: "Equipe",
-    slug: "equipe",
-    descricao: "Para barbearias em crescimento.",
-    mensal: "R$ 49,90",
-    semestral: "R$ 249,90",
-    anual: "R$ 419,90",
-    destaque: true,
-    itens: ["Tudo do plano Dupla", "Até 5 profissionais", "Financeiro completo", "Relatórios e indicadores"],
+    name: "Equipe",
+    capacity: "Até 5 barbeiros",
+    price: "49,90",
+    popular: true,
+    features: ["Tudo do Dupla", "Até 5 profissionais", "Comissões", "Relatórios e indicadores"],
   },
   {
-    nome: "Profissional",
-    slug: "profissional",
-    descricao: "Para barbearias com alta demanda.",
-    mensal: "R$ 79,90",
-    semestral: "R$ 399,90",
-    anual: "R$ 669,90",
-    itens: ["Tudo do plano Equipe", "Até 10 profissionais", "Mais capacidade", "Recursos da plataforma"],
+    name: "Profissional",
+    capacity: "Até 10 barbeiros",
+    price: "79,90",
+    features: ["Tudo do Equipe", "Até 10 profissionais", "Mais capacidade", "Recursos da plataforma"],
   },
 ];
 
 export default function ApresentacaoPage() {
-  const [periodo, setPeriodo] = useState("mensal");
-
-  function preco(plano) {
-    if (periodo === "semestral") return plano.semestral;
-    if (periodo === "anual") return plano.anual;
-    return plano.mensal;
-  }
-
-  function sufixo() {
-    if (periodo === "semestral") return "/6 meses";
-    if (periodo === "anual") return "/ano";
-    return "/mês";
-  }
-
   return (
-    <div className={styles.viewport}>
-      <main className={styles.page}>
-        <header className={styles.header}>
-          <div className={styles.headerInner}>
-            <Link href="/apresentacao" className={styles.brand}>
-              <span className={styles.brandIcon}>✂</span>
-              <span className={styles.brandText}>
-                <strong>Barb<span>Sist</span></strong>
-              </span>
-            </Link>
+    <main className={styles.page}>
+      <header className={styles.header}>
+        <div className={styles.headerInner}>
+          <Link href="/apresentacao" className={styles.brand} aria-label="BarbSist - início">
+            <span className={styles.brandIcon}>✂</span>
+            <span>Barb<span>Sist</span></span>
+          </Link>
 
-            <nav className={styles.nav}>
-              <Link href="/recursos">Recursos</Link>
-              <Link href="/apresentacao#planos">Planos</Link>
-              <Link href="/como-funciona">Como funciona</Link>
-              <Link href="/contato">Contato</Link>
-            </nav>
+          <nav className={styles.nav} aria-label="Navegação principal">
+            <a href="#recursos">Recursos</a>
+            <a href="#solucoes">Soluções</a>
+            <a href="#como-funciona">Como funciona</a>
+            <a href="#planos">Planos</a>
+            <Link href="/contato">Contato</Link>
+          </nav>
 
-            <div className={styles.headerActions}>
-              <Link href="/login" className={styles.loginButton}>Entrar</Link>
-              <Link href="/cadastro" className={styles.createButton}>Criar conta</Link>
-            </div>
+          <div className={styles.headerActions}>
+            <Link href="/login" className={styles.loginButton}>Entrar</Link>
+            <Link href="/cadastro" className={styles.primaryButton}>Criar conta</Link>
           </div>
-        </header>
+        </div>
+      </header>
 
-        <section className={styles.hero}>
+      <section className={styles.hero}>
+        <div className={styles.heroInner}>
           <div className={styles.heroCopy}>
-            <div className={styles.heroKicker}>
+            <div className={styles.eyebrowLine}>
               <span />
-              SISTEMA COMPLETO PARA BARBEARIAS
+              GESTÃO COMPLETA PARA BARBEARIAS
             </div>
 
             <h1>
-              Mais controle para
-              <span>sua barbearia.</span>
+              Sua barbearia mais organizada,
+              <strong> do agendamento ao caixa.</strong>
             </h1>
 
-            <h2>Gestão simples. Operação organizada.</h2>
-
-            <p>
-              O BarbSist centraliza agenda, clientes, comandas, produtos,
-              estoque, financeiro, assinaturas e pagamentos em um só lugar,
-              para sua barbearia crescer com mais organização e controle.
+            <p className={styles.heroLead}>
+              O BarbSist conecta agenda, clientes, comandas, produtos, estoque,
+              financeiro, equipe, planos e pagamentos em um único sistema.
             </p>
 
-                        <div className={styles.heroTrust}>
-              <span className={styles.trustGift}>🎁</span>
+            <div className={styles.heroActions}>
+              <Link href="/cadastro" className={styles.heroPrimary}>
+                Testar grátis por 40 dias
+                <span>→</span>
+              </Link>
+              <Link href="/recursos" className={styles.heroSecondary}>
+                Conhecer recursos
+              </Link>
+            </div>
 
-              <span className={styles.trialMessage}>
-                <strong>Teste grátis por 40 dias</strong>
-                <small>Conheça o BarbSist antes de contratar.</small>
-              </span>
-
-              <span className={styles.trialPill}>Sem compromisso</span>
+            <div className={styles.heroTrust}>
+              <span>✓ Sem compromisso</span>
+              <span>✓ Acesso pelo navegador</span>
+              <span>✓ Comece em poucos minutos</span>
             </div>
           </div>
 
           <div className={styles.heroVisual}>
             <Image
               src="/barbsist-hero-v13.jpg"
-              alt="Barbearia com painel do BarbSist"
+              alt="Barbeiro atendendo um cliente com uma visão do sistema BarbSist"
               fill
               priority
-              className={styles.heroImage}
               sizes="(max-width: 900px) 100vw, 58vw"
             />
+            <div className={styles.heroGlow} />
           </div>
-        </section>
+        </div>
+      </section>
 
-        <section id="recursos" className={styles.resources}>
-          <div className={styles.resourcesTop}>
-            <div>
-              <span className={styles.kicker}>RECURSOS</span>
-              <h2>Tudo que sua barbearia precisa, em um só lugar.</h2>
-            </div>
+      <section className={styles.proofBar} aria-label="Diferenciais BarbSist">
+        <div>
+          <strong>40 dias grátis</strong>
+          <span>Conheça antes de contratar</span>
+        </div>
+        <div>
+          <strong>Operação conectada</strong>
+          <span>Da agenda ao financeiro</span>
+        </div>
+        <div>
+          <strong>Perfis separados</strong>
+          <span>Administração e equipe</span>
+        </div>
+        <div>
+          <strong>Dados por barbearia</strong>
+          <span>Organização e isolamento</span>
+        </div>
+      </section>
 
-            <div className={styles.resourcesAside}>
-              <p>Ferramentas completas para facilitar sua rotina e acompanhar melhor o negócio.</p>
-              <Link href="/recursos">Ver todos os recursos →</Link>
-            </div>
+      <section className={styles.resources} id="recursos">
+        <div className={styles.sectionIntro}>
+          <div>
+            <span className={styles.kicker}>RECURSOS</span>
+            <h2>Tudo que sua barbearia precisa, em um só lugar.</h2>
           </div>
-
-          <div className={styles.resourceGrid}>
-            {recursos.map(([icone, titulo, texto]) => (
-              <article key={titulo} className={styles.resourceCard}>
-                <span className={styles.resourceIcon}>{icone}</span>
-                <h3>{titulo}</h3>
-                <p>{texto}</p>
-              </article>
-            ))}
+          <div className={styles.sectionAside}>
+            <p>Uma visão clara da rotina para organizar melhor atendimento, operação e gestão.</p>
+            <Link href="/recursos">Ver todos os recursos →</Link>
           </div>
-        </section>
+        </div>
 
-        <section id="como-funciona" className={styles.steps}>
-          <div className={styles.stepsTitle}>
-            <span className={styles.kicker}>COMO FUNCIONA</span>
-            <h2>Comece em minutos e simplifique sua rotina.</h2>
-          </div>
+        <div className={styles.resourceGrid}>
+          {recursos.map((recurso) => (
+            <article className={styles.resourceCard} key={recurso.title}>
+              <div className={styles.resourceIcon} aria-hidden="true">{recurso.icon}</div>
+              <h3>{recurso.title}</h3>
+              <p>{recurso.text}</p>
+            </article>
+          ))}
+        </div>
+      </section>
 
-          <div className={styles.stepsGrid}>
-            {passos.map(([numero, icone, titulo, texto], index) => (
-              <article key={numero} className={styles.step}>
-                <span className={styles.stepNumber}>{numero}</span>
-                <span className={styles.stepIcon}>{icone}</span>
-                <div>
-                  <h3>{titulo}</h3>
-                  <p>{texto}</p>
-                </div>
-                {index < passos.length - 1 && <span className={styles.stepArrow}>›</span>}
-              </article>
-            ))}
-          </div>
-        </section>
+      <section className={styles.solutions} id="solucoes">
+        <div className={styles.solutionsIntro}>
+          <span className={styles.kicker}>UMA PLATAFORMA, TRÊS FRENTES</span>
+          <h2>Organize o que acontece antes, durante e depois de cada atendimento.</h2>
+          <p>
+            Em vez de espalhar informações em aplicativos, cadernos e planilhas,
+            o BarbSist reúne os processos centrais da barbearia.
+          </p>
+        </div>
 
-        <section id="planos" className={styles.plans}>
-          <div className={styles.plansTop}>
-            <div>
-              <span className={styles.kicker}>PLANOS</span>
-              <h2>Escolha o plano ideal para sua barbearia.</h2>
-            </div>
-
-            <div className={styles.planControls}>
-              <span>40 dias grátis antes da contratação</span>
-              <div className={styles.toggle}>
-                {[
-                  ["mensal", "Mensal"],
-                  ["semestral", "Semestral"],
-                  ["anual", "Anual"],
-                ].map(([value, label]) => (
-                  <button
-                    key={value}
-                    type="button"
-                    onClick={() => setPeriodo(value)}
-                    className={periodo === value ? styles.activePeriod : ""}
-                  >
-                    {label}
-                  </button>
-                ))}
+        <div className={styles.solutionStack}>
+          {solucoes.map((solucao, index) => (
+            <article
+              className={`${styles.solutionCard} ${styles[`accent_${solucao.accent}`]}`}
+              key={solucao.title}
+            >
+              <div className={styles.solutionNumber}>0{index + 1}</div>
+              <div className={styles.solutionCopy}>
+                <span>{solucao.eyebrow}</span>
+                <h3>{solucao.title}</h3>
+                <p>{solucao.text}</p>
               </div>
-            </div>
-          </div>
+              <ul>
+                {solucao.items.map((item) => <li key={item}>✓ {item}</li>)}
+              </ul>
+            </article>
+          ))}
+        </div>
+      </section>
 
-          <div className={styles.planGrid}>
-            {planos.map((plano) => (
-              <article
-                key={plano.nome}
-                className={`${styles.planCard} ${plano.destaque ? styles.featuredPlan : ""}`}
-              >
-                {plano.destaque && <div className={styles.featuredLabel}>★ MAIS ESCOLHIDO</div>}
+      <section className={styles.audience}>
+        <div className={styles.audienceVisual}>
+          <Image
+            src="/images/barbsist-auth-diversidade.jpg"
+            alt="Profissionais de barbearia e beleza representando diferentes perfis de negócio"
+            fill
+            sizes="(max-width: 900px) 100vw, 44vw"
+          />
+        </div>
 
-                <div className={styles.planHeading}>
-                  <span className={styles.planIcon}>
-                    {plano.nome === "Solo" ? "👤" :
-                     plano.nome === "Dupla" ? "👥" :
-                     plano.nome === "Equipe" ? "👥" : "🏢"}
-                  </span>
-                  <div>
-                    <h3>{plano.nome}</h3>
-                    <p>{plano.descricao}</p>
-                  </div>
+        <div className={styles.audienceCopy}>
+          <span className={styles.kicker}>PARA QUEM É</span>
+          <h2>Um sistema que acompanha o tamanho da sua operação.</h2>
+          <p className={styles.audienceLead}>
+            Comece simples e evolua a organização conforme sua equipe e sua rotina crescem.
+          </p>
+
+          <div className={styles.audienceCards}>
+            {perfis.map((perfil) => (
+              <article key={perfil.title}>
+                <span aria-hidden="true">{perfil.icon}</span>
+                <div>
+                  <h3>{perfil.title}</h3>
+                  <p>{perfil.text}</p>
                 </div>
-
-                <div className={styles.price}>
-                  <strong>{preco(plano)}</strong>
-                  <span>{sufixo()}</span>
-                </div>
-
-                <ul>
-                  {plano.itens.map((item) => <li key={item}>✓ {item}</li>)}
-                </ul>
-
-                <Link href="/cadastro" className={styles.planButton}>
-                  Começar agora
-                </Link>
               </article>
             ))}
           </div>
-        </section>
+        </div>
+      </section>
 
-        <section id="contato" className={styles.finalCta}>
-          <span className={styles.finalIcon}>✂</span>
-          <div className={styles.finalText}>
-            <strong>Pronto para modernizar sua barbearia?</strong>
-            <span>Crie sua conta e teste o BarbSist gratuitamente por 40 dias.</span>
+      <section className={styles.steps} id="como-funciona">
+        <div className={styles.stepsHeader}>
+          <div>
+            <span className={styles.kicker}>COMO FUNCIONA</span>
+            <h2>Comece em poucos minutos.</h2>
           </div>
+          <p>Você testa primeiro, organiza sua operação e só depois escolhe o plano adequado à equipe.</p>
+        </div>
 
-          <div className={styles.finalChecks}>
-            <span>✓ 40 dias grátis</span>
-            <span>✓ Sem compromisso</span>
-            <span>✓ Configuração rápida</span>
+        <div className={styles.stepsGrid}>
+          <article>
+            <span>01</span>
+            <div className={styles.stepIcon}>🏪</div>
+            <h3>Crie sua barbearia</h3>
+            <p>Informe os dados principais e inicie seu período gratuito de 40 dias.</p>
+          </article>
+          <article>
+            <span>02</span>
+            <div className={styles.stepIcon}>⚙️</div>
+            <h3>Configure a operação</h3>
+            <p>Cadastre serviços, profissionais, produtos e informações essenciais.</p>
+          </article>
+          <article>
+            <span>03</span>
+            <div className={styles.stepIcon}>✂️</div>
+            <h3>Use no dia a dia</h3>
+            <p>Registre agenda, clientes, comandas, estoque e financeiro no mesmo sistema.</p>
+          </article>
+          <article>
+            <span>04</span>
+            <div className={styles.stepIcon}>📈</div>
+            <h3>Escolha o plano</h3>
+            <p>Ao final do teste, escolha a opção compatível com a quantidade de profissionais.</p>
+          </article>
+        </div>
+      </section>
+
+      <section className={styles.plans} id="planos">
+        <div className={styles.plansHeader}>
+          <div>
+            <span className={styles.kicker}>PLANOS</span>
+            <h2>Escolha o plano ideal para sua barbearia.</h2>
           </div>
-        </section>
-      </main>
-    </div>
+          <div className={styles.trialCallout}>
+            <strong>40 dias grátis</strong>
+            <span>antes da contratação</span>
+          </div>
+        </div>
+
+        <div className={styles.planGrid}>
+          {planos.map((plano) => (
+            <article
+              key={plano.name}
+              className={`${styles.planCard} ${plano.popular ? styles.planPopular : ""}`}
+            >
+              {plano.popular && <div className={styles.popularBadge}>MAIS ESCOLHIDO</div>}
+              <div className={styles.planTop}>
+                <div>
+                  <h3>{plano.name}</h3>
+                  <p>{plano.capacity}</p>
+                </div>
+                <span className={styles.planIcon}>✂</span>
+              </div>
+
+              <div className={styles.price}>
+                <span>R$</span>
+                <strong>{plano.price}</strong>
+                <small>/mês</small>
+              </div>
+
+              <ul>
+                {plano.features.map((feature) => <li key={feature}>✓ {feature}</li>)}
+              </ul>
+
+              <Link href="/cadastro" className={styles.planButton}>
+                Começar agora
+              </Link>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className={styles.finalCta} id="contato">
+        <div>
+          <span className={styles.kicker}>40 DIAS GRÁTIS</span>
+          <h2>Modernize sua barbearia sem mudar tudo de uma vez.</h2>
+          <p>
+            Teste a rotina no seu ritmo, organize os módulos essenciais e decida depois qual plano faz sentido para sua equipe.
+          </p>
+        </div>
+
+        <div className={styles.finalActions}>
+          <Link href="/cadastro" className={styles.finalPrimary}>Criar minha barbearia →</Link>
+          <Link href="/contato" className={styles.finalSecondary}>Falar com o BarbSist</Link>
+        </div>
+      </section>
+
+      <footer className={styles.footer}>
+        <div className={styles.footerBrand}>
+          <span>✂</span>
+          <strong>Barb<span>Sist</span></strong>
+        </div>
+        <p>Gestão para barbearias • RMR Soluções de Sistemas</p>
+        <div>
+          <Link href="/login">Entrar</Link>
+          <Link href="/cadastro">Criar conta</Link>
+        </div>
+      </footer>
+    </main>
   );
 }
