@@ -864,3 +864,337 @@
     width: calc(100% - 40px) !important;
   }
 }
+
+
+/* V24 - EQUILIBRIO CARDS E BOTOES */
+
+/*
+  Objetivo:
+  - reduzir um pouco a escala geral da home em relacao a V23;
+  - manter bom aproveitamento horizontal;
+  - diminuir a altura dos cards;
+  - aumentar e valorizar os botoes;
+  - preservar o hero e o destaque dos 40 dias.
+*/
+
+.page {
+  width: calc(100vw - 48px) !important;
+  max-width: 1640px !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+  left: auto !important;
+}
+
+/* HEADER */
+.header {
+  min-height: 68px !important;
+  padding-left: clamp(26px, 4vw, 72px) !important;
+  padding-right: clamp(26px, 4vw, 72px) !important;
+}
+
+.brand {
+  font-size: 30px !important;
+}
+
+.nav {
+  gap: 27px !important;
+}
+
+.navLink,
+.navGhost,
+.navPrimary {
+  font-size: 14px !important;
+}
+
+.navPrimary {
+  min-height: 42px !important;
+  padding: 0 18px !important;
+  border-radius: 9px !important;
+  font-size: 14.5px !important;
+}
+
+/* HERO */
+.hero {
+  min-height: 525px !important;
+}
+
+.heroInner {
+  grid-template-columns:
+    minmax(500px, 0.96fr)
+    minmax(620px, 1.04fr) !important;
+}
+
+.heroCopy {
+  padding:
+    48px
+    clamp(32px, 4vw, 70px)
+    38px
+    clamp(32px, 4.4vw, 78px) !important;
+}
+
+.heroCopy h1 {
+  max-width: 720px !important;
+  font-size: clamp(54px, 4.6vw, 76px) !important;
+  line-height: 0.98 !important;
+}
+
+.heroCopy h2 {
+  font-size: clamp(25px, 1.8vw, 33px) !important;
+}
+
+.heroCopy > p {
+  max-width: 700px !important;
+  font-size: 17px !important;
+  line-height: 1.55 !important;
+}
+
+.heroVisual {
+  min-height: 525px !important;
+}
+
+.heroTrust {
+  width: min(100%, 570px) !important;
+  min-height: 72px !important;
+  margin-top: 22px !important;
+}
+
+.trialMessage strong {
+  font-size: 18px !important;
+}
+
+.trialMessage small {
+  font-size: 11.5px !important;
+}
+
+.trialPill {
+  min-height: 34px !important;
+  padding: 0 14px !important;
+  font-size: 11px !important;
+}
+
+/* RECURSOS */
+.resources {
+  padding:
+    34px
+    clamp(30px, 4.2vw, 76px)
+    36px !important;
+}
+
+.resourcesTop {
+  margin-bottom: 20px !important;
+}
+
+.resourcesTop h2 {
+  font-size: clamp(34px, 2.45vw, 43px) !important;
+}
+
+.resourcesAside p {
+  font-size: 14.5px !important;
+}
+
+.resourcesAside a {
+  min-height: 46px !important;
+  padding: 0 20px !important;
+  border-radius: 10px !important;
+  font-size: 14px !important;
+  font-weight: 800 !important;
+}
+
+.resourceGrid {
+  gap: 18px !important;
+}
+
+.resourceCard {
+  min-height: 178px !important;
+  padding: 21px 21px 19px !important;
+  border-radius: 17px !important;
+}
+
+.resourceIcon {
+  width: 52px !important;
+  height: 52px !important;
+  font-size: 25px !important;
+}
+
+.resourceCard h3 {
+  margin-top: 12px !important;
+  font-size: 21px !important;
+}
+
+.resourceCard p {
+  font-size: 14.5px !important;
+  line-height: 1.5 !important;
+}
+
+/* COMO FUNCIONA */
+.steps {
+  padding:
+    30px
+    clamp(30px, 4.2vw, 76px)
+    34px !important;
+}
+
+.stepsTitle {
+  margin-bottom: 16px !important;
+}
+
+.stepsTitle h2 {
+  font-size: clamp(33px, 2.35vw, 41px) !important;
+}
+
+.stepsGrid {
+  gap: 18px !important;
+}
+
+.step {
+  min-height: 164px !important;
+  padding: 19px 20px !important;
+  grid-template-columns: 38px 50px 1fr !important;
+  gap: 10px !important;
+  border-radius: 17px !important;
+}
+
+.stepNumber {
+  width: 38px !important;
+  height: 38px !important;
+  font-size: 13px !important;
+}
+
+.stepIcon {
+  width: 50px !important;
+  height: 50px !important;
+  font-size: 23px !important;
+}
+
+.step h3 {
+  font-size: 20px !important;
+}
+
+.step p {
+  font-size: 14px !important;
+  line-height: 1.45 !important;
+}
+
+/* PLANOS */
+.plans {
+  padding:
+    30px
+    clamp(30px, 4.2vw, 76px)
+    32px !important;
+}
+
+.plansTitle h2 {
+  font-size: clamp(32px, 2.25vw, 40px) !important;
+}
+
+.plansGrid {
+  gap: 16px !important;
+}
+
+.planCard {
+  min-height: 332px !important;
+  padding: 20px 19px 18px !important;
+  border-radius: 17px !important;
+}
+
+.planCard h3 {
+  font-size: 19px !important;
+}
+
+.price strong {
+  font-size: 34px !important;
+}
+
+.planList li {
+  font-size: 12.8px !important;
+  line-height: 1.4 !important;
+}
+
+/* botoes dos planos mais fortes */
+.planButton {
+  min-height: 52px !important;
+  padding: 0 18px !important;
+  border-width: 2px !important;
+  border-radius: 9px !important;
+  font-size: 15.5px !important;
+  font-weight: 900 !important;
+  letter-spacing: -0.01em !important;
+}
+
+.planButton:hover {
+  transform: translateY(-1px) !important;
+}
+
+/* CTA FINAL */
+.cta {
+  width: calc(100% - clamp(60px, 8.4vw, 152px)) !important;
+  min-height: 88px !important;
+  margin-bottom: 20px !important;
+  padding: 16px 22px !important;
+}
+
+.ctaCopy strong {
+  font-size: 21px !important;
+}
+
+.ctaCopy span {
+  font-size: 12px !important;
+}
+
+/* qualquer botao dentro do CTA final */
+.cta a,
+.cta button {
+  min-height: 48px !important;
+  padding: 0 24px !important;
+  border-radius: 9px !important;
+  font-size: 15px !important;
+  font-weight: 900 !important;
+}
+
+/* RESPONSIVIDADE */
+@media (max-width: 1400px) {
+  .page {
+    width: calc(100vw - 32px) !important;
+  }
+
+  .heroInner {
+    grid-template-columns: 1fr 1fr !important;
+  }
+}
+
+@media (max-width: 1100px) {
+  .page {
+    width: 100vw !important;
+    max-width: none !important;
+  }
+
+  .heroInner {
+    grid-template-columns: 1fr !important;
+  }
+
+  .heroVisual {
+    min-height: 390px !important;
+  }
+
+  .resourceGrid,
+  .stepsGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .plansGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (max-width: 700px) {
+  .resourceGrid,
+  .stepsGrid,
+  .plansGrid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .planButton {
+    min-height: 50px !important;
+    font-size: 15px !important;
+  }
+}
