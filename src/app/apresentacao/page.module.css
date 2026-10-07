@@ -1645,3 +1645,118 @@
     width: calc(100% - 36px) !important;
   }
 }
+
+
+/* V26 - FONTES BOTOES E CARDS */
+
+/* Mantem a tela cheia da V25; altera apenas legibilidade e destaque. */
+
+.navLink {
+  font-size: 17px !important;
+  font-weight: 850 !important;
+  line-height: 1 !important;
+}
+
+.navGhost {
+  min-height: 48px !important;
+  padding: 0 22px !important;
+  font-size: 16.5px !important;
+  font-weight: 900 !important;
+}
+
+.navPrimary {
+  min-height: 50px !important;
+  padding: 0 24px !important;
+  font-size: 16.5px !important;
+  font-weight: 950 !important;
+}
+
+.resourcesAside a {
+  min-height: 52px !important;
+  padding: 0 25px !important;
+  font-size: 16px !important;
+  font-weight: 950 !important;
+}
+
+.resourceCard h3 {
+  font-size: 23px !important;
+  line-height: 1.15 !important;
+  font-weight: 900 !important;
+  margin-top: 11px !important;
+  margin-bottom: 9px !important;
+}
+
+.resourceCard p {
+  font-size: 16.5px !important;
+  line-height: 1.52 !important;
+  font-weight: 500 !important;
+  color: #536783 !important;
+}
+
+.step h3 {
+  font-size: 22px !important;
+  line-height: 1.18 !important;
+  font-weight: 900 !important;
+}
+
+.step p {
+  font-size: 16px !important;
+  line-height: 1.48 !important;
+  font-weight: 500 !important;
+  color: #536783 !important;
+}
+
+.stepNumber {
+  font-size: 14px !important;
+  font-weight: 900 !important;
+}
+
+.planCard h3 {
+  font-size: 21px !important;
+  font-weight: 900 !important;
+}
+
+.planCard p {
+  font-size: 14.5px !important;
+  line-height: 1.45 !important;
+}
+
+.planList li {
+  font-size: 14.5px !important;
+  line-height: 1.43 !important;
+}
+
+.planButton {
+  min-height: 58px !important;
+  font-size: 17px !important;
+  font-weight: 950 !important;
+}
+
+.cta a,
+.cta button {
+  min-height: 54px !important;
+  padding: 0 28px !important;
+  font-size: 16.5px !important;
+  font-weight: 950 !important;
+}
+
+@media (min-width: 1500px) {
+  .navLink { font-size: 17.5px !important; }
+  .navGhost,
+  .navPrimary { font-size: 17px !important; }
+  .resourceCard h3 { font-size: 23.5px !important; }
+  .resourceCard p,
+  .step p { font-size: 16.5px !important; }
+}
+
+@media (max-width: 900px) {
+  .navLink { font-size: 15px !important; }
+  .navGhost,
+  .navPrimary { font-size: 15px !important; }
+
+  .resourceCard h3,
+  .step h3 { font-size: 20px !important; }
+
+  .resourceCard p,
+  .step p { font-size: 15px !important; }
+}
