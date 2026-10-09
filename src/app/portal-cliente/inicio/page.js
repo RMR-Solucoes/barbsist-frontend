@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -55,7 +55,7 @@ export default function Inicio() {
   const [pagamentos, setPagamentos] = useState([]);
   const [planos, setPlanos] = useState([]);
   const [diaVencimento, setDiaVencimento] = useState(
-    Math.min(new Date().getDate(), 28),
+    Math.min(new Date().getDate(), 30),
   );
   const [processandoPlanoId, setProcessandoPlanoId] = useState(null);
   const [pix, setPix] = useState(null);
@@ -384,7 +384,7 @@ export default function Inicio() {
                 <input
                   type="number"
                   min="1"
-                  max="28"
+                  max="30"
                   value={diaVencimento}
                   onChange={(evento) => setDiaVencimento(evento.target.value)}
                   className="ml-2 w-20 rounded-lg border border-slate-300 px-3 py-2"
@@ -409,7 +409,7 @@ export default function Inicio() {
                     <button
                       type="button"
                       onClick={() => contratarPix(plano.id)}
-                      disabled={processandoPlanoId !== null || Number(diaVencimento) < 1 || Number(diaVencimento) > 28}
+                      disabled={processandoPlanoId !== null || Number(diaVencimento) < 1 || Number(diaVencimento) > 30}
                       className="mt-5 rounded-lg bg-blue-600 px-4 py-2 font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
                     >
                       {processandoPlanoId === plano.id ? "Gerando PIX..." : "Assinar com PIX"}

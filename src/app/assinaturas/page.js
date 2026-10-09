@@ -140,8 +140,8 @@ export default function AssinaturasPage() {
     }
 
     const diaVencimento = Number(form.dia_vencimento);
-    if (!Number.isInteger(diaVencimento) || diaVencimento < 1 || diaVencimento > 28) {
-      setErro("Escolha um dia de vencimento entre 1 e 28.");
+    if (!Number.isInteger(diaVencimento) || diaVencimento < 1 || diaVencimento > 30) {
+      setErro("Escolha um dia de vencimento entre 1 e 30.");
       return;
     }
 
@@ -265,7 +265,7 @@ export default function AssinaturasPage() {
           if (partes.length !== 3) return "";
 
           const dia = Number(partes[2]);
-          return dia >= 1 && dia <= 28 ? String(dia) : "";
+          return dia >= 1 && dia <= 30 ? String(dia) : "";
         }
 
         function abrirEdicaoVencimento(assinatura) {
@@ -279,8 +279,8 @@ export default function AssinaturasPage() {
 
         async function confirmarEdicaoVencimento() {
           const dia = Number(novoDiaVencimento);
-          if (!Number.isInteger(dia) || dia < 1 || dia > 28) {
-            setErro("Escolha um dia de vencimento entre 1 e 28.");
+          if (!Number.isInteger(dia) || dia < 1 || dia > 30) {
+            setErro("Escolha um dia de vencimento entre 1 e 30.");
             return;
           }
 
@@ -659,7 +659,7 @@ export default function AssinaturasPage() {
             required
           >
             <option value="">Selecione o dia</option>
-            {Array.from({ length: 28 }, (_, indice) => indice + 1).map((dia) => (
+            {Array.from({ length: 30 }, (_, indice) => indice + 1).map((dia) => (
               <option key={dia} value={dia}>Dia {dia}</option>
             ))}
           </select>
@@ -1093,7 +1093,7 @@ historicoAberto && (
               disabled={vencimentoCarregando}
             >
               <option value="">Selecione o dia</option>
-              {Array.from({ length: 28 }, (_, index) => index + 1).map((dia) => (
+              {Array.from({ length: 30 }, (_, index) => index + 1).map((dia) => (
                 <option key={dia} value={dia}>
                   Dia {dia}
                 </option>
