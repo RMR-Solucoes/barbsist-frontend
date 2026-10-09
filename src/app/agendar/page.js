@@ -37,6 +37,7 @@ export default function AgendamentoOnlinePage() {
   }
 
   const [barbearia, setBarbearia] = useState(null);
+  const agendamentoOnlineAtivo = Boolean(barbearia?.permitir_agendamento_portal);
   const hoje = new Date().toISOString().split("T")[0];
 
   const [servicos, setServicos] = useState([]);
@@ -123,6 +124,10 @@ export default function AgendamentoOnlinePage() {
     console.log("BARBEARIA:", dados);
 
     setBarbearia(dados);
+
+    if (!dados?.permitir_agendamento_portal) {
+      setAbaPublica("consultar");
+    }
   } catch (error) {
     console.error(error);
     setBarbearia(null);
@@ -208,6 +213,10 @@ export default function AgendamentoOnlinePage() {
   setMensagem("");
   setErro("");
 
+  if (!agendamentoOnlineAtivo) {
+    setErro("Agendamento online não está disponível nesta barbearia.");
+    return;
+  }
   if (!servicoId) {
     setErro("Escolha um serviço.");
     return;
@@ -658,148 +667,121 @@ return (
         </div>
       )}
       <header className={styles.cabecalho}>
-        {barbearia?.imagem_capa_url && (
-          <img
-            src={barbearia.imagem_capa_url}
-            alt="Capa da Barbearia"
-            className={styles.imagemCapa}
-          />
-        )}
+        <section className={styles.painelBarbearia}>
+          {barbearia?.imagem_capa_url && (
+            <img
+              src={barbearia.imagem_capa_url}
+              alt="Capa da Barbearia"
+              className={styles.imagemCapa}
+            />
+          )}
 
-        {barbearia?.logo_url && (
-          <img
-            src={barbearia.logo_url}
-            alt="Logo da Barbearia"
-            style={{
-              width: "120px",
-              height: "120px",
-              objectFit: "contain",
-              borderRadius: "50%",
-              background: "#ffffff",
-              padding: "10px",
-              marginBottom: "15px",
-              boxShadow: "0 4px 15px rgba(0,0,0,0.20)",
-            }}
-          />
-        )}
+          <div className={styles.identidadeConteudo}>
+            {barbearia?.logo_url ? (
+              <img
+                src={barbearia.logo_url}
+                alt="Logo da Barbearia"
+                className={styles.logo}
+              />
+            ) : (
+              <div className={styles.logoPlaceholder}>✂</div>
+            )}
 
-        <h1
-          style={{
-            fontSize: "42px",
-            fontWeight: "700",
-            marginBottom: "10px",
-          }}
-        >
-          {barbearia?.nome || "BarbSist"}
-        </h1>
+            <span className={styles.seloAgendamento}>Agendamento online</span>
 
-        {barbearia?.slogan && (
-          <p
-            style={{
-              color: "#d1d5db",
-              fontSize: "20px",
-              fontStyle: "italic",
-              marginBottom: "15px",
-            }}
-          >
-            {barbearia.slogan}
+            <h1 className={styles.titulo}>
+              {barbearia?.nome || "BarbSist"}
+            </h1>
+
+            {barbearia?.slogan && (
+              <p className={styles.slogan}>{barbearia.slogan}</p>
+            )}
+
+            <div className={styles.infoBarbearia}>
+              {barbearia?.telefone_whatsapp && (
+                <span>📱 {barbearia.telefone_whatsapp}</span>
+              )}
+
+              {!barbearia?.telefone_whatsapp && barbearia?.telefone && (
+                <span>📞 {barbearia.telefone}</span>
+              )}
+
+              {barbearia?.instagram && (
+                <span>📸 {barbearia.instagram}</span>
+              )}
+
+              {barbearia?.endereco && (
+                <span>📍 {barbearia.endereco}</span>
+              )}
+            </div>
+          </div>
+        </section>
+
+        <section className={styles.painelNavegacao}>
+          <div>
+            <span className={styles.sobretitulo}>BARBSIST</span>
+            <h2 className={styles.tituloAcao}>
+              {abaPublica === "agendar" && "Agende seu horário"}
+              {abaPublica === "consultar" && "Consulte seus horários"}
+              {abaPublica === "cancelar" && "Cancelar agendamento"}
+            </h2>
+          </div>
+
+          <div className={styles.abas}>
+            <button
+              type="button"
+              onClick={() => {
+                if (agendamentoOnlineAtivo) {
+                  setAbaPublica("agendar");
+                }
+              }}
+              disabled={!agendamentoOnlineAtivo}
+              className={`${styles.botaoAba} ${
+                abaPublica === "agendar" ? styles.botaoAbaAtivo : ""
+              }`}
+            >
+              Agendar
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setAbaPublica("consultar")}
+              className={`${styles.botaoAba} ${
+                abaPublica === "consultar" ? styles.botaoAbaAtivo : ""
+              }`}
+            >
+              Consultar
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setAbaPublica("cancelar")}
+              className={`${styles.botaoAba} ${
+                abaPublica === "cancelar" ? styles.botaoAbaPerigo : ""
+              }`}
+            >
+              Cancelar
+            </button>
+          </div>
+
+          <p className={styles.instrucaoTopo}>
+            {abaPublica === "agendar" &&
+              "Escolha o serviço, profissional, data e horário. A confirmação leva apenas alguns passos."}
+
+            {abaPublica === "consultar" &&
+              "Informe seu telefone para consultar seus agendamentos."}
+
+            {abaPublica === "cancelar" &&
+              "Informe seu telefone para localizar e cancelar um agendamento."}
           </p>
-        )}
 
-        {barbearia?.endereco && (
-          <p
-            style={{
-              color: "#d1d5db",
-              fontSize: "15px",
-              marginBottom: "6px",
-            }}
-          >
-            📍 {barbearia.endereco}
-          </p>
-        )}
-
-        {barbearia?.instagram && (
-          <p
-            style={{
-              color: "#d1d5db",
-              fontSize: "15px",
-              marginBottom: "25px",
-            }}
-          >
-            📸 {barbearia.instagram}
-          </p>
-        )}
-
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "center",
-            flexWrap: "wrap",
-            gap: "10px",
-            marginBottom: "15px",
-          }}
-        >
-          <button
-            type="button"
-            onClick={() => setAbaPublica("agendar")}
-            style={{
-              ...buttonStyle,
-              background:
-                abaPublica === "agendar"
-                  ? "#2563eb"
-                  : "#374151",
-            }}
-          >
-            Agendar Horário
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setAbaPublica("consultar")}
-            style={{
-              ...buttonStyle,
-              background:
-                abaPublica === "consultar"
-                  ? "#2563eb"
-                  : "#374151",
-            }}
-          >
-            Consultar Agendamento
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setAbaPublica("cancelar")}
-            style={{
-              ...buttonStyle,
-              background:
-                abaPublica === "cancelar"
-                  ? "#dc2626"
-                  : "#374151",
-            }}
-          >
-            Cancelar Agendamento
-          </button>
-        </div>
-
-        <p
-          style={{
-            color: "#d1d5db",
-            fontSize: "17px",
-            marginTop: "10px",
-          }}
-        >
-          {abaPublica === "agendar" &&
-            "Escolha seu serviço, horário e confirme seu atendimento."}
-
-          {abaPublica === "consultar" &&
-            "Informe seu telefone para consultar seus agendamentos."}
-
-          {abaPublica === "cancelar" &&
-            "Informe seu telefone para localizar e cancelar um agendamento."}
-        </p>
+          {!agendamentoOnlineAtivo && (
+            <div className={styles.avisoIndisponivel}>
+              🔒 Novos agendamentos online estão temporariamente indisponíveis.
+            </div>
+          )}
+        </section>
       </header>
-
       {mensagem && (
         <div
           style={{
@@ -1068,31 +1050,56 @@ return (
       {abaPublica === "agendar" && (
         <section className={styles.layoutAgendamento}>
           <div className={styles.colunaFormulario}>
-            <div style={cardStyle}>
-              <h2>1. Escolha o serviço</h2>
+            <div className={styles.etapaCard}>
+              <div className={styles.etapaCabecalho}>
+                <span className={styles.numeroEtapa}>1</span>
+                <div>
+                  <h2>Escolha o serviço</h2>
+                  <p>Selecione o atendimento que deseja realizar.</p>
+                </div>
+              </div>
 
-              <select
-                value={servicoId}
-                onChange={(e) => setServicoId(e.target.value)}
-                style={inputStyle}
-              >
-                <option value="">Selecione um serviço</option>
+              <div className={styles.listaServicos}>
+                {servicos.map((servico) => {
+                  const selecionado =
+                    String(servicoId) === String(servico.id);
 
-                {servicos.map((servico) => (
-                  <option key={servico.id} value={servico.id}>
-                    {servico.nome} - {formatarMoeda(servico.preco)}
-                  </option>
-                ))}
-              </select>
+                  return (
+                    <button
+                      key={servico.id}
+                      type="button"
+                      onClick={() => setServicoId(String(servico.id))}
+                      className={`${styles.servicoItem} ${
+                        selecionado ? styles.servicoItemAtivo : ""
+                      }`}
+                    >
+                      <span className={styles.servicoSelecao}>
+                        {selecionado ? "✓" : ""}
+                      </span>
 
-              {servicoSelecionado && (
-                <p style={{ color: "#6b7280", marginTop: "10px" }}>
-                  Tempo médio:{" "}
-                  <strong>
-                    {servicoSelecionado.tempo_medio_minutos || 30} minutos
-                  </strong>
-                </p>
-              )}
+                      <span className={styles.servicoDescricao}>
+                        <strong>{servico.nome}</strong>
+                        <small>
+                          {servico.tempo_medio_minutos || 30} min
+                        </small>
+                      </span>
+
+                      <span className={styles.servicoPreco}>
+                        <strong>{formatarMoeda(servico.preco)}</strong>
+                        <small>
+                          {selecionado ? "Selecionado" : "Selecionar"}
+                        </small>
+                      </span>
+                    </button>
+                  );
+                })}
+
+                {!servicos.length && (
+                  <p className={styles.textoAuxiliar}>
+                    Nenhum serviço disponível para agendamento.
+                  </p>
+                )}
+              </div>
             </div>
 
             <div style={cardStyle}>

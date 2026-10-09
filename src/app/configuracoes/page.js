@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useState } from "react";
 
@@ -880,7 +880,7 @@ const estadosBrasil = [
                   })
                 }
               />
-              Permitir agendamento pelo Portal do Cliente
+              Permitir agendamento online pelos clientes
             </label>
 
             <button
