@@ -6,6 +6,8 @@ import { useEffect, useMemo, useState } from "react";
 import { listarMinhaAgenda } from "@/services/agendamentoService";
 import { listarMinhasComandas } from "@/services/comandaService";
 import { listarMinhasComissoes } from "@/services/comissaoService";
+import { criarCliente } from "@/services/clienteService";
+// CADASTRO_CLIENTE_BARBEIRO_M1
 
 import styles from "./page.module.css";
 
@@ -105,6 +107,83 @@ export default function MeuTrabalhoPage() {
   const [carregando, setCarregando] = useState(true);
   const [avisos, setAvisos] = useState([]);
   const [painelAtivo, setPainelAtivo] = useState("agenda");
+  const [cadastroClienteAberto, setCadastroClienteAberto] = useState(false);
+  const [clienteNome, setClienteNome] = useState("");
+  const [clienteTelefone, setClienteTelefone] = useState("");
+  const [clienteEmail, setClienteEmail] = useState("");
+  const [clienteObservacoes, setClienteObservacoes] = useState("");
+  const [salvandoCliente, setSalvandoCliente] = useState(false);
+  const [mensagemCliente, setMensagemCliente] = useState("");
+  const [erroCliente, setErroCliente] = useState("");
+
+
+  function limparFormularioCliente() {
+    setClienteNome("");
+    setClienteTelefone("");
+    setClienteEmail("");
+    setClienteObservacoes("");
+  }
+
+  function abrirCadastroCliente() {
+    setPainelAtivo("cliente");
+    setCadastroClienteAberto(true);
+    setMensagemCliente("");
+    setErroCliente("");
+  }
+
+  function cancelarCadastroCliente() {
+    limparFormularioCliente();
+    setCadastroClienteAberto(false);
+    setMensagemCliente("");
+    setErroCliente("");
+    setPainelAtivo("agenda");
+  }
+
+  async function salvarClienteBarbeiro(evento) {
+    evento.preventDefault();
+    setMensagemCliente("");
+    setErroCliente("");
+
+    const nome = clienteNome.trim();
+    const telefone = clienteTelefone.trim();
+    const email = clienteEmail.trim();
+    const observacoes = clienteObservacoes.trim();
+
+    if (!nome) {
+      setErroCliente("Informe o nome do cliente.");
+      return;
+    }
+
+    if (!telefone) {
+      setErroCliente("Informe o telefone do cliente.");
+      return;
+    }
+
+    try {
+      setSalvandoCliente(true);
+
+      const cliente = await criarCliente({
+        nome,
+        telefone,
+        email: email || null,
+        observacoes: observacoes || null,
+      });
+
+      setMensagemCliente(
+        `Cliente ${cliente?.nome || nome} cadastrado com sucesso.`
+      );
+      limparFormularioCliente();
+    } catch (erro) {
+      setErroCliente(
+        mensagemErro(
+          erro,
+          "Não foi possível cadastrar o cliente."
+        )
+      );
+    } finally {
+      setSalvandoCliente(false);
+    }
+  }
 
   async function carregarTudo() {
     setCarregando(true);
@@ -323,9 +402,118 @@ export default function MeuTrabalhoPage() {
           <strong>{comandasAbertas.length} comanda(s) aberta(s)</strong>
           <small>Acompanhe sua movimentação operacional</small>
         </button>
+        <button
+          type="button"
+          className={`${styles.atalhoCard} ${styles.atalhoCliente} ${painelAtivo === "cliente" ? styles.atalhoClienteAtivo : ""}`}
+          onClick={abrirCadastroCliente}
+          aria-pressed={painelAtivo === "cliente"}
+        >
+          <span>Cadastrar cliente</span>
+          <strong>+ Novo cliente</strong>
+          <small>Cadastre rapidamente durante o atendimento</small>
+        </button>
       </section>
 
       <section>
+        {painelAtivo === "cliente" && cadastroClienteAberto && (
+          <article className={`${styles.painel} ${styles.painelCliente}`}>
+            <div className={styles.tituloLinha}>
+              <div>
+                <h2>Cadastrar cliente</h2>
+                <p>Cadastro rápido para uso na agenda e no atendimento da barbearia.</p>
+              </div>
+            </div>
+
+            {mensagemCliente && (
+              <div className={styles.mensagemSucesso} role="status">
+                {mensagemCliente}
+              </div>
+            )}
+
+            {erroCliente && (
+              <div className={styles.erroCliente} role="alert">
+                {erroCliente}
+              </div>
+            )}
+
+            <form className={styles.formCliente} onSubmit={salvarClienteBarbeiro}>
+              <label className={styles.campo}>
+                <span>Nome *</span>
+                <input
+                  type="text"
+                  value={clienteNome}
+                  onChange={(evento) => setClienteNome(evento.target.value)}
+                  placeholder="Nome do cliente"
+                  maxLength={120}
+                  autoComplete="name"
+                  disabled={salvandoCliente}
+                />
+              </label>
+
+              <label className={styles.campo}>
+                <span>Telefone *</span>
+                <input
+                  type="tel"
+                  value={clienteTelefone}
+                  onChange={(evento) => setClienteTelefone(evento.target.value)}
+                  placeholder="(11) 99999-9999"
+                  maxLength={20}
+                  autoComplete="tel"
+                  disabled={salvandoCliente}
+                />
+              </label>
+
+              <label className={styles.campo}>
+                <span>E-mail</span>
+                <input
+                  type="email"
+                  value={clienteEmail}
+                  onChange={(evento) => setClienteEmail(evento.target.value)}
+                  placeholder="cliente@email.com"
+                  maxLength={160}
+                  autoComplete="email"
+                  disabled={salvandoCliente}
+                />
+              </label>
+
+              <label className={`${styles.campo} ${styles.campoObservacoes}`}>
+                <span>Observações</span>
+                <textarea
+                  value={clienteObservacoes}
+                  onChange={(evento) => setClienteObservacoes(evento.target.value)}
+                  placeholder="Informações úteis para o atendimento"
+                  rows={3}
+                  maxLength={500}
+                  disabled={salvandoCliente}
+                />
+              </label>
+
+              <div className={styles.acoesFormulario}>
+                <button
+                  type="submit"
+                  className={styles.botaoPrimario}
+                  disabled={salvandoCliente}
+                >
+                  {salvandoCliente ? "Salvando..." : "Cadastrar cliente"}
+                </button>
+
+                <button
+                  type="button"
+                  className={styles.botaoSecundario}
+                  onClick={cancelarCadastroCliente}
+                  disabled={salvandoCliente}
+                >
+                  Cancelar
+                </button>
+              </div>
+            </form>
+
+            <p className={styles.notaCliente}>
+              O cliente ficará vinculado à barbearia, não ao barbeiro.
+            </p>
+          </article>
+        )}
+
         {painelAtivo === "agenda" && <article className={styles.painel}>
           <div className={styles.tituloLinha}>
             <div><h2>Próximos agendamentos</h2><p>Seus próximos horários ativos.</p></div>
