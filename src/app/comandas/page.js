@@ -13,6 +13,7 @@ import {
   consultarAssinaturaComanda,
   usarPlanoNoItem,
   fecharComanda,
+  removerItemComanda,
   cancelarComanda,
   cancelarCobrancaOnlineComanda,
   excluirComandaTeste,
@@ -71,6 +72,11 @@ export default function ComandasPage() {
   const [
     usandoPlanoItemId,
     setUsandoPlanoItemId,
+  ] = useState(null);
+
+  const [
+    removendoItemId,
+    setRemovendoItemId,
   ] = useState(null);
 
   const [servicoId, setServicoId] = useState("");
@@ -489,6 +495,76 @@ export default function ComandasPage() {
           "Erro ao adicionar produto. Verifique o estoque."
         )
       );
+    }
+  }
+
+
+  async function removerItemDaComanda(item) {
+    if (!comandaSelecionada) {
+      setErro("Selecione uma comanda.");
+      return;
+    }
+
+    if (comandaSelecionada.status !== "aberta") {
+      setErro("Somente comandas abertas permitem remover itens.");
+      return;
+    }
+
+    const complemento =
+      item.tipo === "produto"
+        ? " O produto será devolvido ao estoque."
+        : item.tipo === "servico" && item.pago_com_plano
+          ? " O uso do plano será devolvido quando aplicável."
+          : "";
+
+    const confirmar = window.confirm(
+      `Remover "${item.descricao}" da comanda #${comandaSelecionada.id}?${complemento}`
+    );
+
+    if (!confirmar) return;
+
+    try {
+      setErro("");
+      setMensagem("");
+      setRemovendoItemId(item.id);
+
+      const resultado = await removerItemComanda(
+        comandaSelecionada.id,
+        item.id
+      );
+
+      setMensagem(
+        item.tipo === "produto"
+          ? "Item removido e estoque devolvido."
+          : resultado?.mensagem || "Item removido com sucesso."
+      );
+
+      await atualizarFluxoComanda(
+        comandaSelecionada.id
+      );
+
+      if (item.tipo === "produto") {
+        try {
+          const dadosProdutos = await listarProdutos();
+          setProdutos(dadosProdutos || []);
+        } catch (errorProdutos) {
+          console.warn(
+            "Produtos não atualizados após remoção:",
+            errorProdutos
+          );
+        }
+      }
+    } catch (error) {
+      console.error(error);
+
+      setErro(
+        obterDetalheErro(
+          error,
+          "Erro ao remover item da comanda."
+        )
+      );
+    } finally {
+      setRemovendoItemId(null);
     }
   }
 
@@ -1584,6 +1660,7 @@ export default function ComandasPage() {
                       <th>Qtd.</th>
                       <th>Subtotal</th>
                       <th>Situação</th>
+                      <th>Ações</th>
                     </tr>
                   </thead>
 
@@ -1724,6 +1801,35 @@ export default function ComandasPage() {
                               >
                                 PRODUTO
                               </span>
+                            )}
+                          </td>
+
+                          <td>
+                            {comandaSelecionada.status === "aberta" && (
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  removerItemDaComanda(item)
+                                }
+                                disabled={
+                                  removendoItemId === item.id ||
+                                  processandoPagamento
+                                }
+                                style={{
+                                  ...dangerButtonStyle,
+                                  padding: "6px 8px",
+                                  fontSize: "11px",
+                                  opacity:
+                                    removendoItemId === item.id ||
+                                    processandoPagamento
+                                      ? 0.6
+                                      : 1,
+                                }}
+                              >
+                                {removendoItemId === item.id
+                                  ? "Removendo..."
+                                  : "Remover"}
+                              </button>
                             )}
                           </td>
                         </tr>

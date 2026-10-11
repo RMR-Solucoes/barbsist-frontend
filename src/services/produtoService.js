@@ -29,3 +29,20 @@ export async function reativarProduto(id) {
   const response = await api.put(`/produtos/${id}/reativar`);
   return response.data;
 }
+
+export async function entradaEstoque(id, dados) {
+  const response = await api.post(`/produtos/${id}/estoque/entrada`, dados);
+  return response.data;
+}
+
+export async function ajustarEstoque(id, dados) {
+  const response = await api.post(`/produtos/${id}/estoque/ajuste`, dados);
+  return response.data;
+}
+
+export async function listarMovimentacoesEstoque(id, limite = 50) {
+  const response = await api.get(`/produtos/${id}/estoque/movimentacoes`, {
+    params: { limite },
+  });
+  return response.data;
+}
