@@ -22,13 +22,33 @@ export async function listarServicosOnline(barbeariaSlug) {
 }
 
 
+// BARBSIST_MULTI_SERVICE_M4_API_CLIENT
+function adicionarServicosNosParametros(params, servicosIds) {
+  if (Array.isArray(servicosIds)) {
+    const ids = servicosIds
+      .map((id) => Number(id))
+      .filter((id) => Number.isInteger(id) && id > 0);
+
+    if (ids.length) {
+      params.append("servicos_ids", ids.join(","));
+    }
+
+    return;
+  }
+
+  if (servicosIds !== null && servicosIds !== undefined && servicosIds !== "") {
+    params.append("servico_id", servicosIds);
+  }
+}
+
+
 export async function listarHorariosDiaOnline(
   barbeariaSlug,
-  servicoId,
+  servicosIds,
   data
 ) {
   const params = new URLSearchParams();
-  params.append("servico_id", servicoId);
+  adicionarServicosNosParametros(params, servicosIds);
   params.append("data", data);
 
   const response = await api.get(
@@ -41,12 +61,12 @@ export async function listarHorariosDiaOnline(
 export async function listarHorariosSemanaOnline(
   barbeariaSlug,
   barbeiroId,
-  servicoId,
+  servicosIds,
   dataInicio
 ) {
   const params = new URLSearchParams();
   params.append("barbeiro_id", barbeiroId);
-  params.append("servico_id", servicoId);
+  adicionarServicosNosParametros(params, servicosIds);
   params.append("data_inicio", dataInicio);
 
   const response = await api.get(

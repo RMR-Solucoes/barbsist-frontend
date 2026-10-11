@@ -17,6 +17,45 @@ import { obterBarbeariaPublica } from "@/services/barbeariaService";
 import { carregarPerfilCliente } from "@/services/portalClienteService";
 
 
+// BARBSIST_M4_1_ACABAMENTO
+function formatarServicosAgendamentoM41(agendamento) {
+  const listas = [
+    agendamento?.servicos,
+    agendamento?.servicos_nomes,
+    agendamento?.servicosNomes,
+  ];
+
+  for (const lista of listas) {
+    if (!Array.isArray(lista) || lista.length === 0) {
+      continue;
+    }
+
+    const nomes = lista
+      .map((item) => {
+        if (typeof item === "string") {
+          return item;
+        }
+
+        return item?.nome || item?.servico || item?.descricao || "";
+      })
+      .filter(Boolean);
+
+    if (nomes.length > 0) {
+      return nomes.join(" + ");
+    }
+  }
+
+  if (
+    typeof agendamento?.servicos === "string" &&
+    agendamento.servicos.trim()
+  ) {
+    return agendamento.servicos.trim();
+  }
+
+  return agendamento?.servico || "-";
+}
+
+
 export default function AgendamentoOnlinePage() {
   const origemPortal =
     typeof window !== "undefined" &&
@@ -43,7 +82,8 @@ export default function AgendamentoOnlinePage() {
   const [servicos, setServicos] = useState([]);
   const [barbeiros, setBarbeiros] = useState([]);
 
-  const [servicoId, setServicoId] = useState("");
+  // BARBSIST_MULTI_SERVICE_M4_CLIENTE
+  const [servicosIds, setServicosIds] = useState([]);
   const [modo, setModo] = useState("qualquer");
   const [barbeiroId, setBarbeiroId] = useState("");
   const [dataSelecionada, setDataSelecionada] = useState(hoje);
@@ -115,7 +155,7 @@ export default function AgendamentoOnlinePage() {
 
   setHorarioSelecionado(null);
   carregarHorarios();
-}, [abaPublica, servicoId, modo, barbeiroId, dataSelecionada]);
+}, [abaPublica, servicosIds, modo, barbeiroId, dataSelecionada]);
 
   async function carregarBarbearia() {
   try {
@@ -151,8 +191,26 @@ export default function AgendamentoOnlinePage() {
     }
   }
 
+  function alternarServico(servicoId) {
+    const id = Number(servicoId);
+
+    setServicosIds((atuais) => {
+      const jaSelecionado = atuais.some(
+        (item) => Number(item) === id
+      );
+
+      if (jaSelecionado) {
+        return atuais.filter(
+          (item) => Number(item) !== id
+        );
+      }
+
+      return [...atuais, id];
+    });
+  }
+
   async function carregarHorarios() {
-    if (!servicoId || !dataSelecionada) {
+    if (servicosIds.length === 0 || !dataSelecionada) {
       setHorariosDia([]);
       setHorariosSemana([]);
       return;
@@ -172,7 +230,7 @@ export default function AgendamentoOnlinePage() {
         const dados = await listarHorariosSemanaOnline(
           barbeariaSlug,
           barbeiroId,
-          servicoId,
+          servicosIds,
           dataSelecionada
         );
 
@@ -181,7 +239,7 @@ export default function AgendamentoOnlinePage() {
       } else {
         const dados = await listarHorariosDiaOnline(
           barbeariaSlug,
-          servicoId,
+          servicosIds,
           dataSelecionada
         );
 
@@ -194,6 +252,28 @@ export default function AgendamentoOnlinePage() {
     } finally {
       setCarregando(false);
     }
+  }
+
+  function reiniciarNovoAgendamentoM41() {
+    setAgendamentoConfirmado(null);
+    setMensagem("");
+    setErro("");
+
+    setServicosIds([]);
+    setModo("qualquer");
+    setBarbeiroId("");
+    setDataSelecionada(hoje);
+
+    setHorariosDia([]);
+    setHorariosSemana([]);
+    setHorarioSelecionado(null);
+
+    setCliente({
+      nome: "",
+      telefone: "",
+      email: "",
+      observacoes: "",
+    });
   }
 
   function alterarCliente(campo, valor) {
@@ -217,8 +297,8 @@ export default function AgendamentoOnlinePage() {
     setErro("Agendamento online não está disponível nesta barbearia.");
     return;
   }
-  if (!servicoId) {
-    setErro("Escolha um serviço.");
+  if (servicosIds.length === 0) {
+    setErro("Escolha pelo menos um serviço.");
     return;
   }
 
@@ -241,7 +321,8 @@ export default function AgendamentoOnlinePage() {
     nome_cliente: cliente.nome.trim(),
     telefone_cliente: cliente.telefone.trim(),
     barbeiro_id: Number(horarioSelecionado.barbeiro_id),
-    servico_id: Number(servicoId),
+    servico_id: Number(servicosIds[0]),
+    servicos_ids: servicosIds.map(Number),
     data_hora_inicio: horarioSelecionado.data_hora_inicio,
     tipo_atendimento: "avulso",
     observacoes: montarObservacoesCliente(),
@@ -255,7 +336,9 @@ export default function AgendamentoOnlinePage() {
     setAgendamentoConfirmado({
         cliente: cliente.nome,
         telefone: cliente.telefone,
-        servico: servicoSelecionado?.nome || "",
+        servico: servicosSelecionados
+          .map((item) => item.nome)
+          .join(", "),
         barbeiro: horarioSelecionado.barbeiro_nome,
         data: dataSelecionada,
         horario: horarioSelecionado.horario,
@@ -433,9 +516,31 @@ async function cancelarAgendamento(id) {
   return partes.join(" | ");
 }
 
-const servicoSelecionado = useMemo(() => {
-  return servicos.find((s) => Number(s.id) === Number(servicoId));
-}, [servicos, servicoId]);
+const servicosSelecionados = useMemo(() => {
+  const selecionados = new Set(
+    servicosIds.map((id) => Number(id))
+  );
+
+  return servicos.filter(
+    (servico) => selecionados.has(Number(servico.id))
+  );
+}, [servicos, servicosIds]);
+
+const duracaoTotalSelecionada = useMemo(() => {
+  return servicosSelecionados.reduce(
+    (total, servico) =>
+      total + Number(servico.tempo_medio_minutos || 30),
+    0
+  );
+}, [servicosSelecionados]);
+
+const valorTotalSelecionado = useMemo(() => {
+  return servicosSelecionados.reduce(
+    (total, servico) =>
+      total + Number(servico.preco || 0),
+    0
+  );
+}, [servicosSelecionados]);
 
 const barbeiroSelecionado = useMemo(() => {
   return barbeiros.find((b) => Number(b.id) === Number(barbeiroId));
@@ -607,19 +712,7 @@ if (agendamentoConfirmado) {
           <button
             type="button"
             className={styles.botaoPrincipal}
-            onClick={() => {
-              setAgendamentoConfirmado(null);
-              setMensagem("");
-              setErro("");
-              setHorarioSelecionado(null);
-
-              setCliente({
-                nome: "",
-                telefone: "",
-                email: "",
-                observacoes: "",
-              });
-            }}
+            onClick={reiniciarNovoAgendamentoM41}
             style={{
               ...buttonStyle,
               flex: 1,
@@ -882,7 +975,7 @@ return (
                     }}
                   >
                     <h3 style={{ marginBottom: "12px", color: "#111827" }}>
-                      ✂️ {agendamento.servico}
+                      ✂️ {formatarServicosAgendamentoM41(agendamento)}
                     </h3>
 
                     <p>
@@ -988,7 +1081,7 @@ return (
                     }}
                   >
                     <h3 style={{ marginBottom: "12px", color: "#111827" }}>
-                      ✂️ {agendamento.servico}
+                      ✂️ {formatarServicosAgendamentoM41(agendamento)}
                     </h3>
 
                     <p>
@@ -1054,21 +1147,22 @@ return (
               <div className={styles.etapaCabecalho}>
                 <span className={styles.numeroEtapa}>1</span>
                 <div>
-                  <h2>Escolha o serviço</h2>
-                  <p>Selecione o atendimento que deseja realizar.</p>
+                  <h2>Escolha os serviços</h2>
+                  <p>Selecione um ou mais atendimentos.</p>
                 </div>
               </div>
 
               <div className={styles.listaServicos}>
                 {servicos.map((servico) => {
-                  const selecionado =
-                    String(servicoId) === String(servico.id);
+                  const selecionado = servicosIds.some(
+                    (id) => Number(id) === Number(servico.id)
+                  );
 
                   return (
                     <button
                       key={servico.id}
                       type="button"
-                      onClick={() => setServicoId(String(servico.id))}
+                      onClick={() => alternarServico(servico.id)}
                       className={`${styles.servicoItem} ${
                         selecionado ? styles.servicoItemAtivo : ""
                       }`}
@@ -1100,6 +1194,32 @@ return (
                   </p>
                 )}
               </div>
+
+              {servicosIds.length > 0 && (
+                <div
+                  style={{
+                    marginTop: "16px",
+                    padding: "14px 16px",
+                    borderRadius: "12px",
+                    background: "#f8fafc",
+                    border: "1px solid #e2e8f0",
+                    display: "grid",
+                    gap: "6px",
+                  }}
+                >
+                  <strong>
+                    {servicosIds.length} serviço
+                    {servicosIds.length === 1 ? "" : "s"} selecionado
+                    {servicosIds.length === 1 ? "" : "s"}
+                  </strong>
+                  <span>
+                    Tempo estimado: {duracaoTotalSelecionada} min
+                  </span>
+                  <span>
+                    Total: {formatarMoeda(valorTotalSelecionado)}
+                  </span>
+                </div>
+              )}
             </div>
 
             <div style={cardStyle}>
@@ -1172,19 +1292,19 @@ return (
 
               {carregando && <p>Carregando horários...</p>}
 
-              {!carregando && !servicoId && (
+              {!carregando && servicosIds.length === 0 && (
                 <p style={{ color: "#6b7280" }}>
                   Escolha um serviço para visualizar os horários.
                 </p>
               )}
 
-              {!carregando && modo === "barbeiro" && servicoId && !barbeiroId && (
+              {!carregando && modo === "barbeiro" && servicosIds.length > 0 && !barbeiroId && (
                 <p style={{ color: "#6b7280" }}>
                   Escolha um barbeiro para visualizar a semana.
                 </p>
               )}
 
-              {!carregando && modo === "qualquer" && servicoId && (
+              {!carregando && modo === "qualquer" && servicosIds.length > 0 && (
                 <ListaHorariosDia
                   horarios={horariosDia}
                   horarioSelecionado={horarioSelecionado}
@@ -1193,7 +1313,7 @@ return (
                 />
               )}
 
-              {!carregando && modo === "barbeiro" && servicoId && barbeiroId && (
+              {!carregando && modo === "barbeiro" && servicosIds.length > 0 && barbeiroId && (
                 <ListaHorariosSemana
                   semana={horariosSemana}
                   horarioSelecionado={horarioSelecionado}
@@ -1251,8 +1371,32 @@ return (
             style={cardStyle}
           >
             <h2>Resumo</h2>
-
-            <ResumoLinha titulo="Serviço" valor={servicoSelecionado?.nome} />
+            <ResumoLinha
+              titulo="Serviços"
+              valor={
+                servicosSelecionados.length
+                  ? servicosSelecionados
+                      .map((item) => item.nome)
+                      .join(", ")
+                  : "-"
+              }
+            />
+            <ResumoLinha
+              titulo="Tempo estimado"
+              valor={
+                servicosSelecionados.length
+                  ? `${duracaoTotalSelecionada} min`
+                  : "-"
+              }
+            />
+            <ResumoLinha
+              titulo="Total"
+              valor={
+                servicosSelecionados.length
+                  ? formatarMoeda(valorTotalSelecionado)
+                  : "-"
+              }
+            />
 
             <ResumoLinha
               titulo="Modo"

@@ -70,6 +70,8 @@ export default function AgendaPage() {
     cliente_id: "",
     barbeiro_id: "",
     servico_id: "",
+    // BARBSIST_MULTI_SERVICE_M5_INTERNO
+    servicos_ids: [],
     data: hoje,
     hora: "",
     tipo_atendimento: "avulso",
@@ -107,7 +109,7 @@ export default function AgendaPage() {
 
   // Carrega a agenda semanal no ticket do NOVO AGENDAMENTO
   useEffect(() => {
-    if (abaAtiva === "agendamento" && form.barbeiro_id && form.servico_id) {
+    if (abaAtiva === "agendamento" && form.barbeiro_id && form.servicos_ids?.length > 0) {
       carregarAgendaSemanal();
     }
   }, [abaAtiva, form.barbeiro_id, form.servico_id, semanaSelecionada]);
@@ -211,6 +213,56 @@ export default function AgendaPage() {
         ? { hora: "" }
         : {}),
     }));
+  }
+
+  function obterServicosSelecionadosM5() {
+    const ids = new Set(
+      (form.servicos_ids || [])
+        .map((id) => Number(id))
+        .filter((id) => Number.isInteger(id) && id > 0)
+    );
+
+    return servicos.filter((servico) =>
+      ids.has(Number(servico.id))
+    );
+  }
+
+  function alternarServicoInternoM5(servicoId) {
+    const id = Number(servicoId);
+
+    setForm((prev) => {
+      const atuais = (prev.servicos_ids || [])
+        .map((item) => Number(item))
+        .filter((item) => Number.isInteger(item) && item > 0);
+
+      const existe = atuais.includes(id);
+      const proximos = existe
+        ? atuais.filter((item) => item !== id)
+        : [...atuais, id];
+
+      return {
+        ...prev,
+        servicos_ids: proximos,
+        servico_id: proximos.length ? String(proximos[0]) : "",
+        hora: "",
+      };
+    });
+  }
+
+  function calcularDuracaoTotalServicosM5() {
+    return obterServicosSelecionadosM5().reduce(
+      (total, servico) =>
+        total + Number(servico.tempo_medio_minutos || 30),
+      0
+    );
+  }
+
+  function calcularValorTotalServicosM5() {
+    return obterServicosSelecionadosM5().reduce(
+      (total, servico) =>
+        total + Number(servico.preco || 0),
+      0
+    );
   }
 
   function handleFiltroChange(e) {
@@ -351,7 +403,7 @@ export default function AgendaPage() {
       return [];
     }
 
-    if (!form.barbeiro_id || !form.servico_id) {
+    if (!form.barbeiro_id || !form.servicos_ids?.length) {
       return [];
     }
 
@@ -387,12 +439,10 @@ export default function AgendaPage() {
     const dataSelecionadaEhHoje = form.data === hojeSistema;
     const minutosAgora = obterMinutosAgora();
 
-    const servicoSelecionado = servicos.find(
-      (s) => Number(s.id) === Number(form.servico_id),
-    );
-
-    const duracaoServico = Number(
-      servicoSelecionado?.tempo_medio_minutos || 30,
+    const duracaoServico = obterServicosSelecionadosM5().reduce(
+      (total, servico) =>
+        total + Number(servico.tempo_medio_minutos || 30),
+      0
     );
     const fechamentoMin = transformarEmMinutos(horaFimBase);
 
@@ -436,7 +486,7 @@ export default function AgendaPage() {
   }, [
     form.data,
     form.barbeiro_id,
-    form.servico_id,
+    form.servicos_ids,
     servicos,
     agendamentos,
     configuracoesFuncionamento,
@@ -469,24 +519,21 @@ export default function AgendaPage() {
     const faturamentoIdeal = agendamentos.reduce((soma, ag) => {
       if (ag.status === "cancelado") return soma;
 
-      const servico = buscarServico(ag.servico_id);
-      return soma + Number(servico?.preco || 0);
+      return soma + calcularValorAgendamentoM52(ag);
     }, 0);
 
     const faturamentoReal = agendamentos.reduce((soma, ag) => {
       if (ag.status === "cancelado") return soma;
       if (ag.tipo_atendimento === "plano") return soma;
 
-      const servico = buscarServico(ag.servico_id);
-      return soma + Number(servico?.preco || 0);
+      return soma + calcularValorAgendamentoM52(ag);
     }, 0);
 
     const valorAtendimentosPlano = agendamentos.reduce((soma, ag) => {
       if (ag.status === "cancelado") return soma;
       if (ag.tipo_atendimento !== "plano") return soma;
 
-      const servico = buscarServico(ag.servico_id);
-      return soma + Number(servico?.preco || 0);
+      return soma + calcularValorAgendamentoM52(ag);
     }, 0);
 
     return {
@@ -501,6 +548,72 @@ export default function AgendaPage() {
     };
   }, [agendamentos, servicos]);
 
+  // BARBSIST_MULTI_SERVICE_M5_2_EXIBICAO
+  function obterIdsServicosAgendamentoM52(agendamento) {
+    const idsInformados =
+      Array.isArray(agendamento?.servicos_ids) &&
+      agendamento.servicos_ids.length > 0
+        ? agendamento.servicos_ids
+        : [agendamento?.servico_id];
+
+    const ids = [];
+    const vistos = new Set();
+
+    idsInformados.forEach((valor) => {
+      const id = Number(valor);
+
+      if (Number.isInteger(id) && id > 0 && !vistos.has(id)) {
+        vistos.add(id);
+        ids.push(id);
+      }
+    });
+
+    return ids;
+  }
+
+  function obterServicosAgendamentoM52(agendamento) {
+    return obterIdsServicosAgendamentoM52(agendamento)
+      .map((id) => buscarServico(id))
+      .filter(Boolean);
+  }
+
+  function formatarNomesServicosAgendamentoM52(agendamento) {
+    const nomes = obterServicosAgendamentoM52(agendamento)
+      .map((servico) => servico.nome)
+      .filter(Boolean);
+
+    return nomes.length > 0 ? nomes.join(" + ") : "-";
+  }
+
+  function calcularValorAgendamentoM52(agendamento) {
+    return obterServicosAgendamentoM52(agendamento).reduce(
+      (total, servico) => total + Number(servico.preco || 0),
+      0
+    );
+  }
+
+  // BARBSIST_MULTI_SERVICE_M5_2_1_DURACAO
+  function calcularDuracaoAgendamentoM521(agendamento) {
+    const inicio = new Date(agendamento?.data_hora_inicio);
+    const fim = new Date(agendamento?.data_hora_fim);
+
+    if (
+      !Number.isNaN(inicio.getTime()) &&
+      !Number.isNaN(fim.getTime()) &&
+      fim > inicio
+    ) {
+      return Math.round((fim - inicio) / 60000);
+    }
+
+    const totalCatalogo = obterServicosAgendamentoM52(agendamento).reduce(
+      (total, servicoItem) =>
+        total + Number(servicoItem.tempo_medio_minutos || 30),
+      0
+    );
+
+    return totalCatalogo > 0 ? totalCatalogo : null;
+  }
+
   async function salvarAgendamento(e) {
     e.preventDefault();
     limparMensagens();
@@ -513,11 +626,11 @@ export default function AgendaPage() {
     if (
       !form.cliente_id ||
       !form.barbeiro_id ||
-      !form.servico_id ||
+      !(form.servicos_ids || []).length ||
       !form.data ||
       !form.hora
     ) {
-      setErro("Preencha cliente, barbeiro, serviço, data e hora.");
+      setErro("Preencha cliente, barbeiro, pelo menos um serviço, data e hora.");
       return;
     }
 
@@ -541,7 +654,8 @@ export default function AgendaPage() {
     const dados = {
       cliente_id: Number(form.cliente_id),
       barbeiro_id: Number(form.barbeiro_id),
-      servico_id: Number(form.servico_id),
+      servico_id: Number(form.servicos_ids[0]),
+      servicos_ids: form.servicos_ids.map(Number),
       data_hora_inicio: `${form.data}T${form.hora}:00`,
       estilo_corte_id: null,
       estilo_barba_id: null,
@@ -574,6 +688,7 @@ export default function AgendaPage() {
         cliente_id: "",
         barbeiro_id: "",
         servico_id: "",
+    servicos_ids: [],
         data: form.data,
         hora: "",
         tipo_atendimento: "avulso",
@@ -662,7 +777,7 @@ export default function AgendaPage() {
       return null;
     }
 
-    if (!form.servico_id) {
+    if (!form.servicos_ids?.length) {
       return (
         <div style={infoTicketStyle}>
           <strong>📌 Agenda semanal do barbeiro</strong>
@@ -756,13 +871,11 @@ export default function AgendaPage() {
         return [];
       }
 
-      const servicoSelecionado = servicos.find(
-        (s) => Number(s.id) === Number(form.servico_id),
-      );
-
-      const duracaoServico = Number(
-        servicoSelecionado?.tempo_medio_minutos || 30,
-      );
+      const duracaoServico = obterServicosSelecionadosM5().reduce(
+      (total, servico) =>
+        total + Number(servico.tempo_medio_minutos || 30),
+      0
+    );
       const horarios = gerarHorariosPorIntervalo(base.horaInicio, base.horaFim);
       const fechamentoMin = transformarEmMinutos(base.horaFim);
 
@@ -1008,7 +1121,7 @@ export default function AgendaPage() {
         </p>
         <p>
           <strong>Serviço:</strong>{" "}
-          {buscarNome(servicos, agendamento.servico_id)}
+          {formatarNomesServicosAgendamentoM52(agendamento)}
         </p>
         <p>
           <strong>Início:</strong>{" "}
@@ -1265,26 +1378,93 @@ export default function AgendaPage() {
                 ))}
               </select>
 
-              {renderTicketDisponibilidadeBarbeiro()}
 
-              <label>Serviço</label>
-              <select
-                name="servico_id"
-                value={form.servico_id}
-                onChange={handleFormChange}
-                style={inputStyle}
+
+              <label>{"Servi\u00e7os"}</label>
+
+              <div
+                style={{
+                  display: "grid",
+                  gap: "10px",
+                  marginBottom: "12px",
+                }}
               >
-                <option value="">Selecione um serviço</option>
-                {servicos.map((servico) => (
-                  <option key={servico.id} value={servico.id}>
-                    {servico.nome} - {formatarMoeda(servico.preco)} -{" "}
-                    {servico.tempo_medio_minutos} min
-                  </option>
-                ))}
-              </select>
+                {servicos.map((servico) => {
+                  const selecionado = (form.servicos_ids || []).some(
+                    (id) => Number(id) === Number(servico.id)
+                  );
 
-              {form.barbeiro_id &&
-                form.servico_id &&
+                  return (
+                    <button
+                      key={servico.id}
+                      type="button"
+                      onClick={() => alternarServicoInternoM5(servico.id)}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        gap: "12px",
+                        width: "100%",
+                        padding: "12px 14px",
+                        borderRadius: "10px",
+                        border: selecionado
+                          ? "2px solid #2563eb"
+                          : "1px solid #d1d5db",
+                        background: selecionado
+                          ? "#eff6ff"
+                          : "#ffffff",
+                        cursor: "pointer",
+                        textAlign: "left",
+                      }}
+                    >
+                      <span>
+                        <strong>{servico.nome}</strong>
+                        <br />
+                        <small>
+                          {servico.tempo_medio_minutos || 30} min
+                        </small>
+                      </span>
+
+                      <span style={{ textAlign: "right" }}>
+                        <strong>{formatarMoeda(servico.preco)}</strong>
+                        <br />
+                        <small>
+                          {selecionado ? "Selecionado" : "Selecionar"}
+                        </small>
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {(form.servicos_ids || []).length > 0 && (
+                <div
+                  style={{
+                    background: "#f8fafc",
+                    border: "1px solid #dbeafe",
+                    borderRadius: "10px",
+                    padding: "12px 14px",
+                    marginBottom: "15px",
+                  }}
+                >
+                  <strong>
+                    {(form.servicos_ids || []).length}{" "}
+                    {(form.servicos_ids || []).length === 1
+                      ? "servi\u00e7o selecionado"
+                      : "servi\u00e7os selecionados"}
+                  </strong>
+                  <div style={{ marginTop: "5px", color: "#475569" }}>
+                    Tempo estimado: {calcularDuracaoTotalServicosM5()} min
+                    {" | "}
+                    Total: {formatarMoeda(calcularValorTotalServicosM5())}
+                  </div>
+                </div>
+              )}
+
+                            {renderTicketDisponibilidadeBarbeiro()}
+
+{form.barbeiro_id &&
+                (form.servicos_ids || []).length > 0 &&
                 horariosDisponiveis.length === 0 && (
                   <p style={{ color: "#991b1b", marginTop: "-8px" }}>
                     Nenhum horário disponível para esta data, barbeiro e
@@ -1528,9 +1708,9 @@ export default function AgendaPage() {
               >
                 {agendaVisualDoDia.map((item, index) => {
                   const agendamento = item.agendamento;
-                  const servico = agendamento
-                    ? buscarServico(agendamento.servico_id)
-                    : null;
+                  const nomesServicos = agendamento
+                    ? formatarNomesServicosAgendamentoM52(agendamento)
+                    : "-";
 
                   return (
                     <div
@@ -1555,7 +1735,7 @@ export default function AgendaPage() {
                           </p>
 
                           <p style={{ margin: "4px 0 0 0", fontSize: "13px" }}>
-                            {servico?.nome || "Serviço"}
+                            {nomesServicos}
                           </p>
 
                           <p style={{ margin: "4px 0 0 0", fontSize: "13px" }}>
@@ -1640,7 +1820,7 @@ export default function AgendaPage() {
 
                   <tbody>
                     {agendamentos.map((agendamento) => {
-                      const servico = buscarServico(agendamento.servico_id);
+                      const nomesServicos = formatarNomesServicosAgendamentoM52(agendamento);
 
                       return (
                         <tr
@@ -1660,7 +1840,7 @@ export default function AgendaPage() {
                           <td data-label="Barbeiro">
                             {buscarNome(barbeiros, agendamento.barbeiro_id)}
                           </td>
-                          <td data-label="Serviço">{servico?.nome || "-"}</td>
+                          <td data-label="Serviço">{nomesServicos}</td>
 
                           <td data-label="Tipo">
                             <span
@@ -1686,7 +1866,7 @@ export default function AgendaPage() {
                           </td>
 
                           <td data-label="Duração">
-                            {servico?.tempo_medio_minutos || "-"} min
+                            {calcularDuracaoAgendamentoM521(agendamento) || "-"} min
                           </td>
 
                           <td data-label="Status">
