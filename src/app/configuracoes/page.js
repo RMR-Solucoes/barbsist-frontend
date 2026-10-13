@@ -8,6 +8,7 @@ import {
   obterBarbearia,
   criarBarbearia,
   atualizarBarbearia,
+  geocodificarEnderecoBarbearia,
 } from "@/services/barbeariaService";
 
 import {
@@ -54,9 +55,16 @@ export default function ConfiguracoesPage() {
   logo_url: "",
   slogan: "",
   imagem_capa_url: "",
+  catalogo_publico_ativo: false,
+  latitude: null,
+  longitude: null,
   ativa: true,
   created_at: null,
 });
+
+const [capturandoLocalizacao, setCapturandoLocalizacao] = useState(false);
+const [localizandoEndereco, setLocalizandoEndereco] = useState(false);
+const [resultadoGeocodificacao, setResultadoGeocodificacao] = useState(null);
 
 const [barbeariaExiste, setBarbeariaExiste] = useState(false);
 const [salvandoBarbearia, setSalvandoBarbearia] = useState(false);
@@ -347,6 +355,9 @@ const [salvandoConfiguracaoPortal, setSalvandoConfiguracaoPortal] = useState(fal
   logo_url: dados.logo_url || "",
   slogan: dados.slogan || "",
   imagem_capa_url: dados.imagem_capa_url || "",
+  catalogo_publico_ativo: Boolean(dados.catalogo_publico_ativo),
+  latitude: dados.latitude ?? null,
+  longitude: dados.longitude ?? null,
   ativa: dados.ativa !== false,
   created_at: dados.created_at || null,
 });
@@ -364,10 +375,167 @@ const [salvandoConfiguracaoPortal, setSalvandoConfiguracaoPortal] = useState(fal
 
 
 function alterarCampoBarbearia(campo, valor) {
-  setBarbearia((atual) => ({
-    ...atual,
-    [campo]: valor,
-  }));
+  const camposEndereco = [
+    "endereco",
+    "cidade",
+    "estado",
+    "cep",
+  ];
+
+  setBarbearia((atual) => {
+    const proximo = {
+      ...atual,
+      [campo]: valor,
+    };
+
+    if (
+      camposEndereco.includes(campo) &&
+      atual[campo] !== valor
+    ) {
+      proximo.latitude = null;
+      proximo.longitude = null;
+      proximo.catalogo_publico_ativo = false;
+    }
+
+    return proximo;
+  });
+
+  if (camposEndereco.includes(campo)) {
+    setResultadoGeocodificacao(null);
+  }
+}
+
+
+async function localizarBarbeariaPeloEndereco() {
+  limparMensagens();
+
+  if (
+    !barbearia.endereco.trim() ||
+    !barbearia.cidade.trim() ||
+    !barbearia.estado.trim()
+  ) {
+    setErro(
+      "Preencha endereço, cidade e estado antes de localizar a barbearia."
+    );
+    return;
+  }
+
+  setLocalizandoEndereco(true);
+
+  try {
+    const resultado = await geocodificarEnderecoBarbearia({
+      endereco: barbearia.endereco,
+      cidade: barbearia.cidade,
+      estado: barbearia.estado,
+      cep: barbearia.cep || null,
+    });
+
+    const latitude = Number(resultado.latitude);
+    const longitude = Number(resultado.longitude);
+
+    if (
+      !Number.isFinite(latitude) ||
+      !Number.isFinite(longitude)
+    ) {
+      throw new Error("Coordenadas inválidas.");
+    }
+
+    setResultadoGeocodificacao(resultado);
+
+    if (resultado.catalogo_permitido === true) {
+      setBarbearia((atual) => ({
+        ...atual,
+        latitude,
+        longitude,
+      }));
+
+      setMensagem(
+        "Endereço postal validado e localização aprovada para o catálogo público. Confira o resultado e clique em Salvar Alterações para confirmar."
+      );
+    } else {
+      setBarbearia((atual) => ({
+        ...atual,
+        latitude: null,
+        longitude: null,
+        catalogo_publico_ativo: false,
+      }));
+
+      setErro(
+        resultado.nivel_confianca === "CONFERIR"
+          ? "O endereço foi encontrado, mas precisa de conferência. Use a localização atual da barbearia se necessário."
+          : "A localização encontrada é imprecisa e não será usada no catálogo público. Revise o endereço ou use a localização atual da barbearia."
+      );
+    }
+  } catch (error) {
+    const detalhe = error?.response?.data?.detail;
+
+    setErro(
+      typeof detalhe === "string"
+        ? detalhe
+        : "Não foi possível localizar este endereço."
+    );
+  } finally {
+    setLocalizandoEndereco(false);
+  }
+}
+
+
+function capturarLocalizacaoBarbearia() {
+  limparMensagens();
+
+  if (typeof navigator === "undefined" || !navigator.geolocation) {
+    setErro("Este navegador não permite obter a localização atual.");
+    return;
+  }
+
+  setCapturandoLocalizacao(true);
+
+  navigator.geolocation.getCurrentPosition(
+    (posicao) => {
+      const latitude = Number(
+        posicao.coords.latitude.toFixed(6)
+      );
+      const longitude = Number(
+        posicao.coords.longitude.toFixed(6)
+      );
+
+      setBarbearia((atual) => ({
+        ...atual,
+        latitude,
+        longitude,
+      }));
+
+      setResultadoGeocodificacao(null);
+
+      setMensagem(
+        "Localização capturada. Clique em Salvar Alterações para confirmar."
+      );
+      setCapturandoLocalizacao(false);
+    },
+    (falha) => {
+      let detalhe =
+        "Não foi possível obter a localização atual da barbearia.";
+
+      if (falha?.code === 1) {
+        detalhe =
+          "Permissão de localização negada. Autorize a localização no navegador e tente novamente.";
+      } else if (falha?.code === 2) {
+        detalhe =
+          "A localização não pôde ser determinada neste dispositivo.";
+      } else if (falha?.code === 3) {
+        detalhe =
+          "A tentativa de obter a localização demorou demais. Tente novamente.";
+      }
+
+      setErro(detalhe);
+      setCapturandoLocalizacao(false);
+    },
+    {
+      enableHighAccuracy: true,
+      timeout: 15000,
+      maximumAge: 0,
+    }
+  );
 }
 
 
@@ -384,6 +552,19 @@ async function salvarBarbearia() {
     !barbearia.email.includes("@")
   ) {
     setErro("Informe um e-mail válido.");
+    return;
+  }
+
+  if (
+    barbearia.catalogo_publico_ativo &&
+    (
+      barbearia.latitude == null ||
+      barbearia.longitude == null
+    )
+  ) {
+    setErro(
+      "Para aparecer no catálogo público, registre primeiro a localização da barbearia."
+    );
     return;
   }
 
@@ -423,6 +604,9 @@ async function salvarBarbearia() {
   logo_url: dadosSalvos.logo_url || "",
   slogan: dadosSalvos.slogan || "",
   imagem_capa_url: dadosSalvos.imagem_capa_url || "",
+  catalogo_publico_ativo: Boolean(dadosSalvos.catalogo_publico_ativo),
+  latitude: dadosSalvos.latitude ?? null,
+  longitude: dadosSalvos.longitude ?? null,
   ativa: dadosSalvos.ativa !== false,
   created_at: dadosSalvos.created_at || null,
 });
@@ -934,6 +1118,242 @@ const estadosBrasil = [
             </div>
           )}
         </div>
+
+    <div
+      style={{
+        ...cardStyle,
+        maxWidth: "1000px",
+        border: "1px solid #bfdbfe",
+        background: "#f8fbff",
+      }}
+    >
+      <h3 style={{ marginTop: 0, marginBottom: "8px" }}>
+        📍 Presença pública no BarbSist
+      </h3>
+
+      <p
+        style={{
+          color: "#475569",
+          marginTop: 0,
+          marginBottom: "16px",
+          lineHeight: 1.5,
+        }}
+      >
+        Defina se clientes próximos poderão encontrar sua barbearia
+        no catálogo público do BarbSist. A localização é usada para
+        ordenar as barbearias pela distância em quilômetros.
+      </p>
+
+      <label
+        style={{
+          display: "flex",
+          alignItems: "flex-start",
+          gap: "10px",
+          marginBottom: "16px",
+          cursor: barbeariaExiste ? "pointer" : "not-allowed",
+        }}
+      >
+        <input
+          type="checkbox"
+          checked={Boolean(barbearia.catalogo_publico_ativo)}
+          disabled={
+            !barbeariaExiste ||
+            barbearia.latitude == null ||
+            barbearia.longitude == null
+          }
+          onChange={(evento) =>
+            alterarCampoBarbearia(
+              "catalogo_publico_ativo",
+              evento.target.checked
+            )
+          }
+        />
+
+        <span>
+          <strong>Exibir minha barbearia no catálogo público</strong>
+          <br />
+          <span style={{ color: "#64748b", fontSize: "14px" }}>
+            Ative somente depois de confirmar a localização.
+            Desmarcado, seu estabelecimento não aparecerá na busca
+            pública por proximidade.
+          </span>
+        </span>
+      </label>
+
+      <div
+        style={{
+          display: "flex",
+          gap: "12px",
+          flexWrap: "wrap",
+          alignItems: "center",
+          marginBottom: "12px",
+        }}
+      >
+        <button
+          type="button"
+          onClick={localizarBarbeariaPeloEndereco}
+          disabled={localizandoEndereco || !barbeariaExiste}
+          style={{
+            ...buttonStyle,
+            background: "#2563eb",
+            opacity:
+              localizandoEndereco || !barbeariaExiste ? 0.65 : 1,
+          }}
+        >
+          {localizandoEndereco
+            ? "Localizando endereço..."
+            : "🔎 Localizar pelo endereço"}
+        </button>
+
+        <button
+          type="button"
+          onClick={capturarLocalizacaoBarbearia}
+          disabled={capturandoLocalizacao || !barbeariaExiste}
+          style={{
+            ...buttonStyle,
+            background: "#475569",
+            opacity:
+              capturandoLocalizacao || !barbeariaExiste ? 0.65 : 1,
+          }}
+        >
+          {capturandoLocalizacao
+            ? "Obtendo localização..."
+            : "📌 Usar minha localização atual"}
+        </button>
+
+        <strong
+          style={{
+            color:
+              barbearia.latitude != null &&
+              barbearia.longitude != null
+                ? "#15803d"
+                : "#92400e",
+          }}
+        >
+          {barbearia.latitude != null &&
+          barbearia.longitude != null
+            ? "● Localização definida"
+            : "● Localização ainda não definida"}
+        </strong>
+      </div>
+
+      <p
+        style={{
+          color: "#64748b",
+          fontSize: "13px",
+          marginTop: 0,
+          marginBottom: "12px",
+          lineHeight: 1.45,
+        }}
+      >
+        Recomendado: localize pelo endereço cadastrado. Se usar a
+        localização atual, faça a captura estando fisicamente na
+        barbearia. Depois clique em Salvar Alterações.
+      </p>
+
+      {resultadoGeocodificacao && (
+        <div
+          style={{
+            padding: "12px",
+            borderRadius: "8px",
+            background:
+              resultadoGeocodificacao.catalogo_permitido === true
+                ? "#ecfdf5"
+                : resultadoGeocodificacao.nivel_confianca === "CONFERIR"
+                  ? "#fffbeb"
+                  : "#fef2f2",
+            color:
+              resultadoGeocodificacao.catalogo_permitido === true
+                ? "#166534"
+                : resultadoGeocodificacao.nivel_confianca === "CONFERIR"
+                  ? "#92400e"
+                  : "#991b1b",
+            marginBottom: "12px",
+            lineHeight: 1.45,
+          }}
+        >
+          <strong>Endereço postal validado (ViaCEP):</strong>
+          <br />
+          {resultadoGeocodificacao.endereco_postal}
+
+          <strong
+            style={{
+              display: "block",
+              marginTop: "8px",
+            }}
+          >
+            Coordenada encontrada (Geoapify):
+          </strong>
+          {resultadoGeocodificacao.endereco_formatado}
+
+          {resultadoGeocodificacao.confianca != null && (
+            <>
+              <br />
+              <span style={{ fontSize: "13px" }}>
+                Confiança técnica da Geoapify (informativa):{" "}
+                {Math.round(
+                  Number(resultadoGeocodificacao.confianca) * 100
+                )}%
+                {" — "}
+                {resultadoGeocodificacao.nivel_confianca}
+              </span>
+            </>
+          )}
+
+          {Array.isArray(resultadoGeocodificacao.validacoes) &&
+            resultadoGeocodificacao.validacoes.length > 0 && (
+              <div style={{ marginTop: "8px", fontSize: "13px" }}>
+                {resultadoGeocodificacao.validacoes.map(
+                  (validacao) => (
+                    <div key={validacao}>
+                      {validacao}
+                    </div>
+                  )
+                )}
+              </div>
+            )}
+
+          <div style={{ marginTop: "8px", fontWeight: 700 }}>
+            {resultadoGeocodificacao.catalogo_permitido === true
+              ? "✓ Endereço postal validado e localização aprovada para o catálogo público"
+              : "⚠ Localização não liberada para o catálogo público"}
+          </div>
+        </div>
+      )}
+
+      {barbearia.catalogo_publico_ativo &&
+        (
+          barbearia.latitude == null ||
+          barbearia.longitude == null
+        ) && (
+          <div
+            style={{
+              padding: "12px",
+              borderRadius: "8px",
+              background: "#fef3c7",
+              color: "#92400e",
+              marginBottom: "12px",
+            }}
+          >
+            Para ativar o catálogo público, registre a localização
+            da barbearia.
+          </div>
+        )}
+
+      <div
+        style={{
+          padding: "12px",
+          borderRadius: "8px",
+          background: "#eff6ff",
+          color: "#1e3a8a",
+          lineHeight: 1.45,
+        }}
+      >
+        <strong>Agendamento online é uma configuração independente.</strong>
+        {" "}A barbearia pode aparecer no catálogo público mesmo com
+        o agendamento online desativado.
+      </div>
+    </div>
 
     <div style={{ ...cardStyle, maxWidth: "1000px" }}>
       <h3 style={{ marginTop: 0 }}>Dados cadastrais</h3>

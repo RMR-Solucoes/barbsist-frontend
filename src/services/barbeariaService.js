@@ -26,3 +26,12 @@ export async function obterBarbeariaPublica(barbeariaSlug) {
   );
   return response.data;
 }
+
+export async function geocodificarEnderecoBarbearia(dados) {
+  const response = await api.post(
+    "/barbearia/minha/geocodificar-endereco",
+    dados
+  );
+
+  return response.data;
+}
