@@ -1,133 +1,1671 @@
+.dashboard {
+  display: grid;
+  gap: 22px;
+}
+
 .pageHeader {
-  margin-bottom: 26px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
 }
 
 .title {
-  margin: 0 0 6px;
-  color: #111827;
-  font-size: clamp(28px, 4vw, 38px);
-  line-height: 1.15;
+  margin: 2px 0 4px;
+  font-size: clamp(1.8rem, 3vw, 2.5rem);
+  line-height: 1.05;
+  color: #0f172a;
 }
 
 .subtitle {
   margin: 0;
-  color: #4b5563;
-  font-size: 16px;
+  color: #64748b;
+  font-size: 0.98rem;
+}
+
+.eyebrow {
+  margin: 0 0 4px;
+  color: #2563eb;
+  font-size: 0.76rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.botaoGraficos,
+.botaoAplicar,
+.botaoFecharRodape,
+.botaoTentarNovamente {
+  border: 0;
+  border-radius: 10px;
+  background: #0f172a;
+  color: #fff;
+  font-weight: 700;
+  cursor: pointer;
+  min-height: 44px;
+  padding: 0 16px;
+}
+
+.botaoGraficos {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.botaoGraficos:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
 }
 
 .status {
-  margin: 18px 0;
-  padding: 14px 16px;
+  border: 1px solid #cbd5e1;
   border-radius: 10px;
-  background: #eff6ff;
-  color: #1e3a8a;
-  font-weight: 700;
+  padding: 12px 14px;
+  background: #f8fafc;
+  color: #334155;
 }
 
 .error {
-  background: #fee2e2;
+  border-color: #fecaca;
+  background: #fef2f2;
   color: #991b1b;
 }
 
-.grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 18px;
+.botaoTentarNovamente {
+  margin-left: 12px;
+  min-height: 34px;
+  background: #991b1b;
 }
 
-.card {
-  min-width: 0;
-  min-height: 128px;
-  padding: 22px;
-  border: 1px solid #e5e7eb;
+.atendimentosBloco,
+.atencaoCard,
+.operacaoCard,
+.graficoCard,
+.graficoCardGrande {
+  border: 1px solid #e2e8f0;
   border-radius: 14px;
-  background: #ffffff;
-  box-shadow: 0 4px 14px rgba(17, 24, 39, 0.08);
+  background: #fff;
 }
 
-.cardTitle {
-  margin: 0 0 10px;
-  color: #374151;
-  font-size: 16px;
+.atendimentosBloco,
+.atencaoCard,
+.operacaoCard {
+  padding: 18px;
+}
+
+.secaoCabecalho {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.secaoCabecalho h2,
+.operacaoCard h2,
+.graficoTitulo h3 {
+  margin: 0;
+  color: #0f172a;
+}
+
+.secaoNota {
+  color: #64748b;
+  font-size: 0.84rem;
+}
+
+.atendimentosGrid {
+  margin-top: 15px;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.atendimentoCard {
+  border-radius: 12px;
+  background: #f8fafc;
+  padding: 14px 16px;
+}
+
+.atendimentoCard span,
+.indicadorCard span,
+.operacaoGrid span,
+.agendaMetricas span {
+  display: block;
+  color: #64748b;
+  font-size: 0.82rem;
   font-weight: 700;
 }
 
-.cardValue {
-  margin: 0;
-  color: #111827;
-  font-size: clamp(27px, 4vw, 34px);
-  line-height: 1.1;
+.atendimentoCard strong {
+  display: block;
+  margin-top: 5px;
+  color: #0f172a;
+  font-size: 1.9rem;
+  line-height: 1;
+}
+
+.indicadoresGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.indicadorCard {
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 16px;
+  background: #fff;
+  min-width: 0;
+}
+
+.indicadorCard strong {
+  display: block;
+  margin: 7px 0 3px;
+  color: #0f172a;
+  font-size: 1.35rem;
   overflow-wrap: anywhere;
 }
 
-.danger {
+.indicadorCard small {
+  color: #94a3b8;
+}
+
+.resumoInferior {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr);
+  gap: 14px;
+}
+
+.badgesEstoque {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.badgesEstoque span {
+  padding: 5px 8px;
+  border-radius: 999px;
+  background: #fff7ed;
+  color: #9a3412;
+  font-size: 0.76rem;
+  font-weight: 800;
+}
+
+.alertasLista {
+  margin-top: 14px;
+  display: grid;
+  gap: 8px;
+}
+
+.alertaLinha {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  border-top: 1px solid #f1f5f9;
+  padding-top: 9px;
+}
+
+.alertaLinha:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.alertaLinha strong {
+  display: block;
+  color: #0f172a;
+}
+
+.alertaLinha span {
+  display: block;
+  margin-top: 2px;
+  color: #64748b;
+  font-size: 0.82rem;
+}
+
+.alertaCritico,
+.alertaAviso {
+  flex: 0 0 auto;
+  border-radius: 999px;
+  padding: 5px 8px;
+  font-size: 0.72rem;
+}
+
+.alertaCritico {
+  background: #fef2f2;
   color: #b91c1c;
 }
 
-.summary {
-  margin-top: 24px;
-  padding: 22px;
-  border: 1px solid #e5e7eb;
-  border-radius: 14px;
-  background: #ffffff;
-  box-shadow: 0 4px 14px rgba(17, 24, 39, 0.08);
+.alertaAviso {
+  background: #fffbeb;
+  color: #a16207;
 }
 
-.summary h2 {
-  margin: 0 0 14px;
-  color: #111827;
-  font-size: 22px;
+.estadoPositivo {
+  margin-top: 14px;
+  border-radius: 10px;
+  background: #f0fdf4;
+  color: #166534;
+  padding: 12px;
+  font-weight: 700;
 }
 
-.summaryGrid {
+.operacaoGrid {
+  margin-top: 14px;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
-  gap: 10px 18px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
 }
 
-.summaryItem {
+.operacaoGrid > div {
+  border-radius: 10px;
+  background: #f8fafc;
+  padding: 12px;
+  min-width: 0;
+}
+
+.operacaoGrid strong {
+  display: block;
+  margin-top: 4px;
+  color: #0f172a;
+  font-size: 1.08rem;
+  overflow-wrap: anywhere;
+}
+
+.modalBackdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  overflow-y: auto;
+  padding: 24px;
+  background: rgba(15, 23, 42, 0.66);
+}
+
+.modalPainel {
+  width: min(1220px, 100%);
+  margin: auto;
+  border-radius: 18px;
+  background: #f8fafc;
+  box-shadow: 0 24px 70px rgba(15, 23, 42, 0.28);
+  overflow: hidden;
+}
+
+.modalHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 22px 24px;
+  background: #fff;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.modalHeader h2 {
+  margin: 2px 0 5px;
+  color: #0f172a;
+  font-size: 1.65rem;
+}
+
+.modalHeader p:not(.eyebrow) {
   margin: 0;
+  color: #64748b;
+}
+
+.botaoFechar {
+  width: 44px;
+  height: 44px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #fff;
+  color: #334155;
+  font-size: 1.65rem;
+  cursor: pointer;
+}
+
+.filtrosPeriodo {
+  display: grid;
+  gap: 12px;
+  padding: 16px 24px;
+  background: #fff;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.periodoBotoes {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.periodoBotao,
+.periodoAtivo {
+  min-height: 40px;
+  padding: 0 13px;
+  border-radius: 9px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.periodoBotao {
+  border: 1px solid #cbd5e1;
+  background: #fff;
+  color: #475569;
+}
+
+.periodoAtivo {
+  border: 1px solid #2563eb;
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.filtroDatas {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.filtroDatas label {
+  display: grid;
+  gap: 5px;
+  color: #475569;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.filtroDatas input {
+  min-height: 42px;
+  border: 1px solid #cbd5e1;
+  border-radius: 9px;
+  background: #fff;
+  padding: 0 10px;
+  font-size: 1rem;
+}
+
+.botaoAplicar {
+  background: #2563eb;
+}
+
+.modalMetricas {
+  padding: 18px 24px 0;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.modalMetricas article {
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #fff;
+  padding: 13px;
+  min-width: 0;
+}
+
+.modalMetricas span {
+  color: #64748b;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.modalMetricas strong {
+  display: block;
+  margin-top: 5px;
+  color: #0f172a;
+  font-size: 1.2rem;
+  overflow-wrap: anywhere;
+}
+
+.graficosGrid {
+  padding: 18px 24px 24px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.graficoCard,
+.graficoCardGrande {
+  padding: 16px;
+  min-width: 0;
+}
+
+.graficoCardGrande {
+  grid-column: 1 / -1;
+}
+
+.graficoTitulo {
+  margin-bottom: 14px;
+}
+
+.graficoTitulo h3 {
+  font-size: 1rem;
+}
+
+.graficoTitulo p {
+  margin: 4px 0 0;
+  color: #64748b;
+  font-size: 0.8rem;
+}
+
+.graficoVazio {
+  min-height: 120px;
+  display: grid;
+  place-items: center;
+  border: 1px dashed #cbd5e1;
+  border-radius: 10px;
+  color: #64748b;
+  text-align: center;
+  padding: 14px;
+}
+
+.graficoLinhaWrap {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.svgChart {
+  display: block;
+  width: 100%;
+  min-width: 620px;
+  height: auto;
+}
+
+.gridLine {
+  stroke: #e2e8f0;
+  stroke-width: 1;
+}
+
+.axisText {
+  fill: #64748b;
+  font-size: 11px;
+}
+
+.graficoLegenda {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-bottom: 4px;
+  color: #475569;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.graficoLegenda span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.graficoLegenda i {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+}
+
+.barras {
+  display: grid;
+  gap: 12px;
+}
+
+.barraCabecalho {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 5px;
+  color: #334155;
+  font-size: 0.82rem;
+}
+
+.barraCabecalho span {
+  color: #64748b;
+  text-align: right;
+  font-size: 0.76rem;
+}
+
+.barraTrilho {
+  height: 9px;
+  border-radius: 999px;
+  background: #e2e8f0;
+  overflow: hidden;
+}
+
+.barraPreenchimento {
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #2563eb, #0f766e);
+}
+
+.roscaWrap {
+  display: grid;
+  grid-template-columns: 150px minmax(0, 1fr);
+  gap: 18px;
+  align-items: center;
+}
+
+.rosca {
+  width: 148px;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+}
+
+.roscaCentro {
+  width: 84px;
+  aspect-ratio: 1;
+  display: grid;
+  place-content: center;
+  text-align: center;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: inset 0 0 0 1px #e2e8f0;
+}
+
+.roscaCentro strong {
+  color: #0f172a;
+  font-size: 1rem;
+}
+
+.roscaCentro span {
+  color: #64748b;
+  font-size: 0.7rem;
+}
+
+.roscaLegenda {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
+.roscaLegendaItem {
+  display: grid;
+  grid-template-columns: 10px minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+  color: #475569;
+  font-size: 0.8rem;
+}
+
+.roscaCor {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+}
+
+.planosLista {
+  display: grid;
+  gap: 8px;
+}
+
+.planoLinha {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
   padding: 10px 0;
-  color: #4b5563;
-  border-bottom: 1px solid #e5e7eb;
+  border-top: 1px solid #f1f5f9;
 }
 
-.summaryItem strong {
-  color: #111827;
+.planoLinha:first-child {
+  border-top: 0;
+  padding-top: 0;
 }
 
-@media (max-width: 767px) {
+.planoLinha strong,
+.planoLinha span {
+  display: block;
+}
+
+.planoLinha span {
+  margin-top: 2px;
+  color: #64748b;
+  font-size: 0.76rem;
+}
+
+.planoNumeros {
+  text-align: right;
+  flex: 0 0 auto;
+}
+
+.agendaMetricas {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.agendaMetricas > div {
+  border-radius: 10px;
+  background: #f8fafc;
+  padding: 12px;
+}
+
+.agendaMetricas strong {
+  display: block;
+  margin-top: 5px;
+  color: #0f172a;
+  font-size: 1.3rem;
+}
+
+.modalFooter {
+  display: flex;
+  justify-content: flex-end;
+  padding: 16px 24px 22px;
+  border-top: 1px solid #e2e8f0;
+  background: #fff;
+}
+
+.botaoFecharRodape {
+  background: #334155;
+}
+
+@media (max-width: 900px) {
+  .atendimentosGrid,
+  .indicadoresGrid,
+  .modalMetricas {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .resumoInferior,
+  .graficosGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .graficoCardGrande {
+    grid-column: auto;
+  }
+}
+
+@media (max-width: 620px) {
   .pageHeader {
-    margin-bottom: 20px;
+    align-items: stretch;
   }
 
-  .title {
-    font-size: 28px;
+  .botaoGraficos {
+    width: 100%;
+    justify-content: center;
   }
 
-  .grid {
+  .atendimentosGrid,
+  .indicadoresGrid,
+  .modalMetricas,
+  .operacaoGrid,
+  .agendaMetricas {
     grid-template-columns: 1fr;
-    gap: 14px;
   }
 
-  .card {
-    min-height: 116px;
-    padding: 20px;
+  .modalBackdrop {
+    padding: 8px;
   }
 
-  .cardTitle {
-    font-size: 16px;
+  .modalPainel {
+    border-radius: 12px;
   }
 
-  .cardValue {
-    font-size: 30px;
+  .modalHeader,
+  .filtrosPeriodo,
+  .modalMetricas,
+  .graficosGrid,
+  .modalFooter {
+    padding-left: 14px;
+    padding-right: 14px;
   }
 
-  .summary {
-    padding: 20px;
-  }
-
-  .summaryGrid {
+  .roscaWrap {
     grid-template-columns: 1fr;
+    justify-items: center;
+  }
+
+  .roscaLegenda {
+    width: 100%;
+  }
+
+  .barraCabecalho,
+  .planoLinha {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .barraCabecalho span,
+  .planoNumeros {
+    text-align: left;
   }
 }
+
+/* ==========================================================================
+   DASHBOARD_GRAFICOS_RESPONSIVO_M2
+   Ajuste visual controlado: fundo do painel + responsividade.
+   Sem alteracao de logica, API, banco ou componentes JSX.
+   ========================================================================== */
+
+.modalBackdrop {
+  padding: clamp(10px, 2.2vw, 30px);
+  background:
+    radial-gradient(circle at 12% 10%, rgba(37, 99, 235, 0.18), transparent 34%),
+    radial-gradient(circle at 88% 16%, rgba(15, 118, 110, 0.14), transparent 32%),
+    linear-gradient(135deg, rgba(15, 23, 42, 0.80), rgba(30, 41, 59, 0.72));
+  -webkit-backdrop-filter: blur(8px) saturate(118%);
+  backdrop-filter: blur(8px) saturate(118%);
+  overscroll-behavior: contain;
+}
+
+.modalPainel {
+  width: min(1280px, calc(100vw - 40px));
+  max-height: calc(100dvh - 32px);
+  margin: auto;
+  overflow-y: auto;
+  overflow-x: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  border-radius: 22px;
+  background:
+    linear-gradient(180deg, rgba(250, 252, 255, 0.99) 0%, rgba(244, 247, 251, 0.99) 52%, rgba(239, 244, 250, 0.99) 100%);
+  box-shadow:
+    0 28px 90px rgba(2, 6, 23, 0.36),
+    0 10px 30px rgba(15, 23, 42, 0.16);
+  scrollbar-gutter: stable;
+  overscroll-behavior: contain;
+}
+
+.modalHeader {
+  position: sticky;
+  top: 0;
+  z-index: 8;
+  padding: clamp(18px, 2.4vw, 28px);
+  background: rgba(255, 255, 255, 0.94);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  box-shadow: 0 1px 0 rgba(226, 232, 240, 0.9);
+}
+
+.botaoFechar {
+  flex: 0 0 auto;
+  transition:
+    transform 160ms ease,
+    box-shadow 160ms ease,
+    background 160ms ease;
+}
+
+.botaoFechar:hover {
+  transform: translateY(-1px);
+  background: #f8fafc;
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.10);
+}
+
+.filtrosPeriodo {
+  padding: 16px clamp(16px, 2.4vw, 28px);
+  background: rgba(255, 255, 255, 0.88);
+}
+
+.periodoBotoes {
+  align-items: center;
+}
+
+.periodoBotao,
+.periodoAtivo {
+  white-space: nowrap;
+}
+
+.modalMetricas {
+  padding: 20px clamp(16px, 2.4vw, 28px) 0;
+  gap: 12px;
+}
+
+.modalMetricas article,
+.graficoCard,
+.graficoCardGrande {
+  border-color: #dbe4ef;
+  background:
+    linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
+  box-shadow:
+    0 1px 2px rgba(15, 23, 42, 0.04),
+    0 8px 22px rgba(15, 23, 42, 0.045);
+}
+
+.graficosGrid {
+  padding: 20px clamp(16px, 2.4vw, 28px) 28px;
+  gap: 16px;
+}
+
+.graficoCard,
+.graficoCardGrande {
+  border-radius: 16px;
+}
+
+.graficoLinhaWrap {
+  max-width: 100%;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+  scrollbar-width: thin;
+  scrollbar-color: #94a3b8 transparent;
+}
+
+.graficoLinhaWrap::-webkit-scrollbar {
+  height: 8px;
+}
+
+.graficoLinhaWrap::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: #94a3b8;
+}
+
+.svgChart {
+  min-width: 560px;
+}
+
+.graficoVazio {
+  background:
+    linear-gradient(135deg, rgba(248, 250, 252, 0.86), rgba(241, 245, 249, 0.86));
+}
+
+.modalFooter {
+  position: sticky;
+  bottom: 0;
+  z-index: 7;
+  padding: 14px clamp(16px, 2.4vw, 28px) 18px;
+  background: rgba(255, 255, 255, 0.94);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  box-shadow: 0 -1px 0 rgba(226, 232, 240, 0.9);
+}
+
+@media (max-width: 1100px) {
+  .modalPainel {
+    width: min(100%, calc(100vw - 24px));
+    max-height: calc(100dvh - 20px);
+  }
+
+  .modalMetricas {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .graficosGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .graficoCardGrande {
+    grid-column: auto;
+  }
+
+  .svgChart {
+    min-width: 520px;
+  }
+}
+
+@media (max-width: 720px) {
+  .modalBackdrop {
+    padding: 0;
+    background:
+      radial-gradient(circle at 14% 4%, rgba(37, 99, 235, 0.20), transparent 36%),
+      linear-gradient(180deg, rgba(15, 23, 42, 0.82), rgba(30, 41, 59, 0.76));
+  }
+
+  .modalPainel {
+    width: 100%;
+    min-height: 100dvh;
+    max-height: 100dvh;
+    border: 0;
+    border-radius: 0;
+  }
+
+  .modalHeader {
+    gap: 12px;
+    padding: 16px;
+  }
+
+  .modalHeader h2 {
+    font-size: clamp(1.28rem, 6vw, 1.55rem);
+  }
+
+  .modalHeader p:not(.eyebrow) {
+    font-size: 0.88rem;
+  }
+
+  .botaoFechar {
+    width: 40px;
+    height: 40px;
+  }
+
+  .filtrosPeriodo {
+    gap: 14px;
+    padding: 14px 16px;
+  }
+
+  .periodoBotoes {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding-bottom: 4px;
+    scroll-snap-type: x proximity;
+    scrollbar-width: thin;
+  }
+
+  .periodoBotao,
+  .periodoAtivo {
+    flex: 0 0 auto;
+    min-height: 42px;
+    scroll-snap-align: start;
+  }
+
+  .filtroDatas {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: end;
+    width: 100%;
+  }
+
+  .filtroDatas label,
+  .filtroDatas input {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .botaoAplicar {
+    grid-column: 1 / -1;
+    width: 100%;
+    min-height: 44px;
+  }
+
+  .modalMetricas {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    padding: 16px 14px 0;
+    gap: 10px;
+  }
+
+  .modalMetricas article {
+    padding: 12px;
+  }
+
+  .modalMetricas strong {
+    font-size: 1.08rem;
+  }
+
+  .graficosGrid {
+    padding: 16px 14px 20px;
+    gap: 12px;
+  }
+
+  .graficoCard,
+  .graficoCardGrande {
+    padding: 14px;
+    border-radius: 14px;
+  }
+
+  .graficoTitulo {
+    margin-bottom: 12px;
+  }
+
+  .svgChart {
+    min-width: 440px;
+  }
+
+  .roscaWrap {
+    grid-template-columns: 1fr;
+    justify-items: center;
+  }
+
+  .roscaLegenda {
+    width: 100%;
+  }
+
+  .agendaMetricas {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .agendaMetricas > div {
+    padding: 10px;
+  }
+
+  .modalFooter {
+    padding: 12px 14px calc(12px + env(safe-area-inset-bottom));
+  }
+
+  .botaoFecharRodape {
+    width: 100%;
+    min-height: 46px;
+  }
+}
+
+@media (max-width: 430px) {
+  .modalHeader {
+    padding: 14px 12px;
+  }
+
+  .filtrosPeriodo,
+  .modalMetricas,
+  .graficosGrid,
+  .modalFooter {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+
+  .modalMetricas {
+    grid-template-columns: 1fr;
+  }
+
+  .filtroDatas {
+    grid-template-columns: 1fr;
+  }
+
+  .botaoAplicar {
+    grid-column: auto;
+  }
+
+  .agendaMetricas {
+    grid-template-columns: 1fr;
+  }
+
+  .svgChart {
+    min-width: 400px;
+  }
+
+  .barraCabecalho,
+  .planoLinha {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .barraCabecalho span,
+  .planoNumeros {
+    text-align: left;
+  }
+}
+
+/* ==========================================================================
+   DASHBOARD_TEMA_M3
+   AlternÃ¢ncia Claro/Escuro exclusiva do painel de grÃ¡ficos.
+   ========================================================================== */
+
+.modalHeaderAcoes {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 0 0 auto;
+}
+
+.temaControle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid #dbe4ef;
+  border-radius: 12px;
+  background: rgba(248, 250, 252, 0.92);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.85);
+}
+
+.temaBotao,
+.temaAtivo {
+  min-height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 8px;
+  font-weight: 800;
+  font-size: 0.78rem;
+  cursor: pointer;
+  transition:
+    background 160ms ease,
+    color 160ms ease,
+    box-shadow 160ms ease,
+    transform 160ms ease;
+}
+
+.temaBotao {
+  background: transparent;
+  color: #64748b;
+}
+
+.temaBotao:hover {
+  color: #0f172a;
+  background: rgba(226, 232, 240, 0.7);
+}
+
+.temaAtivo {
+  background: #ffffff;
+  color: #0f172a;
+  box-shadow:
+    0 1px 2px rgba(15, 23, 42, 0.08),
+    0 4px 12px rgba(15, 23, 42, 0.08);
+}
+
+.modalBackdropEscuro {
+  background:
+    radial-gradient(circle at 10% 8%, rgba(37, 99, 235, 0.24), transparent 34%),
+    radial-gradient(circle at 88% 16%, rgba(13, 148, 136, 0.18), transparent 32%),
+    linear-gradient(135deg, rgba(2, 6, 23, 0.92), rgba(15, 23, 42, 0.88));
+}
+
+.modalPainelEscuro {
+  color-scheme: dark;
+  color: #e5edf7;
+  border-color: rgba(71, 85, 105, 0.76);
+  background:
+    linear-gradient(180deg, #101827 0%, #0f172a 52%, #0b1220 100%);
+  box-shadow:
+    0 30px 100px rgba(0, 0, 0, 0.52),
+    0 12px 34px rgba(2, 6, 23, 0.52);
+}
+
+.modalPainelEscuro .modalHeader,
+.modalPainelEscuro .filtrosPeriodo,
+.modalPainelEscuro .modalFooter {
+  border-color: #273449;
+  background: rgba(15, 23, 42, 0.94);
+  box-shadow: none;
+}
+
+.modalPainelEscuro .modalHeader h2,
+.modalPainelEscuro .graficoTitulo h3,
+.modalPainelEscuro .modalMetricas strong,
+.modalPainelEscuro .planoLinha strong,
+.modalPainelEscuro .agendaMetricas strong,
+.modalPainelEscuro .roscaCentro strong,
+.modalPainelEscuro .barraCabecalho strong {
+  color: #f8fafc;
+}
+
+.modalPainelEscuro .modalHeader p:not(.eyebrow),
+.modalPainelEscuro .graficoTitulo p,
+.modalPainelEscuro .modalMetricas span,
+.modalPainelEscuro .planoLinha span,
+.modalPainelEscuro .agendaMetricas span,
+.modalPainelEscuro .roscaCentro span,
+.modalPainelEscuro .barraCabecalho span,
+.modalPainelEscuro .graficoLegenda,
+.modalPainelEscuro .roscaLegendaItem {
+  color: #aebdd0;
+}
+
+.modalPainelEscuro .temaControle {
+  border-color: #334155;
+  background: rgba(2, 6, 23, 0.5);
+  box-shadow: inset 0 1px 0 rgba(148, 163, 184, 0.06);
+}
+
+.modalPainelEscuro .temaBotao {
+  color: #94a3b8;
+}
+
+.modalPainelEscuro .temaBotao:hover {
+  color: #f8fafc;
+  background: #1e293b;
+}
+
+.modalPainelEscuro .temaAtivo {
+  color: #eff6ff;
+  background: #25324a;
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.3),
+    0 5px 14px rgba(0, 0, 0, 0.24);
+}
+
+.modalPainelEscuro .botaoFechar {
+  border-color: #334155;
+  background: #172033;
+  color: #dbeafe;
+}
+
+.modalPainelEscuro .botaoFechar:hover {
+  background: #22304a;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.28);
+}
+
+.modalPainelEscuro .periodoBotao {
+  border-color: #3b4a61;
+  background: #111c2e;
+  color: #aebdd0;
+}
+
+.modalPainelEscuro .periodoBotao:hover {
+  border-color: #4b6080;
+  background: #17243a;
+  color: #f8fafc;
+}
+
+.modalPainelEscuro .periodoAtivo {
+  border-color: #3b82f6;
+  background: rgba(37, 99, 235, 0.20);
+  color: #bfdbfe;
+}
+
+.modalPainelEscuro .filtroDatas label {
+  color: #cbd5e1;
+}
+
+.modalPainelEscuro .filtroDatas input {
+  border-color: #3b4a61;
+  background: #0b1424;
+  color: #e5edf7;
+}
+
+.modalPainelEscuro .modalMetricas article,
+.modalPainelEscuro .graficoCard,
+.modalPainelEscuro .graficoCardGrande {
+  border-color: #2c3b52;
+  background:
+    linear-gradient(180deg, #172236 0%, #121c2e 100%);
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.18),
+    0 10px 26px rgba(0, 0, 0, 0.16);
+}
+
+.modalPainelEscuro .graficoVazio {
+  border-color: #3a4a61;
+  color: #94a3b8;
+  background:
+    linear-gradient(135deg, rgba(17, 28, 46, 0.86), rgba(12, 21, 36, 0.88));
+}
+
+.modalPainelEscuro .gridLine {
+  stroke: #314056;
+}
+
+.modalPainelEscuro .axisText {
+  fill: #aebdd0;
+}
+
+.modalPainelEscuro .barraTrilho {
+  background: #2a374a;
+}
+
+.modalPainelEscuro .planoLinha {
+  border-color: #26364b;
+}
+
+.modalPainelEscuro .agendaMetricas > div {
+  background: #0e192a;
+  border: 1px solid #27364c;
+}
+
+.modalPainelEscuro .roscaCentro {
+  background: #111c2e;
+  box-shadow: inset 0 0 0 1px #334155;
+}
+
+.modalPainelEscuro .graficoLinhaWrap {
+  scrollbar-color: #64748b transparent;
+}
+
+.modalPainelEscuro .graficoLinhaWrap::-webkit-scrollbar-thumb {
+  background: #64748b;
+}
+
+.modalPainelEscuro .botaoFecharRodape {
+  background: #2563eb;
+}
+
+.modalPainelEscuro .botaoFecharRodape:hover {
+  background: #1d4ed8;
+}
+
+@media (max-width: 720px) {
+  .modalHeaderAcoes {
+    gap: 8px;
+  }
+
+  .temaControle {
+    gap: 3px;
+    padding: 3px;
+  }
+
+  .temaBotao,
+  .temaAtivo {
+    min-height: 34px;
+    padding: 0 9px;
+  }
+}
+
+@media (max-width: 430px) {
+  .modalHeaderAcoes {
+    align-self: flex-start;
+  }
+
+  .temaBotao,
+  .temaAtivo {
+    width: 36px;
+    padding: 0;
+  }
+
+  .temaBotao > span:last-child,
+  .temaAtivo > span:last-child {
+    display: none;
+  }
+}
+
+
+/* ==========================================================================
+   DASHBOARD_TEMA_CONFORTO_M4
+   Terceiro tema de baixa luminosidade: Conforto.
+   ========================================================================== */
+
+.modalBackdropConforto {
+  background:
+    radial-gradient(circle at 10% 8%, rgba(180, 83, 9, 0.14), transparent 34%),
+    radial-gradient(circle at 88% 14%, rgba(120, 113, 108, 0.16), transparent 32%),
+    linear-gradient(135deg, rgba(68, 64, 60, 0.78), rgba(87, 83, 78, 0.72));
+}
+
+.modalPainelConforto {
+  color-scheme: light;
+  color: #3f352c;
+  border-color: rgba(214, 199, 180, 0.92);
+  background:
+    linear-gradient(180deg, #f8f2e9 0%, #f3eadf 52%, #eee3d5 100%);
+  box-shadow:
+    0 28px 90px rgba(69, 53, 37, 0.28),
+    0 10px 30px rgba(87, 65, 43, 0.14);
+}
+
+.modalPainelConforto .modalHeader,
+.modalPainelConforto .filtrosPeriodo,
+.modalPainelConforto .modalFooter {
+  border-color: #ded0bf;
+  background: rgba(250, 246, 239, 0.95);
+  box-shadow: none;
+}
+
+.modalPainelConforto .modalHeader h2,
+.modalPainelConforto .graficoTitulo h3,
+.modalPainelConforto .modalMetricas strong,
+.modalPainelConforto .planoLinha strong,
+.modalPainelConforto .agendaMetricas strong,
+.modalPainelConforto .roscaCentro strong,
+.modalPainelConforto .barraCabecalho strong {
+  color: #342a22;
+}
+
+.modalPainelConforto .modalHeader p:not(.eyebrow),
+.modalPainelConforto .graficoTitulo p,
+.modalPainelConforto .modalMetricas span,
+.modalPainelConforto .planoLinha span,
+.modalPainelConforto .agendaMetricas span,
+.modalPainelConforto .roscaCentro span,
+.modalPainelConforto .barraCabecalho span,
+.modalPainelConforto .graficoLegenda,
+.modalPainelConforto .roscaLegendaItem {
+  color: #77685a;
+}
+
+.modalPainelConforto .temaControle {
+  border-color: #d7c7b4;
+  background: rgba(239, 230, 218, 0.92);
+}
+
+.modalPainelConforto .temaBotao {
+  color: #7c6b5b;
+}
+
+.modalPainelConforto .temaBotao:hover {
+  color: #3f352c;
+  background: #e8dccd;
+}
+
+.modalPainelConforto .temaAtivo {
+  color: #5f3b17;
+  background: #fff8ed;
+  box-shadow:
+    0 1px 2px rgba(87, 65, 43, 0.09),
+    0 4px 12px rgba(87, 65, 43, 0.10);
+}
+
+.modalPainelConforto .botaoFechar {
+  border-color: #d7c7b4;
+  background: #fffaf3;
+  color: #5d4b3b;
+}
+
+.modalPainelConforto .periodoBotao {
+  border-color: #d2c0aa;
+  background: #fffaf3;
+  color: #6d5d4e;
+}
+
+.modalPainelConforto .periodoAtivo {
+  border-color: #b7791f;
+  background: #fff3d8;
+  color: #8a520c;
+}
+
+.modalPainelConforto .filtroDatas label {
+  color: #68594b;
+}
+
+.modalPainelConforto .filtroDatas input {
+  border-color: #d2c0aa;
+  background: #fffaf3;
+  color: #3f352c;
+}
+
+.modalPainelConforto .botaoAplicar {
+  background: #b7791f;
+}
+
+.modalPainelConforto .modalMetricas article,
+.modalPainelConforto .graficoCard,
+.modalPainelConforto .graficoCardGrande {
+  border-color: #decfbd;
+  background:
+    linear-gradient(180deg, #fffaf3 0%, #fbf4ea 100%);
+  box-shadow:
+    0 1px 2px rgba(87, 65, 43, 0.05),
+    0 8px 22px rgba(87, 65, 43, 0.06);
+}
+
+.modalPainelConforto .graficoVazio {
+  border-color: #d7c7b4;
+  color: #7c6b5b;
+  background:
+    linear-gradient(135deg, rgba(250, 246, 239, 0.86), rgba(243, 234, 223, 0.9));
+}
+
+.modalPainelConforto .gridLine {
+  stroke: #ddcfbe;
+}
+
+.modalPainelConforto .axisText {
+  fill: #77685a;
+}
+
+.modalPainelConforto .barraTrilho {
+  background: #e6d8c7;
+}
+
+.modalPainelConforto .barraPreenchimento {
+  background: linear-gradient(90deg, #c47a18, #7f6b52);
+}
+
+.modalPainelConforto .planoLinha {
+  border-color: #eadfd2;
+}
+
+.modalPainelConforto .agendaMetricas > div {
+  background: #f6ede2;
+  border: 1px solid #dfd0be;
+}
+
+.modalPainelConforto .roscaCentro {
+  background: #fffaf3;
+  box-shadow: inset 0 0 0 1px #d7c7b4;
+}
+
+.modalPainelConforto .botaoFecharRodape {
+  background: #8a5a24;
+}
+
+.modalPainelConforto .botaoFecharRodape:hover {
+  background: #704719;
+}
+
+@media (max-width: 720px) {
+  .temaControle {
+    max-width: min(100%, 320px);
+  }
+}
+
+
+/* ==========================================================================
+   DASHBOARD_TEMA_SERENO_M5
+   Quarto tema: azul acinzentado de baixa luminosidade.
+   ========================================================================== */
+
+.modalBackdropSereno {
+  background:
+    radial-gradient(circle at 12% 8%, rgba(59, 130, 246, 0.18), transparent 34%),
+    radial-gradient(circle at 88% 14%, rgba(71, 85, 105, 0.18), transparent 34%),
+    linear-gradient(135deg, rgba(30, 41, 59, 0.78), rgba(51, 65, 85, 0.72));
+}
+
+.modalPainelSereno {
+  color-scheme: light;
+  color: #243447;
+  border-color: rgba(184, 199, 217, 0.92);
+  background:
+    linear-gradient(180deg, #edf4fb 0%, #e7eff8 52%, #dfe9f4 100%);
+  box-shadow:
+    0 28px 90px rgba(30, 41, 59, 0.28),
+    0 10px 30px rgba(51, 65, 85, 0.14);
+}
+
+.modalPainelSereno .modalHeader,
+.modalPainelSereno .filtrosPeriodo,
+.modalPainelSereno .modalFooter {
+  border-color: #cbd8e6;
+  background: rgba(244, 248, 252, 0.95);
+  box-shadow: none;
+}
+
+.modalPainelSereno .modalHeader h2,
+.modalPainelSereno .graficoTitulo h3,
+.modalPainelSereno .modalMetricas strong,
+.modalPainelSereno .planoLinha strong,
+.modalPainelSereno .agendaMetricas strong,
+.modalPainelSereno .roscaCentro strong,
+.modalPainelSereno .barraCabecalho strong {
+  color: #1e2f43;
+}
+
+.modalPainelSereno .modalHeader p:not(.eyebrow),
+.modalPainelSereno .graficoTitulo p,
+.modalPainelSereno .modalMetricas span,
+.modalPainelSereno .planoLinha span,
+.modalPainelSereno .agendaMetricas span,
+.modalPainelSereno .roscaCentro span,
+.modalPainelSereno .barraCabecalho span,
+.modalPainelSereno .graficoLegenda,
+.modalPainelSereno .roscaLegendaItem {
+  color: #5f7288;
+}
+
+.modalPainelSereno .temaControle {
+  border-color: #c4d1df;
+  background: rgba(226, 235, 245, 0.92);
+}
+
+.modalPainelSereno .temaBotao {
+  color: #61758c;
+}
+
+.modalPainelSereno .temaBotao:hover {
+  color: #243447;
+  background: #d8e4f0;
+}
+
+.modalPainelSereno .temaAtivo {
+  color: #1e4f7a;
+  background: #f7fbff;
+  box-shadow:
+    0 1px 2px rgba(30, 64, 94, 0.08),
+    0 4px 12px rgba(30, 64, 94, 0.10);
+}
+
+.modalPainelSereno .botaoFechar {
+  border-color: #c4d1df;
+  background: #f7fbff;
+  color: #3f5870;
+}
+
+.modalPainelSereno .periodoBotao {
+  border-color: #bdccdc;
+  background: #f7fbff;
+  color: #536b82;
+}
+
+.modalPainelSereno .periodoAtivo {
+  border-color: #4f83b6;
+  background: #dcecff;
+  color: #24557f;
+}
+
+.modalPainelSereno .filtroDatas label {
+  color: #50677d;
+}
+
+.modalPainelSereno .filtroDatas input {
+  border-color: #bdccdc;
+  background: #f7fbff;
+  color: #243447;
+}
+
+.modalPainelSereno .botaoAplicar {
+  background: #3f78ad;
+}
+
+.modalPainelSereno .modalMetricas article,
+.modalPainelSereno .graficoCard,
+.modalPainelSereno .graficoCardGrande {
+  border-color: #c9d6e4;
+  background:
+    linear-gradient(180deg, #f8fbfe 0%, #f1f6fb 100%);
+  box-shadow:
+    0 1px 2px rgba(30, 64, 94, 0.05),
+    0 8px 22px rgba(30, 64, 94, 0.06);
+}
+
+.modalPainelSereno .graficoVazio {
+  border-color: #c2d0df;
+  color: #61758c;
+  background:
+    linear-gradient(135deg, rgba(240, 246, 252, 0.88), rgba(229, 238, 247, 0.92));
+}
+
+.modalPainelSereno .gridLine {
+  stroke: #c9d6e4;
+}
+
+.modalPainelSereno .axisText {
+  fill: #5f7288;
+}
+
+.modalPainelSereno .barraTrilho {
+  background: #d2deea;
+}
+
+.modalPainelSereno .barraPreenchimento {
+  background: linear-gradient(90deg, #3b82f6, #4f6f8f);
+}
+
+.modalPainelSereno .planoLinha {
+  border-color: #d8e2ec;
+}
+
+.modalPainelSereno .agendaMetricas > div {
+  background: #eaf2f9;
+  border: 1px solid #c9d6e4;
+}
+
+.modalPainelSereno .roscaCentro {
+  background: #f8fbfe;
+  box-shadow: inset 0 0 0 1px #c6d4e2;
+}
+
+.modalPainelSereno .botaoFecharRodape {
+  background: #365f86;
+}
+
+.modalPainelSereno .botaoFecharRodape:hover {
+  background: #294b6a;
+}
+

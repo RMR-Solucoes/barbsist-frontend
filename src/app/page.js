@@ -1,150 +1,223 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import styles from "./dashboard.module.css";
-import { listarClientes } from "@/services/clienteService";
-import { listarBarbeiros } from "@/services/barbeiroService";
-import { listarComandas } from "@/services/comandaService";
-import { listarCaixa } from "@/services/caixaService";
-import { listarProdutos } from "@/services/produtoService";
+import { buscarDashboard } from "@/services/dashboardService";
+import DashboardGraficosModal from "@/components/dashboard/DashboardGraficosModal";
+
+function dinheiro(valor) {
+  return Number(valor || 0).toLocaleString("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+  });
+}
 
 export default function Home() {
-  const [clientes, setClientes] = useState([]);
-  const [barbeiros, setBarbeiros] = useState([]);
-  const [comandas, setComandas] = useState([]);
-  const [caixa, setCaixa] = useState([]);
-  const [produtos, setProdutos] = useState([]);
+  const [dados, setDados] = useState(null);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState("");
+  const [graficosAbertos, setGraficosAbertos] = useState(false);
 
-  useEffect(() => {
-    carregarDashboard();
-  }, []);
-
-  async function carregarDashboard() {
+  const carregarResumo = useCallback(async () => {
     setCarregando(true);
     setErro("");
 
     try {
-      const [
-        dadosClientes,
-        dadosBarbeiros,
-        dadosComandas,
-        dadosCaixa,
-        dadosProdutos,
-      ] = await Promise.all([
-        listarClientes(),
-        listarBarbeiros(),
-        listarComandas(),
-        listarCaixa(),
-        listarProdutos(),
-      ]);
-
-      setClientes(dadosClientes || []);
-      setBarbeiros(dadosBarbeiros || []);
-      setComandas(dadosComandas || []);
-      setCaixa(dadosCaixa || []);
-      setProdutos(dadosProdutos || []);
+      const resposta = await buscarDashboard({
+        periodo: "mes",
+        incluir_graficos: false,
+      });
+      setDados(resposta);
     } catch (error) {
       console.error("Erro Dashboard:", error);
-      setErro("Não foi possível carregar os indicadores do Dashboard.");
+      setErro(
+        String(
+          error?.response?.data?.detail ||
+            "Não foi possível carregar os indicadores do Dashboard."
+        )
+      );
     } finally {
       setCarregando(false);
     }
-  }
+  }, []);
 
-  function formatarMoeda(valor) {
-    return Number(valor || 0).toLocaleString("pt-BR", {
-      style: "currency",
-      currency: "BRL",
-    });
-  }
+  useEffect(() => {
+    carregarResumo();
+  }, [carregarResumo]);
 
-  const resumo = useMemo(() => {
-    const clientesAtivos = clientes.filter((cliente) => cliente.ativo).length;
-    const barbeirosAtivos = barbeiros.filter((barbeiro) => barbeiro.ativo).length;
-    const comandasAbertas = comandas.filter(
-      (comanda) => comanda.status === "aberta"
-    ).length;
-    const faturamento = caixa
-      .filter((movimento) => movimento.tipo === "entrada")
-      .reduce((soma, item) => soma + Number(item.valor || 0), 0);
-    const produtosAtivos = produtos.filter(
-      (produto) => produto.ativo !== false
-    ).length;
-    const produtosEstoqueBaixo = produtos.filter(
-      (produto) => Number(produto.estoque || 0) <= 2
-    ).length;
-    const valorEstoque = produtos.reduce(
-      (soma, produto) =>
-        soma +
-        Number(produto.preco_venda || 0) * Number(produto.estoque || 0),
-      0
-    );
-
-    return {
-      clientesAtivos,
-      barbeirosAtivos,
-      comandasAbertas,
-      faturamento,
-      produtosAtivos,
-      produtosEstoqueBaixo,
-      valorEstoque,
-    };
-  }, [clientes, barbeiros, comandas, caixa, produtos]);
-
-  const indicadores = [
-    ["Clientes Ativos", resumo.clientesAtivos],
-    ["Barbeiros Ativos", resumo.barbeirosAtivos],
-    ["Comandas Abertas", resumo.comandasAbertas],
-    ["Faturamento", formatarMoeda(resumo.faturamento)],
-    ["Produtos Ativos", resumo.produtosAtivos],
-    ["Estoque Baixo", resumo.produtosEstoqueBaixo, true],
-    ["Valor em Estoque", formatarMoeda(resumo.valorEstoque)],
-  ];
+  const atendimentos = dados?.atendimentos || {};
+  const indicadores = dados?.indicadores || {};
+  const estoque = dados?.estoque || {};
+  const operacao = dados?.operacao || {};
 
   return (
-    <section>
+    <section className={styles.dashboard}>
       <header className={styles.pageHeader}>
-        <h1 className={styles.title}>Sistema de Gestão para Barbearia</h1>
-        <p className={styles.subtitle}>Bem-vindo ao painel administrativo.</p>
+        <div>
+          <p className={styles.eyebrow}>Visão geral</p>
+          <h1 className={styles.title}>Dashboard</h1>
+          <p className={styles.subtitle}>
+            Acompanhe o essencial da barbearia sem poluir sua tela.
+          </p>
+        </div>
+
+        <button
+          type="button"
+          className={styles.botaoGraficos}
+          onClick={() => setGraficosAbertos(true)}
+          disabled={carregando || !dados}
+        >
+          <span aria-hidden="true">📊</span>
+          Ver gráficos e análises
+        </button>
       </header>
 
       {carregando && <div className={styles.status}>Carregando indicadores...</div>}
-      {erro && <div className={`${styles.status} ${styles.error}`}>{erro}</div>}
 
-      <div className={styles.grid} aria-busy={carregando}>
-        {indicadores.map(([titulo, valor, alerta]) => (
-          <article className={styles.card} key={titulo}>
-            <h2 className={styles.cardTitle}>{titulo}</h2>
-            <p className={`${styles.cardValue} ${alerta ? styles.danger : ""}`}>
-              {valor}
-            </p>
-          </article>
-        ))}
-      </div>
-
-      <section className={styles.summary}>
-        <h2>Resumo Operacional</h2>
-        <div className={styles.summaryGrid}>
-          <p className={styles.summaryItem}>
-            Total de clientes: <strong>{clientes.length}</strong>
-          </p>
-          <p className={styles.summaryItem}>
-            Total de barbeiros: <strong>{barbeiros.length}</strong>
-          </p>
-          <p className={styles.summaryItem}>
-            Total de comandas: <strong>{comandas.length}</strong>
-          </p>
-          <p className={styles.summaryItem}>
-            Movimentações de caixa: <strong>{caixa.length}</strong>
-          </p>
-          <p className={styles.summaryItem}>
-            Total de produtos: <strong>{produtos.length}</strong>
-          </p>
+      {erro && (
+        <div className={`${styles.status} ${styles.error}`}>
+          {erro}
+          <button
+            type="button"
+            className={styles.botaoTentarNovamente}
+            onClick={carregarResumo}
+          >
+            Tentar novamente
+          </button>
         </div>
-      </section>
+      )}
+
+      {dados && (
+        <>
+          <section className={styles.atendimentosBloco}>
+            <div className={styles.secaoCabecalho}>
+              <div>
+                <p className={styles.eyebrow}>Atendimentos realizados</p>
+                <h2>Movimento da barbearia</h2>
+              </div>
+              <span className={styles.secaoNota}>Comandas fechadas com serviço</span>
+            </div>
+
+            <div className={styles.atendimentosGrid}>
+              {[
+                ["Hoje", atendimentos.hoje],
+                ["Semana", atendimentos.semana],
+                ["Mês", atendimentos.mes],
+                ["Ano", atendimentos.ano],
+              ].map(([rotulo, valor]) => (
+                <article className={styles.atendimentoCard} key={rotulo}>
+                  <span>{rotulo}</span>
+                  <strong>{valor ?? 0}</strong>
+                </article>
+              ))}
+            </div>
+          </section>
+
+          <section className={styles.indicadoresGrid}>
+            <article className={styles.indicadorCard}>
+              <span>Receitas no mês</span>
+              <strong>{dinheiro(indicadores.receitas)}</strong>
+              <small>Entradas ativas do Caixa</small>
+            </article>
+
+            <article className={styles.indicadorCard}>
+              <span>Serviços realizados</span>
+              <strong>{indicadores.servicos_realizados ?? 0}</strong>
+              <small>No mês atual</small>
+            </article>
+
+            <article className={styles.indicadorCard}>
+              <span>Serviços por atendimento</span>
+              <strong>
+                {Number(indicadores.servicos_por_atendimento || 0).toLocaleString(
+                  "pt-BR",
+                  { minimumFractionDigits: 2, maximumFractionDigits: 2 }
+                )}
+              </strong>
+              <small>Média do mês</small>
+            </article>
+
+            <article className={styles.indicadorCard}>
+              <span>Comandas abertas</span>
+              <strong>{indicadores.comandas_abertas ?? 0}</strong>
+              <small>Situação atual</small>
+            </article>
+          </section>
+
+          <section className={styles.resumoInferior}>
+            <article className={styles.atencaoCard}>
+              <div className={styles.secaoCabecalho}>
+                <div>
+                  <p className={styles.eyebrow}>Atenção</p>
+                  <h2>Estoque</h2>
+                </div>
+                <div className={styles.badgesEstoque}>
+                  <span>{estoque.estoque_baixo ?? 0} baixo</span>
+                  <span>{estoque.sem_estoque ?? 0} zerado</span>
+                </div>
+              </div>
+
+              {(estoque.alertas || []).length ? (
+                <div className={styles.alertasLista}>
+                  {(estoque.alertas || []).slice(0, 5).map((item) => (
+                    <div className={styles.alertaLinha} key={item.produto_id}>
+                      <div>
+                        <strong>{item.nome}</strong>
+                        <span>
+                          Saldo {item.estoque} · mínimo {item.estoque_minimo}
+                        </span>
+                      </div>
+                      <b
+                        className={
+                          item.status === "SEM_ESTOQUE"
+                            ? styles.alertaCritico
+                            : styles.alertaAviso
+                        }
+                      >
+                        {item.status === "SEM_ESTOQUE" ? "Sem estoque" : "Estoque baixo"}
+                      </b>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className={styles.estadoPositivo}>
+                  Nenhum produto em alerta de estoque.
+                </div>
+              )}
+            </article>
+
+            <article className={styles.operacaoCard}>
+              <p className={styles.eyebrow}>Operação atual</p>
+              <h2>Estrutura da barbearia</h2>
+
+              <div className={styles.operacaoGrid}>
+                <div>
+                  <span>Clientes ativos</span>
+                  <strong>{operacao.clientes_ativos ?? 0}</strong>
+                </div>
+                <div>
+                  <span>Barbeiros ativos</span>
+                  <strong>{operacao.barbeiros_ativos ?? 0}</strong>
+                </div>
+                <div>
+                  <span>Produtos ativos</span>
+                  <strong>{estoque.produtos_ativos ?? 0}</strong>
+                </div>
+                <div>
+                  <span>Valor em estoque</span>
+                  <strong>{dinheiro(estoque.valor_custo)}</strong>
+                </div>
+              </div>
+            </article>
+          </section>
+        </>
+      )}
+
+      <DashboardGraficosModal
+        aberto={graficosAbertos}
+        onClose={() => setGraficosAbertos(false)}
+      />
     </section>
   );
 }
