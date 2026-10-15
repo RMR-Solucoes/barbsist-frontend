@@ -248,6 +248,8 @@ function BarbeariaCard({ barbearia }) {
     ? `/agendar?barbearia=${encodeURIComponent(barbearia.slug)}`
     : null;
 
+  const urlPerfil = `/barbearia/${encodeURIComponent(barbearia.slug)}`;
+
   return (
     <article className={styles.card}>
       <div className={styles.cover}>
@@ -296,6 +298,10 @@ function BarbeariaCard({ barbearia }) {
         )}
 
         <div className={styles.actions}>
+          <a href={urlPerfil} className={styles.actionButton}>
+            Ver perfil
+          </a>
+
           {urlAgendamento ? (
             <a
               href={urlAgendamento}

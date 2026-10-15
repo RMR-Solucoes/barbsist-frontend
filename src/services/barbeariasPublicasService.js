@@ -18,3 +18,12 @@ export async function listarBarbeariasProximas({
 
   return response.data;
 }
+
+
+export async function obterPerfilBarbeariaPublica(slug) {
+  const response = await api.get(
+    `/publico/barbearias/${encodeURIComponent(slug)}`
+  );
+
+  return response.data;
+}
