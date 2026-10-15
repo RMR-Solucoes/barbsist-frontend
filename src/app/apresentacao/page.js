@@ -125,7 +125,7 @@ export default function ApresentacaoPage() {
     <main className={styles.page}>
       <header className={styles.header}>
         <div className={styles.headerInner}>
-          <Link href="/apresentacao" className={styles.brand} aria-label="BarbSist - início">
+          <Link href="/" className={styles.brand} aria-label="BarbSist - início">
             <span className={styles.brandIcon}>✂</span>
             <span>Barb<span>Sist</span></span>
           </Link>
@@ -135,6 +135,7 @@ export default function ApresentacaoPage() {
             <a href="#solucoes">Soluções</a>
             <a href="#como-funciona">Como funciona</a>
             <a href="#planos">Planos</a>
+            <Link href="/barbearias">Encontrar barbearias</Link>
             <Link href="/contato">Contato</Link>
           </nav>
 
@@ -170,6 +171,9 @@ export default function ApresentacaoPage() {
               </Link>
               <Link href="/recursos" className={styles.heroSecondary}>
                 Conhecer recursos
+              </Link>
+              <Link href="/barbearias" className={styles.heroSecondary}>
+                Encontrar barbearias perto de mim
               </Link>
             </div>
 
