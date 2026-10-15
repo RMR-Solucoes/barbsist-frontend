@@ -98,11 +98,22 @@ export default function PerfilPublicoBarbeariaPage() {
 
   const urlInstagram = obterUrlInstagram(barbearia.instagram);
 
-  const urlMaps = enderecoCompleto
-    ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-        enderecoCompleto
-      )}`
-    : null;
+  const latitudeBarbearia = Number(barbearia.latitude);
+  const longitudeBarbearia = Number(barbearia.longitude);
+
+  const possuiCoordenadas =
+    barbearia.latitude != null &&
+    barbearia.longitude != null &&
+    Number.isFinite(latitudeBarbearia) &&
+    Number.isFinite(longitudeBarbearia);
+
+  const urlMaps = possuiCoordenadas
+    ? `https://www.google.com/maps/dir/?api=1&destination=${latitudeBarbearia},${longitudeBarbearia}`
+    : enderecoCompleto
+      ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+          enderecoCompleto
+        )}`
+      : null;
 
   const urlAgendamento = barbearia.permitir_agendamento_portal
     ? `/agendar?barbearia=${encodeURIComponent(barbearia.slug)}`
