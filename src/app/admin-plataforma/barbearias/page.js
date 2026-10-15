@@ -320,7 +320,7 @@ export default function Page() {
 
       await recarregarUsuario();
 
-      router.replace("/");
+      router.replace("/dashboard");
     } catch (e) {
       setErro(
         e?.response?.data?.detail ||

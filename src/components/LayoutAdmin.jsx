@@ -143,7 +143,7 @@ export default function LayoutAdmin({ children }) {
   ];
 
   function itemEstaAtivo(href) {
-    if (href === "/") return pathname === "/";
+    if (href === "/dashboard") return pathname === "/dashboard";
     return pathname === href || pathname.startsWith(`${href}/`);
   }
 
@@ -257,7 +257,7 @@ export default function LayoutAdmin({ children }) {
           ) : (
             <>
               <Link
-                href="/"
+                href="/dashboard"
                 className={classesLink(
                   styles.dashboardLink,
                   "/"

@@ -28,7 +28,7 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (!carregando && autenticado) {
-      router.replace("/");
+      router.replace("/dashboard");
     }
   }, [
     carregando,
@@ -65,7 +65,7 @@ export default function LoginPage() {
         senha: formulario.senha,
       });
 
-      router.replace("/");
+      router.replace("/dashboard");
     } catch (error) {
       const detalhe =
         error.response?.data?.detail;
