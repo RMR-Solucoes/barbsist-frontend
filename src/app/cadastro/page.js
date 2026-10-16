@@ -10,8 +10,12 @@ import styles from "./cadastro.module.css";
 const formularioInicial = {
   nome_barbearia: "",
   responsavel: "",
+  tipo_documento: "CPF",
+  documento: "",
   email: "",
   telefone_whatsapp: "",
+  endereco: "",
+  cep: "",
   cidade: "",
   estado: "",
   senha: "",
@@ -52,8 +56,12 @@ export default function CadastroPage() {
     if (
       !formulario.nome_barbearia.trim() ||
       !formulario.responsavel.trim() ||
+      !formulario.tipo_documento.trim() ||
+      !formulario.documento.trim() ||
       !formulario.email.trim() ||
       !formulario.telefone_whatsapp.trim() ||
+      !formulario.endereco.trim() ||
+      !formulario.cep.trim() ||
       !formulario.cidade.trim() ||
       !formulario.estado.trim() ||
       !formulario.senha
@@ -61,12 +69,43 @@ export default function CadastroPage() {
       return "Preencha todos os campos obrigatórios.";
     }
 
+    const documentoDigitos =
+      formulario.documento.replace(/\D/g, "");
+
+    if (
+      formulario.tipo_documento === "CPF" &&
+      documentoDigitos.length !== 11
+    ) {
+      return "Informe um CPF com 11 d\u00edgitos.";
+    }
+
+    if (
+      formulario.tipo_documento === "CNPJ" &&
+      documentoDigitos.length !== 14
+    ) {
+      return "Informe um CNPJ com 14 d\u00edgitos.";
+    }
+
+    const cepDigitos =
+      formulario.cep.replace(/\D/g, "");
+
+    if (cepDigitos.length !== 8) {
+      return "Informe um CEP com 8 d\u00edgitos.";
+    }
+
     if (formulario.estado.trim().length !== 2) {
       return "Informe o estado usando duas letras, por exemplo: SP.";
     }
 
-    if (formulario.senha.length < 6) {
-      return "A senha deve possuir pelo menos 6 caracteres.";
+    if (formulario.senha.length < 8) {
+      return "A senha deve possuir pelo menos 8 caracteres.";
+    }
+
+    if (
+      !/[A-Za-z]/.test(formulario.senha) ||
+      !/\d/.test(formulario.senha)
+    ) {
+      return "A senha deve conter pelo menos uma letra e um n\u00famero.";
     }
 
     if (
@@ -108,6 +147,12 @@ export default function CadastroPage() {
       responsavel:
         formulario.responsavel.trim(),
 
+      tipo_documento:
+        formulario.tipo_documento,
+
+      documento:
+        formulario.documento.trim(),
+
       email:
         formulario.email
           .trim()
@@ -115,6 +160,12 @@ export default function CadastroPage() {
 
       telefone_whatsapp:
         formulario.telefone_whatsapp.trim(),
+
+      endereco:
+        formulario.endereco.trim(),
+
+      cep:
+        formulario.cep.trim(),
 
       cidade:
         formulario.cidade.trim(),
@@ -147,10 +198,18 @@ export default function CadastroPage() {
           "Nome da barbearia",
         responsavel:
           "Responsável",
+        tipo_documento:
+          "Tipo de documento",
+        documento:
+          "CPF ou CNPJ",
         email:
           "E-mail",
         telefone_whatsapp:
           "WhatsApp",
+        endereco:
+          "Endere\u00e7o",
+        cep:
+          "CEP",
         cidade:
           "Cidade",
         estado:
@@ -259,6 +318,28 @@ export default function CadastroPage() {
                 "Barbearia cadastrada com sucesso."}
             </div>
 
+            {resultado.teste_gratuito && (
+              <div className={styles.statusTeste}>
+                <strong>
+                  {resultado.teste_gratuito
+                    .concedido
+                    ? "Teste gratuito liberado"
+                    : "Teste gratuito n\u00e3o liberado automaticamente"}
+                </strong>
+
+                <span>
+                  {resultado.teste_gratuito
+                    .mensagem}
+                </span>
+              </div>
+            )}
+
+            {resultado.proximo_passo && (
+              <p className={styles.proximoPasso}>
+                {resultado.proximo_passo}
+              </p>
+            )}
+
             <div className={styles.resumo}>
               <div>
                 <span>Barbearia</span>
@@ -366,6 +447,16 @@ export default function CadastroPage() {
             </div>
           )}
 
+          <div className={styles.ofertaTeste}>
+            <strong>
+              {"Teste gr\u00e1tis por 40 dias"}
+            </strong>
+
+            <span>
+              {"Sem cart\u00e3o. Sem compromisso. Voc\u00ea s\u00f3 escolhe um plano se decidir continuar."}
+            </span>
+          </div>
+
           <div className={styles.grade}>
             <label className={styles.campo}>
               <span>
@@ -401,6 +492,56 @@ export default function CadastroPage() {
             </label>
 
             <label className={styles.campo}>
+              <span>Tipo de documento</span>
+
+              <select
+                name="tipo_documento"
+                value={formulario.tipo_documento}
+                onChange={alterarCampo}
+                required
+              >
+                <option value="CPF">
+                  CPF do responsavel
+                </option>
+
+                <option value="CNPJ">
+                  CNPJ da barbearia
+                </option>
+              </select>
+            </label>
+
+            <label className={styles.campo}>
+              <span>
+                {formulario.tipo_documento ===
+                "CNPJ"
+                  ? "CNPJ"
+                  : "CPF do respons\u00e1vel"}
+              </span>
+
+              <input
+                type="text"
+                name="documento"
+                value={formulario.documento}
+                onChange={alterarCampo}
+                placeholder={
+                  formulario.tipo_documento ===
+                  "CNPJ"
+                    ? "00.000.000/0000-00"
+                    : "000.000.000-00"
+                }
+                maxLength={
+                  formulario.tipo_documento ===
+                  "CNPJ"
+                    ? 18
+                    : 14
+                }
+                inputMode="numeric"
+                autoComplete="off"
+                required
+              />
+            </label>
+
+            <label className={styles.campo}>
               <span>E-mail</span>
 
               <input
@@ -426,6 +567,40 @@ export default function CadastroPage() {
                 onChange={alterarCampo}
                 placeholder="11999999999"
                 autoComplete="tel"
+                required
+              />
+            </label>
+
+            <label className={styles.campo}>
+              <span>
+                {"Endere\u00e7o completo"}
+              </span>
+
+              <input
+                type="text"
+                name="endereco"
+                value={formulario.endereco}
+                onChange={alterarCampo}
+                placeholder={
+                  "Rua, avenida, n\u00famero e complemento"
+                }
+                autoComplete="street-address"
+                required
+              />
+            </label>
+
+            <label className={styles.campo}>
+              <span>CEP</span>
+
+              <input
+                type="text"
+                name="cep"
+                value={formulario.cep}
+                onChange={alterarCampo}
+                placeholder="00000-000"
+                maxLength={9}
+                inputMode="numeric"
+                autoComplete="postal-code"
                 required
               />
             </label>
@@ -467,7 +642,7 @@ export default function CadastroPage() {
                 name="senha"
                 value={formulario.senha}
                 onChange={alterarCampo}
-                placeholder="Mínimo de 6 caracteres"
+                placeholder="Minimo de 8 caracteres"
                 autoComplete="new-password"
                 required
               />

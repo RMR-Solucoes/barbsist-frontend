@@ -100,6 +100,55 @@
   font-weight: 700;
 }
 
+.ofertaTeste {
+  margin: 0 0 22px;
+  padding: 14px 16px;
+  display: grid;
+  gap: 5px;
+  border: 1px solid #bfdbfe;
+  border-radius: 12px;
+  background: #eff6ff;
+}
+
+.ofertaTeste strong {
+  color: #1d4ed8;
+  font-size: 15px;
+}
+
+.ofertaTeste span {
+  color: #475569;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.statusTeste {
+  margin: 16px 0 0;
+  padding: 14px;
+  display: grid;
+  gap: 5px;
+  border: 1px solid #bfdbfe;
+  border-radius: 10px;
+  background: #eff6ff;
+}
+
+.statusTeste strong {
+  color: #1d4ed8;
+  font-size: 14px;
+}
+
+.statusTeste span {
+  color: #475569;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.proximoPasso {
+  margin: 14px 0 0;
+  color: #475569;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
 .grade {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -118,7 +167,8 @@
   font-weight: 700;
 }
 
-.campo input {
+.campo input,
+.campo select {
   width: 100%;
   height: 48px;
   padding: 0 14px;
@@ -134,7 +184,8 @@
     box-shadow 0.2s;
 }
 
-.campo input:focus {
+.campo input:focus,
+.campo select:focus {
   border-color: #2563eb;
   box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.14);
 }
