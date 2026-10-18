@@ -10,7 +10,7 @@ import {
   listarAssinaturasSaas,
   bloquearAssinaturaSaas,
   liberarAssinaturaSaas,
-  concederTesteSaas,
+  concederExcecaoTesteGratuitoSaas,
   listarBarbearias,
   listarPlanosSaas,
 } from "@/services/adminPlataformaService";
@@ -265,59 +265,131 @@ export default function Page() {
     useState("");
 
   const [barbeariaTeste, setBarbeariaTeste] = useState("");
-  const [planoTeste, setPlanoTeste] = useState("");
-  const [diasTeste, setDiasTeste] = useState(40);
-  const [observacaoTeste, setObservacaoTeste] = useState("");
-  const [confirmacaoTeste, setConfirmacaoTeste] = useState("");
-  const [excecaoTeste, setExcecaoTeste] = useState(null);
+  const [tipoDocumentoTeste, setTipoDocumentoTeste] = useState("CPF");
+  const [documentoTeste, setDocumentoTeste] = useState("");
+  const [motivoTeste, setMotivoTeste] = useState("");
+  const [confirmarExcecaoTeste, setConfirmarExcecaoTeste] = useState(false);
 
-  async function concederTeste(evento) {
+  async function concederExcecaoTeste(evento) {
     evento.preventDefault();
+
     setErro("");
     setSucesso("");
 
-    if (!barbeariaTeste || !planoTeste) {
-      setErro("Selecione a barbearia e o plano do teste.");
+    if (!barbeariaTeste) {
+      setErro("Selecione a barbearia.");
       return;
     }
 
-    setProcessandoId("teste");
+    if (!tipoDocumentoTeste) {
+      setErro("Selecione CPF ou CNPJ.");
+      return;
+    }
+
+    if (!documentoTeste.trim()) {
+      setErro("Informe o documento.");
+      return;
+    }
+
+    if (motivoTeste.trim().length < 3) {
+      setErro(
+        "Informe o motivo da exce\u00e7\u00e3o administrativa."
+      );
+      return;
+    }
+
+    if (!confirmarExcecaoTeste) {
+      setErro(
+        "Confirme que o conflito antifraude foi revisado antes da libera\u00e7\u00e3o."
+      );
+      return;
+    }
+
+    setProcessandoId(
+      "teste-gratuito-excecao"
+    );
+
     try {
-      await concederTesteSaas(Number(barbeariaTeste), {
-        plano_id: Number(planoTeste),
-        dias: Number(diasTeste),
-        observacao: observacaoTeste,
-        autorizar_excecao: Boolean(excecaoTeste),
-        confirmacao: excecaoTeste ? confirmacaoTeste : null,
-      });
-      setSucesso(`Teste de ${diasTeste} dias concedido com sucesso.`);
-      setObservacaoTeste("");
-      setConfirmacaoTeste("");
-      setExcecaoTeste(null);
-      await carregar();
-    } catch (e) {
-      const detalhe = e?.response?.data?.detail;
-      if (
-        e?.response?.status === 409 &&
-        detalhe &&
-        typeof detalhe === "object" &&
-        detalhe.confirmacao_exigida
-      ) {
-        setExcecaoTeste(detalhe);
-        setConfirmacaoTeste("");
-        // A mensagem estruturada ja e apresentada dentro do painel de
-        // confirmacao excepcional. Manter o erro global vazio evita que o
-        // mesmo aviso apareca duas vezes na tela.
-        setErro("");
-      } else {
-        setErro(
-          typeof detalhe === "string"
-            ? detalhe
-            : "Não foi possível conceder o teste."
+      const resposta =
+        await concederExcecaoTesteGratuitoSaas(
+          Number(barbeariaTeste),
+          {
+            tipo_documento:
+              tipoDocumentoTeste,
+            documento:
+              documentoTeste.trim(),
+            motivo:
+              motivoTeste.trim(),
+          }
         );
+
+      const dataFim =
+        resposta?.data_fim
+          ? new Date(
+              resposta.data_fim
+            ).toLocaleDateString(
+              "pt-BR"
+            )
+          : null;
+
+      setSucesso(
+        `${
+          resposta?.mensagem ||
+          "Exce\u00e7\u00e3o de teste gratuito concedida com sucesso."
+        }${
+          dataFim
+            ? ` V\u00e1lido at\u00e9 ${dataFim}.`
+            : ""
+        }`
+      );
+
+      setDocumentoTeste("");
+      setMotivoTeste("");
+      setConfirmarExcecaoTeste(false);
+
+      await carregar();
+
+    } catch (e) {
+
+      const detalhe =
+        e?.response?.data?.detail;
+
+      if (
+        typeof detalhe === "string"
+      ) {
+
+        setErro(detalhe);
+
+      } else if (
+        detalhe &&
+        typeof detalhe === "object"
+      ) {
+
+        const mensagem =
+          detalhe.mensagem ||
+          "Nao foi possivel conceder a excecao.";
+
+        const codigo =
+          detalhe.codigo
+            ? ` (${detalhe.codigo})`
+            : "";
+
+        setErro(
+          `${mensagem}${codigo}`
+        );
+
+      } else {
+
+        setErro(
+          "Nao foi possivel conceder a excecao de teste gratuito."
+        );
+
       }
+
     } finally {
+
       setProcessandoId(null);
+
     }
   }
 
@@ -525,54 +597,161 @@ export default function Page() {
     <main style={estilos.pagina}>
       <h1>Assinaturas SaaS</h1>
       <section style={estilos.painel}>
-        <h2>Conceder período de teste</h2>
+        <h2>
+          Conceder exce&ccedil;&atilde;o de teste gratuito
+        </h2>
+
         <p style={estilos.subtitulo}>
-          O prazo sugerido é 40 dias e pode ser ajustado para cada cliente.
+          Use esta op&ccedil;&atilde;o somente quando o
+          antifraude bloquear um teste leg&iacute;timo.
+          O per&iacute;odo &eacute; fixo em 40 dias e
+          n&atilde;o cria plano, pagamento ou
+          assinatura SaaS.
         </p>
-        <form onSubmit={concederTeste} style={estilos.filtros}>
-          <select style={estilos.input} value={barbeariaTeste} onChange={(e) => { setBarbeariaTeste(e.target.value); setExcecaoTeste(null); setConfirmacaoTeste(""); setErro(""); setSucesso(""); }} required>
-            <option value="">Selecione a barbearia</option>
-            {barbearias.map((item) => <option key={item.id} value={item.id}>{item.nome}</option>)}
+
+        <form
+          onSubmit={concederExcecaoTeste}
+          style={estilos.filtros}
+        >
+          <select
+            style={estilos.input}
+            value={barbeariaTeste}
+            onChange={(e) => {
+              setBarbeariaTeste(
+                e.target.value
+              );
+              setDocumentoTeste("");
+              setMotivoTeste("");
+              setConfirmarExcecaoTeste(
+                false
+              );
+              setErro("");
+              setSucesso("");
+            }}
+            required
+          >
+            <option value="">
+              Selecione a barbearia
+            </option>
+
+            {barbearias.map((item) => (
+              <option
+                key={item.id}
+                value={item.id}
+              >
+                {item.nome}
+              </option>
+            ))}
           </select>
-          <select style={estilos.input} value={planoTeste} onChange={(e) => { setPlanoTeste(e.target.value); setExcecaoTeste(null); setConfirmacaoTeste(""); setErro(""); setSucesso(""); }} required>
-            <option value="">Selecione o plano</option>
-            {planos.filter((item) => item.ativo !== false).map((item) => <option key={item.id} value={item.id}>{item.nome} — limite de {item.limite_barbeiros} barbeiro(s)</option>)}
+
+          <select
+            style={estilos.input}
+            value={tipoDocumentoTeste}
+            onChange={(e) => {
+              setTipoDocumentoTeste(
+                e.target.value
+              );
+              setDocumentoTeste("");
+              setErro("");
+              setSucesso("");
+            }}
+            required
+          >
+            <option value="CPF">
+              CPF do respons&aacute;vel
+            </option>
+
+            <option value="CNPJ">
+              CNPJ da barbearia
+            </option>
           </select>
-          <input style={estilos.input} type="number" min="1" max="365" value={diasTeste} onChange={(e) => setDiasTeste(e.target.value)} required />
-          <input style={estilos.input} type="text" minLength="3" maxLength="500" placeholder="Justificativa da concessão" value={observacaoTeste} onChange={(e) => setObservacaoTeste(e.target.value)} required />
-          {excecaoTeste ? (
-            <div style={{ ...estilos.erro, gridColumn: "1 / -1" }}>
-              <strong>Atenção: autorização excepcional</strong>
-              <p>{excecaoTeste.mensagem}</p>
-              {excecaoTeste.assinatura_atual ? (
-                <p>
-                  Plano atual #{excecaoTeste.assinatura_atual.plano_id} —
-                  assinatura {excecaoTeste.assinatura_atual.status} —
-                  pagamento {excecaoTeste.assinatura_atual.status_pagamento} —
-                  vencimento {excecaoTeste.assinatura_atual.data_fim || "não informado"}.
-                </p>
-              ) : null}
-              <p>
-                Para confirmar, digite exatamente:
-                {" "}<strong>{excecaoTeste.confirmacao_exigida}</strong>
-              </p>
-              <input
-                style={estilos.input}
-                type="text"
-                value={confirmacaoTeste}
-                onChange={(e) => setConfirmacaoTeste(e.target.value)}
-                placeholder={excecaoTeste.confirmacao_exigida}
-                autoComplete="off"
-                required
-              />
-            </div>
-          ) : null}
-          <button type="submit" style={estilos.botaoLiberar} disabled={processandoId === "teste"}>
-            {processandoId === "teste"
+
+          <input
+            style={estilos.input}
+            type="text"
+            value={documentoTeste}
+            onChange={(e) =>
+              setDocumentoTeste(
+                e.target.value
+              )
+            }
+            placeholder={
+              tipoDocumentoTeste === "CNPJ"
+                ? "CNPJ"
+                : "CPF do respons\u00e1vel"
+            }
+            minLength={
+              tipoDocumentoTeste === "CNPJ"
+                ? 14
+                : 11
+            }
+            maxLength={18}
+            autoComplete="off"
+            required
+          />
+
+          <input
+            style={estilos.input}
+            type="text"
+            value={motivoTeste}
+            onChange={(e) =>
+              setMotivoTeste(
+                e.target.value
+              )
+            }
+            placeholder={
+              "Motivo da exce\u00e7\u00e3o administrativa"
+            }
+            minLength="3"
+            maxLength="500"
+            required
+          />
+
+          <label
+            style={{
+              gridColumn: "1 / -1",
+              display: "flex",
+              gap: 8,
+              alignItems: "flex-start",
+            }}
+          >
+            <input
+              type="checkbox"
+              checked={
+                confirmarExcecaoTeste
+              }
+              onChange={(e) =>
+                setConfirmarExcecaoTeste(
+                  e.target.checked
+                )
+              }
+              required
+            />
+
+            <span>
+              Confirmo que revisei o conflito
+              antifraude e autorizo
+              excepcionalmente um novo
+              per&iacute;odo gratuito de 40 dias.
+            </span>
+          </label>
+
+          <button
+            type="submit"
+            style={{
+              ...estilos.botaoLiberar,
+              whiteSpace: "nowrap",
+              width: "fit-content",
+            }}
+            disabled={
+              processandoId ===
+              "teste-gratuito-excecao"
+            }
+          >
+            {processandoId ===
+            "teste-gratuito-excecao"
               ? "Concedendo..."
-              : excecaoTeste
-                ? "Confirmar concessão excepcional"
-                : "Conceder teste"}
+              : "Conceder exce\u00e7\u00e3o de 40 dias"}
           </button>
         </form>
       </section>

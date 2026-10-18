@@ -54,6 +54,17 @@ export async function concederTesteSaas(barbeariaId, dados) {
   return resposta.data;
 }
 
+export async function concederExcecaoTesteGratuitoSaas(
+  barbeariaId,
+  dados
+) {
+  const resposta = await api.post(
+    `/admin/barbsist-assinaturas/barbearias/${barbeariaId}/teste-gratuito/excecao`,
+    dados
+  );
+  return resposta.data;
+}
+
 export async function listarPagamentosSaas(params = {}) {
   const resposta = await api.get(
     "/admin/barbsist-assinaturas/pagamentos",
