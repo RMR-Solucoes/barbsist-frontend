@@ -1,5 +1,7 @@
 "use client";
 
+import { numeroWhatsAppBrasil } from "../../utils/telefoneBrasil";
+
 import { useCallback, useState } from "react";
 import { listarBarbeariasProximas } from "@/services/barbeariasPublicasService";
 import styles from "./barbearias.module.css";
@@ -245,7 +247,7 @@ function BarbeariaCard({ barbearia }) {
       ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(enderecoCompleto)}`
       : null;
 
-  const telefoneWhatsApp = somenteDigitos(barbearia.telefone_whatsapp);
+  const telefoneWhatsApp = numeroWhatsAppBrasil(barbearia.telefone_whatsapp);
 
   const urlWhatsApp = telefoneWhatsApp
     ? `https://wa.me/${telefoneWhatsApp}?text=${encodeURIComponent(

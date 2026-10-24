@@ -1,0 +1,189 @@
+.faixa {
+  display: flex;
+  justify-content: flex-end;
+  position: relative;
+  margin-bottom: 14px;
+  min-height: 40px;
+}
+
+.container {
+  position: relative;
+  z-index: 20;
+}
+
+.botao {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 12px;
+  border-radius: 10px;
+  border: 1px solid #d1d5db;
+  background: #fff;
+  color: #111827;
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.botao:hover {
+  background: #f3f4f6;
+}
+
+.botao:focus-visible,
+.fechar:focus-visible,
+.acoes button:focus-visible,
+.acoes a:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+}
+
+.contador {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: #b91c1c;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.painel {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 7px);
+  width: min(370px, calc(100vw - 24px));
+  max-height: min(480px, 70vh);
+  overflow-y: auto;
+  background: #fff;
+  color: #111827;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.18);
+}
+
+.cabecalho {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 13px 15px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.fechar {
+  border: 0;
+  background: transparent;
+  color: #374151;
+  font-size: 24px;
+  cursor: pointer;
+}
+
+.lista {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.item {
+  padding: 13px 15px;
+  border-bottom: 1px solid #f3f4f6;
+  font-size: 13px;
+}
+
+.naoLida {
+  background: #eff6ff;
+}
+
+.item strong {
+  display: block;
+}
+
+.item p {
+  margin: 5px 0 8px;
+  line-height: 1.45;
+}
+
+.acoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.acoes a,
+.acoes button {
+  color: #1d4ed8;
+  font: inherit;
+  font-size: 12px;
+  text-decoration: underline;
+  background: transparent;
+  padding: 0;
+  border: none;
+  cursor: pointer;
+}
+
+.acoes button:disabled {
+  opacity: 0.5;
+  cursor: wait;
+}
+
+.aviso {
+  padding: 12px 15px;
+  margin: 0;
+  color: #92400e;
+  font-size: 13px;
+}
+
+.vazio {
+  padding: 18px 15px;
+  margin: 0;
+  color: #6b7280;
+  font-size: 13px;
+}
+
+@media (max-width: 640px) {
+  .faixa {
+    margin-top: 4px;
+  }
+
+  .painel {
+    max-height: 65vh;
+  }
+}
+
+/* F2.4A2 - alerta sonoro */
+.controlesSom {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 6px;
+  margin-top: 5px;
+  max-width: 370px;
+}
+.controleSom {
+  border: 1px solid #d1d5db;
+  background: #ffffff;
+  color: #1f2937;
+  border-radius: 7px;
+  padding: 4px 8px;
+  font: inherit;
+  font-size: 11px;
+  cursor: pointer;
+}
+.controleSom:hover {
+  background: #f3f4f6;
+}
+.controleSom:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+}
+.somAviso {
+  flex-basis: 100%;
+  color: #92400e;
+  font-size: 11px;
+  text-align: right;
+}

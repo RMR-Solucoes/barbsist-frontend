@@ -1,5 +1,7 @@
 "use client";
 
+import { numeroWhatsAppBrasil } from "../../utils/telefoneBrasil";
+
 import { useEffect, useMemo, useState } from "react";
 import styles from "./agendar.module.css";
 
@@ -485,9 +487,9 @@ async function cancelarAgendamento(id) {
     "Obrigado pela preferência.",
   ].join("\n");
 
-  const telefoneBarbearia = String(
-    barbearia?.telefone_whatsapp || ""
-  ).replace(/\D/g, "");
+  const telefoneBarbearia = numeroWhatsAppBrasil(
+    barbearia?.telefone_whatsapp
+  );
 
   const url = telefoneBarbearia
     ? `https://wa.me/${telefoneBarbearia}?text=${encodeURIComponent(

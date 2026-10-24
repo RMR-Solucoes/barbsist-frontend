@@ -565,7 +565,7 @@ export default function CadastroPage() {
                   formulario.telefone_whatsapp
                 }
                 onChange={alterarCampo}
-                placeholder="11999999999"
+                placeholder="+55 (11) 99999-9999"
                 autoComplete="tel"
                 required
               />

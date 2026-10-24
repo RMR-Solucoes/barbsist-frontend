@@ -1,5 +1,7 @@
 "use client";
 
+import { numeroWhatsAppBrasil } from "../../../utils/telefoneBrasil";
+
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { obterPerfilBarbeariaPublica } from "@/services/barbeariasPublicasService";
@@ -88,7 +90,7 @@ export default function PerfilPublicoBarbeariaPage() {
   }
 
   const enderecoCompleto = montarEndereco(barbearia);
-  const telefoneWhatsApp = somenteDigitos(barbearia.telefone_whatsapp);
+  const telefoneWhatsApp = numeroWhatsAppBrasil(barbearia.telefone_whatsapp);
 
   const urlWhatsApp = telefoneWhatsApp
     ? `https://wa.me/${telefoneWhatsApp}?text=${encodeURIComponent(

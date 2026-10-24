@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { salvarToken } from "@/services/authStorage";
 import { sairContextoBarbearia } from "@/services/adminPlataformaService";
+import SinoNotificacoes from "./SinoNotificacoes";
 import styles from "./LayoutAdmin.module.css";
 
 export default function LayoutAdmin({ children }) {
@@ -424,6 +425,7 @@ export default function LayoutAdmin({ children }) {
       </aside>
 
       <main className={styles.main}>
+        <SinoNotificacoes usuario={usuario} />
         {children}
         <footer className={styles.footer}>
           Desenvolvido por <strong>RMR Soluções de Sistemas</strong>

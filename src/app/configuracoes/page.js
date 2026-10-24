@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import PreferenciasAlertasBarbSist from "@/components/PreferenciasAlertasBarbSist"; // F2.4C3B
 
 import { listarBarbeiros } from "@/services/barbeiroService";
 
@@ -698,15 +699,34 @@ function formatarTelefone(valor) {
 
 
 function formatarWhatsApp(valor) {
-  const numeros = somenteNumeros(valor).slice(0, 13);
+  let numeros = somenteNumeros(String(valor ?? "")).slice(0, 13);
 
-  if (numeros.startsWith("55")) {
-    return numeros
-      .replace(/^(\d{2})(\d{2})(\d)/, "+$1 ($2) $3")
-      .replace(/(\d{5})(\d)/, "$1-$2");
+  if (numeros.startsWith("55") && numeros.length > 11) {
+    numeros = numeros.slice(2);
   }
 
-  return formatarTelefone(numeros);
+  numeros = numeros.slice(0, 11);
+
+  if (!numeros) {
+    return "";
+  }
+
+  const ddd = numeros.slice(0, 2);
+  const local = numeros.slice(2);
+
+  if (!local) {
+    return `+55 (${ddd}`;
+  }
+
+  if (local.length <= 4) {
+    return `+55 (${ddd}) ${local}`;
+  }
+
+  if (local.length <= 8) {
+    return `+55 (${ddd}) ${local.slice(0, 4)}-${local.slice(4)}`;
+  }
+
+  return `+55 (${ddd}) ${local.slice(0, 5)}-${local.slice(5)}`;
 }
 
 
@@ -801,6 +821,10 @@ const estadosBrasil = [
         >
           ✂️ Disponibilidade dos Barbeiros
         </button>
+        <button type="button" onClick={() => setAbaAtiva("alertas")}
+          style={tabButtonStyle(abaAtiva === "alertas")}>
+          🔔 Alertas sonoros
+        </button>
       </div>
 
       {mensagem && (
@@ -828,6 +852,8 @@ const estadosBrasil = [
           {erro}
         </div>
       )}
+
+      {abaAtiva === "alertas" && <PreferenciasAlertasBarbSist />}
 
       {abaAtiva === "barbearia" && (
   <section>
@@ -1437,7 +1463,7 @@ const estadosBrasil = [
                 formatarWhatsApp(e.target.value)
               )
             }
-            placeholder="Ex.: 5511999999999"
+            placeholder="Ex.: +55 (11) 99999-9999"
             style={inputPadraoStyle}
           />
         </div>
