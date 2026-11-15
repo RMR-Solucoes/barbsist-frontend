@@ -1,4 +1,4 @@
-﻿import api from "@/services/api";
+import api from "@/services/api";
 
 const TOKEN_KEY = "barbsist_portal_cliente_token";
 const SLUG_KEY = "barbsist_portal_cliente_barbearia";
@@ -83,5 +83,25 @@ export async function atualizarConfiguracaoPortalAdmin(
         Boolean(permitirAgendamentoPortal),
     },
   );
+  return data;
+}
+
+// BARBSIST_C3OF2C2D1R2_MEUS_AGENDAMENTOS
+export async function carregarMeusAgendamentosCliente() {
+  const { data } = await api.get("/portal-cliente/meus-agendamentos", configCliente());
+  return data;
+}
+
+// B20-C4-A65-R6: saldo de creditos livres do ciclo, vinculado ao JWT do cliente.
+// dataAtendimento deve ser o instante exato escolhido na agenda (sem conversao UTC).
+export async function carregarSaldoCreditosCliente(dataAtendimento) {
+  if (typeof dataAtendimento !== "string" ||
+      !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2})?$/.test(dataAtendimento)) {
+    throw new Error("Data e horario de atendimento invalidos.");
+  }
+  const { data } = await api.get("/portal-cliente/saldo-creditos", {
+    ...configCliente(),
+    params: { data_atendimento: dataAtendimento },
+  });
   return data;
 }
