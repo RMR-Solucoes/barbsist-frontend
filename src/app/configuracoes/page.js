@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import api from "@/services/api";
 import PreferenciasAlertasBarbSist from "@/components/PreferenciasAlertasBarbSist"; // F2.4C3B
 
 import { listarBarbeiros } from "@/services/barbeiroService";
@@ -24,7 +25,6 @@ import {
 
 import {
   obterConfiguracaoPortalAdmin,
-  atualizarConfiguracaoPortalAdmin,
 } from "@/services/portalClienteService";
 
 export default function ConfiguracoesPage() {
@@ -73,6 +73,7 @@ const [linkAgendamento, setLinkAgendamento] = useState("");
 const [linkPortalCliente, setLinkPortalCliente] = useState("");
 const [configuracaoPortal, setConfiguracaoPortal] = useState({
   permitir_agendamento_portal: false,
+  agendamento_exige_plano_cliente: false,
 });
 const [salvandoConfiguracaoPortal, setSalvandoConfiguracaoPortal] = useState(false);
 
@@ -198,6 +199,8 @@ const [salvandoConfiguracaoPortal, setSalvandoConfiguracaoPortal] = useState(fal
       setConfiguracaoPortal({
         permitir_agendamento_portal:
           Boolean(dados?.permitir_agendamento_portal),
+        agendamento_exige_plano_cliente:
+          Boolean(dados?.agendamento_exige_plano_cliente),
       });
     } catch {
       setErro(
@@ -211,13 +214,21 @@ const [salvandoConfiguracaoPortal, setSalvandoConfiguracaoPortal] = useState(fal
     setSalvandoConfiguracaoPortal(true);
 
     try {
-      const dados = await atualizarConfiguracaoPortalAdmin(
-        configuracaoPortal.permitir_agendamento_portal,
+      const { data: dados } = await api.put(
+        "/portal-cliente/admin/configuracao",
+        {
+          permitir_agendamento_portal:
+            configuracaoPortal.permitir_agendamento_portal,
+          agendamento_exige_plano_cliente:
+            configuracaoPortal.agendamento_exige_plano_cliente,
+        },
       );
 
       setConfiguracaoPortal({
         permitir_agendamento_portal:
           Boolean(dados?.permitir_agendamento_portal),
+        agendamento_exige_plano_cliente:
+          Boolean(dados?.agendamento_exige_plano_cliente),
       });
 
       setMensagem(
@@ -1071,27 +1082,85 @@ const estadosBrasil = [
               background: "#f0f9ff",
             }}
           >
-            <label
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "10px",
-                fontWeight: 600,
-                cursor: "pointer",
-              }}
-            >
-              <input
-                type="checkbox"
-                checked={configuracaoPortal.permitir_agendamento_portal}
-                onChange={(evento) =>
-                  setConfiguracaoPortal({
-                    permitir_agendamento_portal:
-                      evento.target.checked,
-                  })
-                }
-              />
-              Permitir agendamento online pelos clientes
-            </label>
+            <div style={{
+  display: "flex",
+  flexDirection: "column",
+  gap: "12px",
+  flex: "1 1 320px",
+}}>
+  {/* BARBSIST_F6B_MODO_UNICO_AGENDAMENTO */}
+  <strong style={{ fontSize: "14px" }}>
+    Modalidade de agendamento online
+  </strong>
+
+  {[
+    {
+      valor: "desativado",
+      titulo: "Não permitir agendamento online",
+      descricao: "A agenda permanece disponível para uso interno.",
+    },
+    {
+      valor: "aberto",
+      titulo: "Permitir agendamento online para todos os clientes",
+      descricao: "Mantém o agendamento público tradicional.",
+    },
+    {
+      valor: "assinantes",
+      titulo: "Permitir agendamento online somente para assinantes de pacotes",
+      descricao: "Exige cliente autenticado e pacote de serviços válido.",
+    },
+  ].map((opcao) => {
+    const modoAtual = !configuracaoPortal.permitir_agendamento_portal
+      ? "desativado"
+      : configuracaoPortal.agendamento_exige_plano_cliente
+        ? "assinantes"
+        : "aberto";
+
+    return (
+      <label
+        key={opcao.valor}
+        style={{
+          display: "flex",
+          alignItems: "flex-start",
+          gap: "10px",
+          cursor: "pointer",
+        }}
+      >
+        <input
+          type="radio"
+          name="modalidade_agendamento_portal"
+          value={opcao.valor}
+          checked={modoAtual === opcao.valor}
+          onChange={() =>
+            setConfiguracaoPortal((anterior) => ({
+              ...anterior,
+              permitir_agendamento_portal:
+                opcao.valor !== "desativado",
+              agendamento_exige_plano_cliente:
+                opcao.valor === "assinantes",
+            }))
+          }
+        />
+        <span style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: "4px",
+        }}>
+          <span style={{ fontWeight: 600 }}>
+            {opcao.titulo}
+          </span>
+          <span style={{
+            fontSize: "13px",
+            color: "#475569",
+            lineHeight: 1.5,
+          }}>
+            {opcao.descricao}
+          </span>
+        </span>
+      </label>
+    );
+  })}
+</div>
 
             <button
               type="button"
