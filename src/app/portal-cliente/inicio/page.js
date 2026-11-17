@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { CardPayment, initMercadoPago } from "@mercadopago/sdk-react";
 import {
   assinarPlanoPix,
+  carregarMeusAgendamentosCliente,
   carregarMeusPagamentos,
   carregarMinhasComandasAbertas,
   carregarMinhaAssinatura,
@@ -64,6 +65,10 @@ export default function Inicio() {
   const [erroFatal, setErroFatal] = useState("");
   const [erro, setErro] = useState("");
   const [secao, setSecao] = useState(null);
+  // BARBSIST_C3OF2C2DBR2_MEUS_AGENDAMENTOS
+  const [agendamentos, setAgendamentos] = useState([]);
+  const [carregandoAgendamentos, setCarregandoAgendamentos] = useState(false);
+  const [erroAgendamentos, setErroAgendamentos] = useState("");
   const [comandas, setComandas] = useState([]);
   const [processandoComandaId, setProcessandoComandaId] = useState(null);
   const [comandaPagamento, setComandaPagamento] = useState(null);
@@ -118,6 +123,38 @@ export default function Inicio() {
       })
       .finally(() => setCarregando(false));
   }, [router]);
+
+  useEffect(() => {
+    if (secao !== "agendamentos") return;
+
+    let ativo = true;
+    setCarregandoAgendamentos(true);
+    setErroAgendamentos("");
+
+    carregarMeusAgendamentosCliente()
+      .then((dados) => {
+        if (!ativo) return;
+        if (!Array.isArray(dados)) {
+          setErroAgendamentos("Resposta inválida da consulta.");
+          return;
+        }
+        setAgendamentos(dados);
+      })
+      .catch((falha) => {
+        if (!ativo) return;
+        const status = falha?.response?.status;
+        setErroAgendamentos(
+          status === 401 || status === 403
+            ? "Sua sessão expirou. Entre novamente no Portal do Cliente."
+            : "Não foi possível carregar seus agendamentos."
+        );
+      })
+      .finally(() => {
+        if (ativo) setCarregandoAgendamentos(false);
+      });
+
+    return () => { ativo = false; };
+  }, [secao]);
 
   function sair() {
     sairPortalCliente();
@@ -287,6 +324,14 @@ export default function Inicio() {
     const cards = [
       { id: "plano", titulo: "Meu plano", texto: assinatura?.plano?.nome || "Escolha uma assinatura", detalhe: assinatura ? `Status: ${rotulo(assinatura.status)}` : "Conheça os planos disponíveis", cor: "border-violet-200 bg-violet-50", destaque: "text-violet-700" },
       { id: "planos", titulo: "Assinar plano", texto: "Planos disponíveis", detalhe: `${planos.length} opção(ões) para contratação`, cor: "border-cyan-200 bg-cyan-50", destaque: "text-cyan-700" },
+      {
+        id: "agendamentos",
+        titulo: "Meus agendamentos",
+        texto: "Próximos horários",
+        detalhe: "Consulte reservas por plano ou avulsas",
+        cor: "border-indigo-200 bg-indigo-50",
+        destaque: "text-indigo-700",
+      },
       { id: "pagamentos", titulo: "Pagamentos", texto: `${pagamentos.length} registro(s)`, detalhe: "Consulte seu histórico financeiro", cor: "border-emerald-200 bg-emerald-50", destaque: "text-emerald-700" },
       ...(perfil?.permitir_agendamento_portal
         ? [{ id: "agendamento", titulo: "Agendamento", texto: "Agendar horário", detalhe: "Escolha serviço, profissional e horário", cor: "border-blue-200 bg-blue-50", destaque: "text-blue-700" }]
@@ -429,6 +474,71 @@ export default function Inicio() {
           <div className={`mt-6 rounded-lg p-4 text-sm ${erro ? "bg-red-50 text-red-700" : "bg-emerald-50 text-emerald-800"}`}>
             {erro || mensagem}
           </div>
+        )}
+
+        {secao === "agendamentos" && (
+          <section className="mt-6 rounded-xl bg-white p-5 shadow">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p className="text-sm font-medium text-blue-700">
+                  Portal do Cliente
+                </p>
+                <h2 className="text-xl font-bold text-slate-950">
+                  Meus agendamentos
+                </h2>
+                <p className="mt-1 text-sm text-slate-600">
+                  Consulte seus próximos atendimentos.
+                </p>
+              </div>
+              {!carregandoAgendamentos && !erroAgendamentos && (
+                <span className="text-sm text-slate-500">
+                  {agendamentos.length} registro(s)
+                </span>
+              )}
+            </div>
+
+            {carregandoAgendamentos ? (
+              <p className="mt-5 text-sm text-slate-600">
+                Consultando agendamentos...
+              </p>
+            ) : erroAgendamentos ? (
+              <p role="alert" className="mt-5 rounded-lg bg-red-50 p-4 text-sm text-red-700">
+                {erroAgendamentos}
+              </p>
+            ) : agendamentos.length === 0 ? (
+              <p className="mt-5 rounded-lg bg-slate-50 p-4 text-sm text-slate-600">
+                Você não possui agendamentos futuros.
+              </p>
+            ) : (
+              <div className="mt-5 grid gap-4 md:grid-cols-2">
+                {agendamentos.map((item) => (
+                  <article key={item.id} className="rounded-xl border border-slate-200 p-4">
+                    <div className="flex flex-wrap items-start justify-between gap-2">
+                      <h3 className="font-bold text-slate-950">
+                        {item.servico || "Serviço não informado"}
+                      </h3>
+                      <span className="rounded-full bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-700">
+                        {item.tipo_atendimento === "plano" ? "Plano" : "Avulso"}
+                      </span>
+                    </div>
+                    <p className="mt-3 text-sm text-slate-700">
+                      <strong>Profissional:</strong>{" "}
+                      {item.barbeiro || "N?o informado"}
+                    </p>
+                    <p className="mt-1 text-sm text-slate-700">
+                      <strong>Data e horário:</strong>{" "}
+                      {item.data_hora_inicio
+                        ? new Date(item.data_hora_inicio).toLocaleString("pt-BR")
+                        : "N?o informado"}
+                    </p>
+                    <p className="mt-1 text-sm text-slate-700">
+                      <strong>Status:</strong> {rotulo(item.status)}
+                    </p>
+                  </article>
+                ))}
+              </div>
+            )}
+          </section>
         )}
 
         {secao === "pagamentos" && <section className="mt-6 rounded-xl bg-white p-5 shadow">
