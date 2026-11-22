@@ -16,7 +16,12 @@ import {
 } from "@/services/agendamentoOnlineService";
 
 import { obterBarbeariaPublica } from "@/services/barbeariaService";
-import { carregarPerfilCliente } from "@/services/portalClienteService";
+import {
+  carregarPerfilCliente,
+  carregarMinhaAssinatura,
+  carregarSaldoCreditosCliente,
+  obterTokenCliente,
+} from "@/services/portalClienteService";
 
 
 // BARBSIST_M4_1_ACABAMENTO
@@ -59,17 +64,18 @@ function formatarServicosAgendamentoM41(agendamento) {
 
 
 export default function AgendamentoOnlinePage() {
-  const origemPortal =
-    typeof window !== "undefined" &&
-    new URLSearchParams(window.location.search).get("origem") ===
-      "portal-cliente";
+  // A68-D45: estado inicial identico no SSR e no navegador.
+  const [origemPortal, setOrigemPortal] = useState(false);
 
-  const barbeariaSlug =
-    (typeof window !== "undefined"
-      ? new URLSearchParams(window.location.search).get("barbearia")
-      : null) ||
-    process.env.NEXT_PUBLIC_BARBEARIA_SLUG ||
-    "barbsist-admin";
+  useEffect(() => {
+    const origem = new URLSearchParams(
+      window.location.search
+    ).get("origem");
+
+    setOrigemPortal(origem === "portal-cliente");
+  }, []);
+
+  const [barbeariaSlug, setBarbeariaSlug] = useState("");
 
   function voltarAoPortalCliente() {
     if (typeof window !== "undefined") {
@@ -79,6 +85,10 @@ export default function AgendamentoOnlinePage() {
 
   const [barbearia, setBarbearia] = useState(null);
   const agendamentoOnlineAtivo = Boolean(barbearia?.permitir_agendamento_portal);
+  // BARBSIST_P9_2R
+  const agendamentoExclusivo = Boolean(
+    barbearia?.agendamento_exige_plano_cliente
+  );
   const hoje = new Date().toISOString().split("T")[0];
 
   const [servicos, setServicos] = useState([]);
@@ -86,6 +96,24 @@ export default function AgendamentoOnlinePage() {
 
   // BARBSIST_MULTI_SERVICE_M4_CLIENTE
   const [servicosIds, setServicosIds] = useState([]);
+  // P10-D14J.32-C: opcao voluntaria pelo plano quando avulso e permitido.
+  const [tipoAtendimentoEscolhido, setTipoAtendimentoEscolhido] = useState("avulso");
+  // R13: entrada pelo Portal preseleciona assinatura.
+  // O cliente pode escolher avulso quando permitido.
+  useEffect(() => {
+    if (origemPortal) {
+      setTipoAtendimentoEscolhido("plano");
+    }
+  }, [origemPortal]);
+  // A65: usos da assinatura nao equivalem a creditos livres (reservas pendentes).
+  const [resumoPlano, setResumoPlano] = useState(null);
+  const [carregandoPlano, setCarregandoPlano] = useState(false);
+  const [erroPlano, setErroPlano] = useState("");
+  // Saldo por instante escolhido: nunca equivale a usos_disponiveis.
+  const [saldoCiclo, setSaldoCiclo] = useState(null);
+  const [carregandoSaldo, setCarregandoSaldo] = useState(false);
+  const [erroSaldo, setErroSaldo] = useState("");
+  const usaPlano = agendamentoExclusivo || tipoAtendimentoEscolhido === "plano";
   const [modo, setModo] = useState("qualquer");
   const [barbeiroId, setBarbeiroId] = useState("");
   const [dataSelecionada, setDataSelecionada] = useState(hoje);
@@ -120,12 +148,32 @@ export default function AgendamentoOnlinePage() {
   const [cancelando, setCancelando] = useState(false);
 
   useEffect(() => {
-    carregarDadosIniciais();
-    carregarBarbearia();
+    const slug = new URLSearchParams(
+      window.location.search
+    ).get("barbearia")?.trim();
+
+    if (!slug) {
+      setErro("Barbearia nao informada para agendamento.");
+      return;
+    }
+
+    setBarbeariaSlug(slug);
   }, []);
 
   useEffect(() => {
+    if (!barbeariaSlug) return;
+
+    carregarDadosIniciais();
+    carregarBarbearia();
+  }, [barbeariaSlug]);
+
+  useEffect(() => {
     if (!origemPortal) {
+      return;
+    }
+
+    // Visita publica: nao consultar perfil sem token.
+    if (!obterTokenCliente()) {
       return;
     }
 
@@ -159,6 +207,96 @@ export default function AgendamentoOnlinePage() {
   carregarHorarios();
 }, [abaPublica, servicosIds, modo, barbeiroId, dataSelecionada]);
 
+  // A65: consulta autenticada ja usada pelo Portal do Cliente.
+  // Esta resposta informa usos remanescentes, mas NAO substitui o saldo
+  // livre calculado por ciclo para a data do agendamento.
+  useEffect(() => {
+    let ativo = true;
+    if (!barbeariaSlug || !usaPlano) {
+      setResumoPlano(null);
+      setErroPlano("");
+      setCarregandoPlano(false);
+      return;
+    }
+
+    if (!obterTokenCliente()) {
+      setResumoPlano(null);
+      setErroPlano("Entre no Portal do Cliente para utilizar a assinatura.");
+      setCarregandoPlano(false);
+      return;
+    }
+
+    setCarregandoPlano(true);
+    setResumoPlano(null);
+    setErroPlano("");
+
+    Promise.all([carregarPerfilCliente(), carregarMinhaAssinatura()])
+      .then(([perfilCliente, assinaturaRecebida]) => {
+        if (!ativo) return;
+        if (perfilCliente?.barbearia_slug !== barbeariaSlug || !perfilCliente?.cliente_id) {
+          setErroPlano("Esta conta pertence a outra barbearia.");
+          return;
+        }
+        setResumoPlano(assinaturaRecebida || null);
+        if (!assinaturaRecebida) {
+          setErroPlano("Nenhuma assinatura encontrada para este cliente.");
+        }
+      })
+      .catch((falha) => {
+        if (!ativo) return;
+        const status = falha?.response?.status;
+        setErroPlano(status === 401 || status === 403
+          ? "Sessao invalida. Acesse novamente o Portal do Cliente."
+          : "Nao foi possivel consultar os dados da assinatura.");
+      })
+      .finally(() => {
+        if (ativo) setCarregandoPlano(false);
+      });
+
+    return () => { ativo = false; };
+  }, [barbeariaSlug, usaPlano]);
+
+  // B20-C4-A65-R6: consulta o saldo para a data/hora EXATA do slot.
+  // Limpa o saldo quando o slot muda, prevenindo exibir creditos de outro ciclo.
+  const instanteSaldo = horarioSelecionado?.data_hora_inicio || "";
+  useEffect(() => {
+    let ativo = true;
+    setSaldoCiclo(null);
+    setErroSaldo("");
+    if (!usaPlano || !barbeariaSlug || !instanteSaldo || erroPlano) {
+      setCarregandoSaldo(false);
+      return;
+    }
+    if (!obterTokenCliente()) {
+      setErroSaldo("Entre novamente no Portal do Cliente para consultar seus creditos.");
+      setCarregandoSaldo(false);
+      return;
+    }
+
+    setCarregandoSaldo(true);
+    carregarSaldoCreditosCliente(instanteSaldo)
+      .then((saldo) => {
+        if (ativo) setSaldoCiclo(saldo);
+      })
+      .catch((falha) => {
+        if (!ativo) return;
+        const status = falha?.response?.status;
+        const detalhe = falha?.response?.data?.detail;
+        setErroSaldo(status === 401 || status === 403
+          ? "Acesso ao saldo nao autorizado. Entre novamente no Portal do Cliente."
+          : status === 404
+            ? "Nao foi encontrada uma assinatura para esta conta."
+            : typeof detalhe === "string" && status === 409
+              ? detalhe
+              : "Nao foi possivel obter o saldo livre para o horario escolhido.");
+      })
+      .finally(() => {
+        if (ativo) setCarregandoSaldo(false);
+      });
+
+    return () => { ativo = false; };
+  }, [usaPlano, barbeariaSlug, instanteSaldo, erroPlano]);
+
   async function carregarBarbearia() {
   try {
     const dados = await obterBarbeariaPublica(barbeariaSlug);
@@ -166,6 +304,9 @@ export default function AgendamentoOnlinePage() {
     console.log("BARBEARIA:", dados);
 
     setBarbearia(dados);
+    if (dados?.agendamento_exige_plano_cliente) {
+      setTipoAtendimentoEscolhido("plano");
+    }
 
     if (!dados?.permitir_agendamento_portal) {
       setAbaPublica("consultar");
@@ -188,8 +329,23 @@ export default function AgendamentoOnlinePage() {
       setServicos(dadosServicos || []);
       setBarbeiros(dadosBarbeiros || []);
     } catch (error) {
-      console.error(error);
-      setErro("Erro ao carregar dados do agendamento.");
+      const status = error?.response?.status;
+      const detalhe = error?.response?.data?.detail;
+
+      const bloqueioSaasEsperado =
+        status === 403 &&
+        detalhe === "Agendamento online não está disponível nesta barbearia.";
+
+      if (bloqueioSaasEsperado) {
+        if (agendamentoOnlineAtivo) {
+          setErro("Novos agendamentos online estão temporariamente indisponíveis.");
+        } else {
+          setErro("");
+        }
+      } else {
+        console.error(error);
+        setErro("Erro ao carregar dados do agendamento.");
+      }
     }
   }
 
@@ -309,42 +465,134 @@ export default function AgendamentoOnlinePage() {
     return;
   }
 
-  if (!cliente.nome.trim()) {
+  if (usaPlano && (carregandoPlano || carregandoSaldo)) {
+    setErro("Aguarde a verificacao da assinatura e dos creditos livres.");
+    return;
+  }
+
+  if (usaPlano && (erroPlano || erroSaldo)) {
+    setErro(erroPlano || erroSaldo);
+    return;
+  }
+  if (usaPlano && (!resumoPlano || !saldoCiclo ||
+      instanteSaldo !== horarioSelecionado?.data_hora_inicio)) {
+    setErro("Ainda nao foi possivel validar o saldo para este horario.");
+    return;
+  }
+  if (usaPlano && Number(saldoCiclo.creditos_livres) < servicosIds.length) {
+    setErro("Saldo insuficiente para os servicos selecionados. Selecione menos servicos ou atendimento avulso.");
+    return;
+  }
+
+  if (usaPlano && resumoPlano &&
+      (!["ATIVO", "ATIVA"].includes(String(resumoPlano.status || "").toUpperCase()) ||
+       String(resumoPlano.status_pagamento || "").toUpperCase() !== "PAGO")) {
+    setErro("Sua assinatura ainda nao esta ativa e paga. Escolha avulso ou regularize o plano.");
+    return;
+  }
+
+  let perfilAutenticado = null;
+  let tokenReserva = null;
+
+  if (usaPlano) {
+    tokenReserva = obterTokenCliente();
+
+    if (!tokenReserva) {
+      setErro(
+        "Para utilizar créditos do plano, entre no Portal do Cliente desta barbearia."
+      );
+      window.location.assign(
+        `/portal-cliente?barbearia=${encodeURIComponent(barbeariaSlug)}`
+      );
+      return;
+    }
+
+    try {
+      perfilAutenticado = await carregarPerfilCliente();
+    } catch {
+      setErro("Sua sessão do Portal do Cliente expirou. Entre novamente.");
+      return;
+    }
+
+    if (
+      perfilAutenticado?.barbearia_slug !== barbeariaSlug ||
+      !perfilAutenticado?.cliente_id
+    ) {
+      setErro(
+        "Sua conta pertence a outra barbearia. Entre no portal correto."
+      );
+      return;
+    }
+
+    if (
+      !perfilAutenticado?.nome?.trim() ||
+      !perfilAutenticado?.telefone?.trim()
+    ) {
+      setErro(
+        "Atualize seu nome e telefone no Portal do Cliente antes de agendar."
+      );
+      return;
+    }
+  }
+
+  if (!usaPlano && !cliente.nome.trim()) {
     setErro("Informe seu nome.");
     return;
   }
 
-  if (!cliente.telefone.trim()) {
+  if (!usaPlano && !cliente.telefone.trim()) {
     setErro("Informe seu telefone.");
     return;
   }
 
   const dados = {
-    nome_cliente: cliente.nome.trim(),
-    telefone_cliente: cliente.telefone.trim(),
+    nome_cliente: usaPlano
+      ? perfilAutenticado.nome.trim()
+      : cliente.nome.trim(),
+    telefone_cliente: usaPlano
+      ? perfilAutenticado.telefone.trim()
+      : cliente.telefone.trim(),
     barbeiro_id: Number(horarioSelecionado.barbeiro_id),
     servico_id: Number(servicosIds[0]),
     servicos_ids: servicosIds.map(Number),
     data_hora_inicio: horarioSelecionado.data_hora_inicio,
-    tipo_atendimento: "avulso",
+    tipo_atendimento: usaPlano ? "plano" : "avulso",
     observacoes: montarObservacoesCliente(),
   };
 
   try {
     setSalvando(true);
 
-    await criarAgendamentoOnline(barbeariaSlug, dados);
+    // Nova consulta antes de criar: evita usar saldo exibido que ja ficou antigo.
+    // O backend continua sendo a autoridade e valida novamente na reserva.
+    if (usaPlano) {
+      const saldoAtual = await carregarSaldoCreditosCliente(dados.data_hora_inicio);
+      setSaldoCiclo(saldoAtual);
+      if (!Number.isFinite(Number(saldoAtual?.creditos_livres)) ||
+          Number(saldoAtual.creditos_livres) < servicosIds.length) {
+        setErro("Nao ha creditos livres suficientes para este atendimento.");
+        return;
+      }
+    }
+
+    await criarAgendamentoOnline(
+      barbeariaSlug,
+      dados,
+      usaPlano ? tokenReserva : null
+    );
 
     setAgendamentoConfirmado({
-        cliente: cliente.nome,
-        telefone: cliente.telefone,
+        cliente: usaPlano
+          ? perfilAutenticado.nome
+          : cliente.nome,
+        telefone: usaPlano ? perfilAutenticado.telefone : cliente.telefone,
         servico: servicosSelecionados
           .map((item) => item.nome)
           .join(", "),
         barbeiro: horarioSelecionado.barbeiro_nome,
-        data: dataSelecionada,
+        data: horarioSelecionado.data_hora_inicio.slice(0, 10),
         horario: horarioSelecionado.horario,
-        protocolo: `AGD-${dataSelecionada.replaceAll("-", "")}-${horarioSelecionado.horario.replace(":", "")}`,
+        protocolo: `AGD-${horarioSelecionado.data_hora_inicio.slice(0, 10).replaceAll("-", "")}-${horarioSelecionado.horario.replace(":", "")}`,
         });
     setHorarioSelecionado(null);
 
@@ -356,13 +604,31 @@ export default function AgendamentoOnlinePage() {
     });
 
     await carregarHorarios();
+    if (usaPlano) {
+      try {
+        const atualizada = await carregarMinhaAssinatura();
+        setResumoPlano(atualizada || null);
+      } catch {
+        // A reserva foi confirmada; falha de atualizacao nao a desfaz.
+        setErroPlano("Atualize a pagina para consultar sua assinatura.");
+      }
+    }
   } catch (error) {
     console.error(error);
 
     const detalhe = error?.response?.data?.detail;
 
+    const status = error?.response?.status;
     setErro(
-      detalhe || "Erro ao confirmar agendamento. Tente novamente."
+      status === 401
+        ? "Sua sessao expirou. Entre novamente no Portal do Cliente."
+        : status === 403
+          ? "Seu acesso nao autoriza este agendamento. Verifique a barbearia e a assinatura."
+          : status === 409
+            ? (typeof detalhe === "string" ? detalhe : "Nao ha creditos livres suficientes para reservar os servicos selecionados.")
+            : typeof detalhe === "string"
+              ? detalhe
+              : "Erro ao confirmar agendamento. Tente novamente."
     );
   } finally {
     setSalvando(false);
@@ -383,7 +649,8 @@ async function consultarAgendamento() {
 
     const resultado = await consultarAgendamentoOnline(
       barbeariaSlug,
-      telefoneConsulta
+      telefoneConsulta,
+      obterTokenCliente(barbeariaSlug)
     );
 
     const agendamentos = resultado?.agendamentos || [];
@@ -425,11 +692,20 @@ async function buscarAgendamentosParaCancelar() {
     const resultado =
       await consultarAgendamentoOnline(
         barbeariaSlug,
-        telefoneCancelamento
+        telefoneCancelamento,
+        obterTokenCliente(barbeariaSlug)
       );
 
     setResultadoCancelamento(resultado);
   } catch (error) {
+    // A68-D40: 404 significa que nao ha agendamentos
+    // ativos para exibir. Preservar a mensagem de
+    // cancelamento concluido, quando houver.
+    if (error?.response?.status === 404) {
+      setResultadoCancelamento({ agendamentos: [] });
+      return;
+    }
+
     console.error(error);
 
     setResultadoCancelamento(null);
@@ -443,14 +719,35 @@ async function buscarAgendamentosParaCancelar() {
   }
 }
 
-async function cancelarAgendamento(id) {
+async function cancelarAgendamento(agendamento) {
+  setErro("");
+  setMensagem("");
+  let tokenCancelamento = null;
+  if ((agendamento?.tipo_atendimento || "").toLowerCase() === "plano") {
+    tokenCancelamento = obterTokenCliente();
+    if (!tokenCancelamento) {
+      setErro("Para cancelar um atendimento do plano, entre no Portal do Cliente da barbearia.");
+      return;
+    }
+    try {
+      const perfil = await carregarPerfilCliente();
+      if (perfil?.barbearia_slug !== barbeariaSlug || !perfil?.cliente_id) {
+        setErro("Este acesso pertence a outra barbearia. Entre no Portal do Cliente correto.");
+        return;
+      }
+    } catch {
+      setErro("Sua sessão do Portal do Cliente expirou. Entre novamente.");
+      return;
+    }
+  }
   try {
     setCancelando(true);
 
     await cancelarAgendamentoOnline(
       barbeariaSlug,
       telefoneCancelamento,
-      id
+      agendamento.id,
+      tokenCancelamento
     );
 
     setMensagem(
@@ -462,8 +759,13 @@ async function cancelarAgendamento(id) {
     console.error(error);
 
     setErro(
-      error?.response?.data?.detail ||
-      "Erro ao cancelar agendamento."
+      error?.response?.status === 409
+        ? "Não é possível cancelar este agendamento porque já existe uma comanda vinculada. Procure a barbearia."
+        : error?.response?.status === 401
+          ? "Sua sessão do Portal do Cliente não está válida. Faça login novamente."
+          : error?.response?.status === 403
+            ? "Este agendamento pertence a outro cliente ou barbearia."
+            : error?.response?.data?.detail || "Erro ao cancelar agendamento."
     );
   } finally {
     setCancelando(false);
@@ -1119,7 +1421,7 @@ return (
 
                     <button
                       type="button"
-                      onClick={() => cancelarAgendamento(agendamento.id)}
+                      onClick={() => cancelarAgendamento(agendamento)}
                       disabled={cancelando}
                       style={{
                         marginTop: "12px",
@@ -1220,6 +1522,63 @@ return (
                   <span>
                     Total: {formatarMoeda(valorTotalSelecionado)}
                   </span>
+                </div>
+              )}
+            </div>
+
+            <div style={cardStyle}>
+              <h2>Forma de atendimento</h2>
+              {agendamentoExclusivo ? (
+                <p>Esta barbearia permite agendamento online somente com plano ativo.</p>
+              ) : (
+                <div className={styles.gradeOpcoes}>
+                  <button type="button"
+                    style={optionButtonStyle(tipoAtendimentoEscolhido === "avulso")}
+                    onClick={() => setTipoAtendimentoEscolhido("avulso")}
+                    aria-pressed={tipoAtendimentoEscolhido === "avulso"}>
+                    <strong>Atendimento avulso</strong>
+                    <br />
+                    <span>Pagamento conforme as condições da barbearia.</span>
+                  </button>
+                  <button type="button"
+                    style={optionButtonStyle(tipoAtendimentoEscolhido === "plano")}
+                    onClick={() => setTipoAtendimentoEscolhido("plano")}
+                    aria-pressed={tipoAtendimentoEscolhido === "plano"}>
+                    <strong>Usar meu plano</strong>
+                    <br />
+                    <span>Necessita login no Portal do Cliente e créditos válidos.</span>
+                  </button>
+                </div>
+              )}
+              {usaPlano && (
+                <div role="status" aria-live="polite" style={{ marginTop: "12px", color: "#334155", display: "grid", gap: "8px" }}>
+                  {carregandoPlano && <p>Consultando sua assinatura...</p>}
+                  {erroPlano && <p style={{ color: "#b91c1c" }}>{erroPlano}</p>}
+                  {!carregandoPlano && resumoPlano && (
+                    <>
+                      <p><strong>Assinatura:</strong> {resumoPlano?.plano?.nome || "Plano contratado"}</p>
+                      <p><strong>Situação:</strong> {resumoPlano.status || "Nao informada"} / {resumoPlano.status_pagamento || "Pagamento nao informado"}</p>
+                      <p><strong>Usos remanescentes informados:</strong> {Number.isInteger(Number(resumoPlano.usos_disponiveis)) && resumoPlano.usos_disponiveis !== null ? resumoPlano.usos_disponiveis : "Nao informado"}</p>
+                    </>
+                  )}
+                  <p><strong>Créditos necessários:</strong> {servicosIds.length} (um por serviço).</p>
+                  {!horarioSelecionado && <p>Escolha um horario para consultar os creditos livres validos naquela data.</p>}
+                  {carregandoSaldo && <p>Consultando saldo livre para o horario...</p>}
+                  {erroSaldo && <p style={{ color: "#b91c1c" }}>{erroSaldo}</p>}
+                  {horarioSelecionado && !carregandoSaldo && saldoCiclo && (
+                    <>
+                      <p><strong>Créditos livres:</strong> {saldoCiclo.creditos_livres}</p>
+                      <p><strong>Créditos reservados:</strong> {saldoCiclo.creditos_reservados}</p>
+                      <p><strong>Créditos consumidos no ciclo:</strong> {saldoCiclo.creditos_consumidos_ciclo}</p>
+                      {Number(saldoCiclo.creditos_livres) < servicosIds.length && (
+                        <p style={{ color: "#b91c1c" }}>Créditos insuficientes para os serviços escolhidos.</p>
+                      )}
+                    </>
+                  )}
+                  <p style={{ fontSize: "13px", color: "#64748b" }}>
+                    O saldo livre considera reservas e consumo no ciclo da data escolhida.
+                    A disponibilidade sera revalidada pelo servidor na confirmacao.
+                  </p>
                 </div>
               )}
             </div>
@@ -1401,6 +1760,10 @@ return (
             />
 
             <ResumoLinha
+              titulo="Atendimento"
+              valor={usaPlano ? "Plano de assinatura" : "Avulso"}
+            />
+            <ResumoLinha
               titulo="Modo"
               valor={
                 modo === "barbeiro"
@@ -1418,7 +1781,7 @@ return (
               }
             />
 
-            <ResumoLinha titulo="Data" valor={formatarData(dataSelecionada)} />
+            <ResumoLinha titulo="Data" valor={formatarData(horarioSelecionado?.data_hora_inicio?.slice(0, 10) || dataSelecionada)} />
 
             <ResumoLinha
               titulo="Horário"
@@ -1431,7 +1794,12 @@ return (
               type="button"
               className={styles.botaoPrincipal}
               onClick={confirmarAgendamento}
-              disabled={salvando}
+              disabled={salvando || (usaPlano && (
+                carregandoPlano || carregandoSaldo || Boolean(erroPlano) ||
+                Boolean(erroSaldo) || !horarioSelecionado || !saldoCiclo ||
+                !Number.isFinite(Number(saldoCiclo.creditos_livres)) ||
+                Number(saldoCiclo.creditos_livres) < servicosIds.length
+              ))}
               style={{
                 ...buttonStyle,
                 width: "100%",

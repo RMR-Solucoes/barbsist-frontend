@@ -16,9 +16,9 @@ const api = axios.create({
 
 api.interceptors.request.use((config) => {
   const token = obterToken();
-  const chamadaPortalCliente =
-    config.barbSistEscopoAutenticacao ===
-    "portal-cliente";
+  const escopo = config.barbSistEscopoAutenticacao;
+  const chamadaPortalCliente = escopo === "portal-cliente";
+  const chamadaPublica = escopo === "publico";
   const possuiAuthorization = Boolean(
     config.headers?.Authorization
   );
@@ -26,6 +26,7 @@ api.interceptors.request.use((config) => {
   if (
     token &&
     !chamadaPortalCliente &&
+    !chamadaPublica &&
     !possuiAuthorization
   ) {
     config.headers.Authorization =
@@ -45,15 +46,16 @@ api.interceptors.response.use(
     const chamadaDeLogin =
       url.includes("/auth/login");
 
-    const chamadaPortalCliente =
-      error.config?.barbSistEscopoAutenticacao ===
-      "portal-cliente";
+    const escopo = error.config?.barbSistEscopoAutenticacao;
+    const chamadaPortalCliente = escopo === "portal-cliente";
+    const chamadaPublica = escopo === "publico";
 
     if (
       status === 401 &&
       token &&
       !chamadaDeLogin &&
-      !chamadaPortalCliente
+      !chamadaPortalCliente &&
+      !chamadaPublica
     ) {
       removerToken();
 

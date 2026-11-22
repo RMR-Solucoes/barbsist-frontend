@@ -11,13 +11,13 @@ function baseUrl(barbeariaSlug) {
 
 
 export async function listarBarbeirosOnline(barbeariaSlug) {
-  const response = await api.get(`${baseUrl(barbeariaSlug)}/barbeiros`);
+  const response = await api.get(`${baseUrl(barbeariaSlug)}/barbeiros`, { barbSistEscopoAutenticacao: "publico" });
   return response.data;
 }
 
 
 export async function listarServicosOnline(barbeariaSlug) {
-  const response = await api.get(`${baseUrl(barbeariaSlug)}/servicos`);
+  const response = await api.get(`${baseUrl(barbeariaSlug)}/servicos`, { barbSistEscopoAutenticacao: "publico" });
   return response.data;
 }
 
@@ -52,7 +52,8 @@ export async function listarHorariosDiaOnline(
   params.append("data", data);
 
   const response = await api.get(
-    `${baseUrl(barbeariaSlug)}/horarios-dia?${params.toString()}`
+    `${baseUrl(barbeariaSlug)}/horarios-dia?${params.toString()}`,
+    { barbSistEscopoAutenticacao: "publico" }
   );
   return response.data;
 }
@@ -70,27 +71,53 @@ export async function listarHorariosSemanaOnline(
   params.append("data_inicio", dataInicio);
 
   const response = await api.get(
-    `${baseUrl(barbeariaSlug)}/horarios-semana?${params.toString()}`
+    `${baseUrl(barbeariaSlug)}/horarios-semana?${params.toString()}`,
+    { barbSistEscopoAutenticacao: "publico" }
   );
   return response.data;
 }
 
 
-export async function criarAgendamentoOnline(barbeariaSlug, dados) {
-  const response = await api.post(baseUrl(barbeariaSlug), dados);
+// BARBSIST_P9_2R - Token do cliente apenas para reserva exclusiva.
+export async function criarAgendamentoOnline(
+  barbeariaSlug,
+  dados,
+  tokenCliente = null
+) {
+  const opcoes = tokenCliente
+    ? {
+        barbSistEscopoAutenticacao: "portal-cliente",
+        headers: { Authorization: `Bearer ${tokenCliente}` },
+      }
+    : { barbSistEscopoAutenticacao: "publico" };
+
+  const response = await api.post(
+    baseUrl(barbeariaSlug),
+    dados,
+    opcoes
+  );
   return response.data;
 }
 
 
 export async function consultarAgendamentoOnline(
   barbeariaSlug,
-  telefone
+  telefone,
+  tokenCliente = null
 ) {
   const params = new URLSearchParams();
   params.append("telefone", telefone);
 
+  const opcoes = tokenCliente
+    ? {
+        barbSistEscopoAutenticacao: "portal-cliente",
+        headers: { Authorization: `Bearer ${tokenCliente}` },
+      }
+    : { barbSistEscopoAutenticacao: "publico" };
+
   const response = await api.get(
-    `${baseUrl(barbeariaSlug)}/consultar?${params.toString()}`
+    `${baseUrl(barbeariaSlug)}/consultar?${params.toString()}`,
+    opcoes
   );
   return response.data;
 }
@@ -99,14 +126,24 @@ export async function consultarAgendamentoOnline(
 export async function cancelarAgendamentoOnline(
   barbeariaSlug,
   telefone,
-  agendamentoId
+  agendamentoId,
+  tokenCliente = null
 ) {
   const params = new URLSearchParams();
   params.append("telefone", telefone);
   params.append("agendamento_id", agendamentoId);
 
+  const opcoes = tokenCliente
+    ? {
+        barbSistEscopoAutenticacao: "portal-cliente",
+        headers: { Authorization: `Bearer ${tokenCliente}` },
+      }
+    : { barbSistEscopoAutenticacao: "publico" };
+
   const response = await api.put(
-    `${baseUrl(barbeariaSlug)}/cancelar?${params.toString()}`
+    `${baseUrl(barbeariaSlug)}/cancelar?${params.toString()}`,
+    null,
+    opcoes
   );
   return response.data;
 }
