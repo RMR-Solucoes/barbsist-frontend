@@ -98,6 +98,13 @@ export default function AgendamentoOnlinePage() {
   const [servicosIds, setServicosIds] = useState([]);
   // P10-D14J.32-C: opcao voluntaria pelo plano quando avulso e permitido.
   const [tipoAtendimentoEscolhido, setTipoAtendimentoEscolhido] = useState("avulso");
+  // R13: entrada pelo Portal preseleciona assinatura.
+  // O cliente pode escolher avulso quando permitido.
+  useEffect(() => {
+    if (origemPortal) {
+      setTipoAtendimentoEscolhido("plano");
+    }
+  }, [origemPortal]);
   // A65: usos da assinatura nao equivalem a creditos livres (reservas pendentes).
   const [resumoPlano, setResumoPlano] = useState(null);
   const [carregandoPlano, setCarregandoPlano] = useState(false);
@@ -478,7 +485,7 @@ export default function AgendamentoOnlinePage() {
   }
 
   if (usaPlano && resumoPlano &&
-      (String(resumoPlano.status || "").toUpperCase() !== "ATIVO" ||
+      (!["ATIVO", "ATIVA"].includes(String(resumoPlano.status || "").toUpperCase()) ||
        String(resumoPlano.status_pagamento || "").toUpperCase() !== "PAGO")) {
     setErro("Sua assinatura ainda nao esta ativa e paga. Escolha avulso ou regularize o plano.");
     return;
@@ -583,9 +590,9 @@ export default function AgendamentoOnlinePage() {
           .map((item) => item.nome)
           .join(", "),
         barbeiro: horarioSelecionado.barbeiro_nome,
-        data: dataSelecionada,
+        data: horarioSelecionado.data_hora_inicio.slice(0, 10),
         horario: horarioSelecionado.horario,
-        protocolo: `AGD-${dataSelecionada.replaceAll("-", "")}-${horarioSelecionado.horario.replace(":", "")}`,
+        protocolo: `AGD-${horarioSelecionado.data_hora_inicio.slice(0, 10).replaceAll("-", "")}-${horarioSelecionado.horario.replace(":", "")}`,
         });
     setHorarioSelecionado(null);
 
@@ -1774,7 +1781,7 @@ return (
               }
             />
 
-            <ResumoLinha titulo="Data" valor={formatarData(dataSelecionada)} />
+            <ResumoLinha titulo="Data" valor={formatarData(horarioSelecionado?.data_hora_inicio?.slice(0, 10) || dataSelecionada)} />
 
             <ResumoLinha
               titulo="Horário"
